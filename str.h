@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string_view>
+#include <iostream>
+
 using u32 = unsigned int;
 using u64 = unsigned long long;
 constexpr int BITS_PER_BYTE = 8;
@@ -85,7 +88,7 @@ struct str {
         const str *base;
         typename str::size_type offset;
         typename str::size_type length;
-        str_view(const str *base_, str::size_type offset_, str::size_type length)
+        view(const str *base_, str::size_type offset_, str::size_type length_)
             : base(base_), offset(offset_), length(length_) {}
 
         letter_holder_type operator[](size_type idx) const { return (*base)[idx + offset]; }
@@ -142,13 +145,21 @@ struct str {
         free(this->data);
     }
 
+    void clear() {
+        free(this->data);
+        this->data = nullptr;
+        length = 0;
+        capacity = 0;
+    }
+
     size_type append(std::basic_string_view<letter_human_type> human) {
         auto mapper = typename letter_type::mapper_type();
 
         size_type ncap = div_up(this->length + human.size(), letters_per_store);
         if (ncap > this->capacity) {
             this->capacity = ncap;
-            this->data = realloc(this->data, ncap * sizeof(store_type));
+            this->data = static_cast<store_type *>(
+                    realloc(this->data, ncap * sizeof(store_type)));
         }
 
         store_type *oit = this->data + (this->length / letters_per_store);
@@ -164,13 +175,19 @@ struct str {
             *oit |= bin << (sub_idx * letter_type::bits);
             sub_idx += 1;
         }
+        return this->length;
     }
 
-    view get_view(size_type offset, size_type length) {
+    operator view() const { return get_view(); }
+
+    view get_view(size_type offset, size_type length) const {
         return view(this, offset, length);
     }
-    view get_view(size_type offset) {
+    view get_view(size_type offset) const {
         return get_view(offset, length - offset);
+    }
+    view get_view() const {
+        return get_view(0, length);
     }
 
     letter_holder_type operator[](size_type idx) const {
@@ -180,7 +197,7 @@ struct str {
         return static_cast<letter_holder_type>((this->data[cell] >> cell_bit) & letter_type::mask);
     }
 
-    void set(size_type index, letter_holder_type val) {
+    void set(size_type idx, letter_holder_type val) {
         size_type cell = idx / letters_per_store;
         int cell_bit = (idx % letters_per_store) * letter_type::bits;
         this->data[cell] &= letter_type::mask << cell_bit;
@@ -194,3 +211,21 @@ struct str {
         throw "out-of-bounds";
     }
 };
+
+std::ostream &operator<<(std::ostream &os, const typename str<dna_letter>::view &sv) {
+    typename str<dna_letter>::letter_type::unmapper_type unmapper;
+
+    for (typename str<dna_letter>::size_type i = 0; i < sv.length; ++i) {
+        os << unmapper(sv[i]);
+    }
+    return os;
+}
+
+std::istream &operator>>(std::istream &is, str<dna_letter> &s) {
+    std::string seq;
+    is >> seq;
+    s.clear();
+    s.append(seq);
+
+    return is;
+}
