@@ -63,7 +63,7 @@ using dna_letter = letter<4, u32, char, dna_char_mapper, dna_char_unmapper>;
 template <
     typename letter,
     typename store = typename letter::holder_type,
-    typename sizet = u64>
+    typename sizet = u32>
 struct str {
     using letter_type = letter;
     using letter_holder_type = typename letter::holder_type;
@@ -86,9 +86,9 @@ struct str {
         // using letter_htype = typename letter_type::human_type;
 
         const str *base;
-        typename str::size_type offset;
-        typename str::size_type length;
-        view(const str *base_, str::size_type offset_, str::size_type length_)
+        size_type offset;
+        size_type length;
+        view(const str *base_, size_type offset_, size_type length_)
             : base(base_), offset(offset_), length(length_) {}
 
         letter_holder_type operator[](size_type idx) const { return (*base)[idx + offset]; }
@@ -229,3 +229,5 @@ std::istream &operator>>(std::istream &is, str<dna_letter> &s) {
 
     return is;
 }
+
+using dna_str = str<dna_letter>;
