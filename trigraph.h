@@ -12,31 +12,6 @@
 #include <type_traits>
 #include <queue>
 
-template<typename str_t>
-struct rgfa_node {
-    using str_type = str_t;
-    using size_type = typename str_type::size_type;
-
-    rgfa_node(str_type &&seg, std::string &&seg_id)
-        : seg(std::move(seg)), seg_id(std::move(seg_id)) {
-    }
-
-    str_type seg;
-    std::string seg_id;
-    // std::string stable_seq;
-    // size_type offset;
-    // size_type rank;
-
-    // size_type id;
-    // size_type dcom_id; // disjoing componend id (from 0 to num_comp-1)
-};
-
-template<typename size_type>
-struct rgfa_edge {
-    size_type to;
-    size_type next;
-};
-
 template<typename letter, typename holder, unsigned k>
 struct kmer {
     using holder_type = holder;
@@ -181,13 +156,6 @@ struct trigraph {
     using kmer_len_type = unsigned short; // assume no more than 64k kmers end in given location
     static constexpr size_type INV_SIZE = -1;
 
-    struct raw_graph_t {
-        std::vector<rgfa_node_t> rgfa_nodes; // N
-        std::vector<rgfa_edge_t> rgfa_edges; // M * 2
-        std::vector<size_type> edge_start;
-        std::vector<size_type> redge_start;
-    };
-
     struct kmer_comp_t {
         std::vector<std::vector<kmer_type>> kmers;
         std::vector<kmer_len_type> done_idx;
@@ -245,68 +213,6 @@ struct trigraph {
         : raw_graph(std::move(rg)) {
     }
 
-    static trigraph from_rgfa(const std::string &file) {
-        std::vector<rgfa_node_t> rgfa_nodes;
-        std::vector<rgfa_edge_t> rgfa_edges;
-        std::vector<size_type> edge_start;
-        std::vector<size_type> redge_start;
-        std::unordered_map<std::string, size_type> seg2id;
-
-        std::ifstream io = std::ifstream(file);
-
-        std::string line;
-        bool processed_nodes = false;
-        while (std::getline(io, line)) {
-            char head;
-            std::istringstream iss(line);
-            iss >> head;
-
-            switch (head) {
-                case 'S': {
-                    std::string seg_id;
-                    str_type seg;
-                    iss >> seg_id >> seg;
-
-                    rgfa_nodes.emplace_back(std::move(seg), std::move(seg_id));
-                    break;
-                }
-                case 'L': {
-                    if (!processed_nodes) {
-                        /* size_type id = 0; */
-                        size_type i = 0;
-                        for (rgfa_node_t &node : rgfa_nodes) {
-                            /* node.id = ++id; */
-                            /* id += node.seg.length; */
-                            /* ++id; */
-                            seg2id[node.seg_id] = i++;
-                        }
-                        edge_start.resize(rgfa_nodes.size(), INV_SIZE);
-                        redge_start.resize(rgfa_nodes.size(), INV_SIZE);
-                        processed_nodes = true;
-                    }
-                    std::string seg_a, seg_b, cigar;
-                    char dir_a, dir_b;
-                    iss >> seg_a >> dir_a >> seg_b >> dir_b >> cigar;
-                    if (dir_a != '+' || dir_b != '+' || cigar != "0M") {
-                        throw "does not support fancy links";
-                    }
-                    size_type a = seg2id[seg_a], b = seg2id[seg_b];
-                    rgfa_edges.emplace_back(rgfa_edge_t(b, edge_start[a]));
-                    edge_start[a] = rgfa_edges.size();
-                    rgfa_edges.emplace_back(rgfa_edge_t(a, redge_start[b]));
-                    edge_start[b] = rgfa_edges.size();
-
-                    break;
-                }
-            }
-        }
-        return trigraph((raw_graph_t) {
-            std::move(rgfa_nodes),
-            std::move(rgfa_edges),
-            std::move(edge_start),
-            std::move(redge_start),
-        });
-    }
 
     struct component_data_t {
         std::vector<size_type> comp_id; // (raw_graph.rgfa_nodes.size(), INV_SIZE);
