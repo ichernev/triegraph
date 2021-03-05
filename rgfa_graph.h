@@ -91,8 +91,8 @@ struct RgfaGraph {
     using const_iterator = ConstNodeIter;
 
     struct NeighbourHelper {
-        const_iterator begin() { return beg; }
-        const_iterator end() { return const_iterator(); }
+        const_iterator begin() const { return beg; }
+        const_iterator end() const { return const_iterator(); }
 
         NeighbourHelper(const RgfaGraph &g, Size edge_id) : beg(g, edge_id) {}
     private:
