@@ -1,16 +1,26 @@
-SRCS := $(wildcard *.cpp)
+SRCS := $(wildcard **/*.cpp *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 DEPS := $(OBJS:%.o=%.d)
+TARGETS  := main
+TESTS := test/letter test/str
 
-CPPFLAGS = -MMD -Wfatal-errors -std=c++20
+CPPFLAGS = -MMD -Wfatal-errors -std=c++20 -I. -Wall
 
-all: main
+all: $(TARGETS)
 
-main: $(OBJS)
-	g++ $(CPPFLAGS) $^ -o $@
+test: $(TESTS)
+
+%: %.o
+	g++ $(CPPFLAGS) $< -o $@
+
+%: %.cpp
+	g++ $(CPPFLAGS) $< -o $@
 
 .PHONY: clean
 clean:
-	rm -rf main $(OBJS) $(DEPS)
+	rm -rf main $(OBJS) $(DEPS) $(TARGETS) $(TESTS)
+
+foo:
+	echo $(DEPS)
 
 -include $(DEPS)
