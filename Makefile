@@ -4,7 +4,8 @@ DEPS := $(OBJS:%.o=%.d)
 TARGETS  := $(patsubst %.cpp,%,$(wildcard *.cpp))
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
 
-CPPFLAGS = -MMD -Wfatal-errors -std=c++20 -I. -Wall
+SHORT := -Wfatal-errors
+CPPFLAGS = -MMD $(SHORT) -std=c++20 -I. -Wall
 
 all: $(TARGETS)
 
