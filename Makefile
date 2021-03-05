@@ -1,8 +1,8 @@
 SRCS := $(wildcard **/*.cpp *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 DEPS := $(OBJS:%.o=%.d)
-TARGETS  := main
-TESTS := test/letter test/str
+TARGETS  := $(patsubst %.cpp,%,$(wildcard *.cpp))
+TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
 
 CPPFLAGS = -MMD -Wfatal-errors -std=c++20 -I. -Wall
 
@@ -19,8 +19,5 @@ test: $(TESTS)
 .PHONY: clean
 clean:
 	rm -rf main $(OBJS) $(DEPS) $(TARGETS) $(TESTS)
-
-foo:
-	echo $(DEPS)
 
 -include $(DEPS)
