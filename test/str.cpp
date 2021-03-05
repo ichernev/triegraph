@@ -86,6 +86,15 @@ static void test_view_iterator() {
     assert(it == v.end());
 }
 
+static void test_move() {
+    DnaStr s("acgt");
+
+    DnaStr s2 = std::move(s);
+    s = std::move(s2);
+
+    assert(s.length == 4);
+}
+
 int main() {
     std::cerr << "Running str tests" << std::endl;
 
@@ -96,7 +105,7 @@ int main() {
     test_stream_output();
     test_str_iterator();
     test_view_iterator();
-
+    test_move();
 
     return 0;
 }

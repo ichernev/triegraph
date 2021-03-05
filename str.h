@@ -134,18 +134,22 @@ struct Str {
         const_iterator end() const { return const_iterator(base->data, offset + length); }
     };
 
-    Str() {
-        this->data = nullptr;
-    }
+    Str() { this->data = nullptr; }
+    Str(Input human) : data(nullptr), length(0), capacity(0) { append(human); }
+    ~Str() { free(this->data); }
 
-    Str(Input human)
-        : data(nullptr), length(0), capacity(0)
-    {
-        append(human);
-    }
+    Str(const Str &) = delete;
+    Str &operator=(const Str &) = delete;
 
-    ~Str() {
-        free(this->data);
+    Str(Str &&other) : data(other.data), length(other.length), capacity(other.capacity) {
+        other.data = nullptr;
+    }
+    Str &operator=(Str &&other) {
+        std::swap(data, other.data);
+        length = other.length;
+        capacity = other.capacity;
+        other.clear();
+        return *this;
     }
 
     void clear() {
