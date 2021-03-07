@@ -6,16 +6,19 @@
 #include <functional>  /* for hash */
 #include <iostream>
 #include <iterator>
+#include <sstream>
 
-template<typename Letter_, typename Holder_, unsigned k>
+template<typename Letter_, typename Holder_, unsigned K_, Holder_ ON_MASK_=0>
 struct Kmer {
     using Letter = Letter_;
     using Holder = Holder_;
     using klen_type = unsigned short;
+    using value_type = Letter;
     // use one bit to encode less-than-maxk length
+    static constexpr Holder ON_MASK = ON_MASK_;
     static constexpr Holder H1 = 1;
     static constexpr klen_type MAX_K = (sizeof(Holder) * BITS_PER_BYTE - 1) / Letter::bits;
-    static constexpr klen_type K = k;
+    static constexpr klen_type K = K_;
     static constexpr Holder _kmer_mask(klen_type anti_len) {
         return (H1 << (K - anti_len) * Letter::bits) - 1;
     }
@@ -25,14 +28,30 @@ struct Kmer {
     static constexpr Holder L2_SHIFT = (MAX_K - 1) * Letter::bits;
     static constexpr Holder L3_MASK = (H1 << 3 * Letter::bits) - 1;
     static constexpr Holder L3_SHIFT = (MAX_K - 4) * Letter::bits;
-    static constexpr Holder EMPTY = L1_MASK | L2_MASK << L2_SHIFT | Holder(K-4) << L3_SHIFT;
+    static constexpr Holder EMPTY = ON_MASK | L1_MASK |
+                                L2_MASK << L2_SHIFT | Holder(K-4) << L3_SHIFT;
     static_assert(std::is_unsigned_v<Holder>, "holder should be unsigned");
-    static_assert(k <= MAX_K, "can not support big k, increase holder size");
+    static_assert(K <= MAX_K, "can not support big k, increase holder size");
 
     Holder data;
 
-    static Kmer empty() {
-        return Kmer {EMPTY};
+    // Kmer() {}
+    // Kmer(Holder data) : data(data) {}
+    // Kmer(const Kmer &kmer) : data(kmer.data) {}
+    // Kmer(Kmer &&kmer) : data(kmer.data) {}
+    // Kmer &operator= (const Kmer &kmer) { data = kmer.data; }
+    // Kmer &operator= (Kmer &&kmer) { data = kmer.data; }
+
+    static Kmer empty() { return Kmer {EMPTY}; }
+    static Kmer from_str(std::basic_string<typename Letter::Human> s) {
+        Kmer k;
+        std::istringstream(s) >> k;
+        return k;
+    }
+    std::basic_string<typename Letter::Human> to_str() const {
+        std::ostringstream os;
+        os << *this;
+        return os.str();
     }
 
     bool is_complete() const {
@@ -54,14 +73,18 @@ struct Kmer {
 
     void push(Letter l) {
         if (is_complete()) {
-            // NOTE: this doesn't preserve "waste" bits
             data <<= Letter::bits;
             data |= l.data /* & Letter::bits */;
             data &= KMER_MASK;
+            data |= ON_MASK;
         } else {
             Holder mask = _inc_len();
             data = (data & ~mask) | ((data << Letter::bits | l.data) & mask);
         }
+    }
+
+    void push_back(Letter l) {
+        return push(l);
     }
 
     void pop() {
@@ -171,18 +194,37 @@ decr_l2:
         return os;
     }
 
+    friend std::istream &operator>>(std::istream &is, Kmer &kmer) {
+        typename Letter::Mapper mapper;
+        using is_it = std::istream_iterator<typename Letter::Human>;
+
+        kmer.data = EMPTY;
+        std::transform(is_it(is), is_it(),
+                std::back_inserter<Kmer>(kmer),
+                mapper);
+        return is;
+    }
+
+    bool operator== (const Kmer &other) const { return data == other.data; }
+
     // friend struct std::hash<Kmer> {
     //     static constexpr hash<Holder> hasher();
     //     std::size_t operator() (const Kmer &kmr) {
     //         return hasher(kmr.data);
     //     }
     // };
+    // struct Hash {
+    //     static constexpr std::hash<Holder> hasher {};
+    //     std::size_t operator() (const Kmer &kmr) const {
+    //         return hasher(kmr.data);
+    //     }
+    // };
 };
 
-template<typename Letter, typename Holder, unsigned k>
-struct std::hash<Kmer<Letter, Holder, k>> {
-    static constexpr hash<Holder> hasher();
-    std::size_t operator() (const Kmer<Letter, Holder, k> &kmr) {
+template<typename Letter, typename Holder, unsigned k, Holder on_mask>
+struct std::hash<Kmer<Letter, Holder, k, on_mask>> {
+    static constexpr hash<Holder> hasher {};
+    std::size_t operator() (const Kmer<Letter, Holder, k, on_mask> &kmr) const {
         return hasher(kmr.data);
     }
 };

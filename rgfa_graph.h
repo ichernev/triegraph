@@ -99,11 +99,11 @@ struct RgfaGraph {
         const_iterator beg;
     };
 
-    NeighbourHelper forward_from(Size node_id) {
+    NeighbourHelper forward_from(Size node_id) const {
         return NeighbourHelper(*this, edge_start[node_id]);
     }
 
-    NeighbourHelper backward_from(Size node_id) {
+    NeighbourHelper backward_from(Size node_id) const {
         return NeighbourHelper(*this, redge_start[node_id]);
     }
 

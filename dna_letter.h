@@ -39,6 +39,7 @@ struct DnaLetters {
     static constexpr auto C = DnaLetter(DnaLetter::Mapper()('C'));
     static constexpr auto G = DnaLetter(DnaLetter::Mapper()('G'));
     static constexpr auto T = DnaLetter(DnaLetter::Mapper()('T'));
+    static constexpr auto EPS = DnaLetter(DnaLetter::num_options);
 };
 
 #endif /* __DNA_LETTER_H__ */
