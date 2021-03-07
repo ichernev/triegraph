@@ -12,13 +12,14 @@ static void test_small() {
     assert(graph.edge_start.size() == graph.nodes.size());
     assert(graph.redge_start.size() == graph.nodes.size());
 
-    for (u32 i = 0; i < graph.nodes.size(); ++i) {
-        std::cerr << graph.nodes[i].seg_id << "," << i << " ->";
-        for (const auto &to_node : graph.forward_from(i)) {
-            std::cerr << " " << to_node.seg_id << "," << to_node.node_id;
-        }
-        std::cerr << std::endl;
-    }
+    std::cerr << graph;
+    // for (u32 i = 0; i < graph.nodes.size(); ++i) {
+    //     std::cerr << graph.nodes[i].seg_id << "," << i << " ->";
+    //     for (const auto &to_node : graph.forward_from(i)) {
+    //         std::cerr << " " << to_node.seg_id << "," << to_node.node_id;
+    //     }
+    //     std::cerr << std::endl;
+    // }
 
     auto edge_helper = graph.forward_from(0);
     assert(std::distance(edge_helper.begin(), edge_helper.end()) == 2);

@@ -43,7 +43,8 @@ struct LetterLocData {
     }
 
     LetterLoc compress(NodePos handle) {
-        return node_start[handle.node] + handle.pos;
+        return handle.node == num_locations ? num_locations :
+            node_start[handle.node] + handle.pos;
     }
 };
 

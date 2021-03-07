@@ -167,6 +167,22 @@ struct RgfaGraph {
             std::move(redge_start),
         };
     }
+
+    friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {
+        for (Size i = 0; i < graph.nodes.size(); ++i) {
+            os << graph.nodes[i].seg_id << "," << i << " ->";
+            for (const auto &to_node : graph.forward_from(i)) {
+                os << " " << to_node.seg_id << "," << to_node.node_id;
+            }
+            os << std::endl;
+            os << graph.nodes[i].seg_id << "," << i << " <-";
+            for (const auto &to_node : graph.backward_from(i)) {
+                os << " " << to_node.seg_id << "," << to_node.node_id;
+            }
+            os << std::endl;
+        }
+        return os;
+    }
 };
 
 #endif /* __RGFA_GRAPH_H__ */
