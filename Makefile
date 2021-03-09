@@ -9,7 +9,10 @@ CPPFLAGS = -MMD $(SHORT) -std=c++20 -I. -Wall
 
 all: $(TARGETS)
 
+tests: $(TESTS)
+
 test: $(TESTS)
+	for t in $(TESTS); do echo ======= $$t =======; ./$$t; done
 
 %: %.o
 	g++ $(CPPFLAGS) $< -o $@
