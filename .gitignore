@@ -1,6 +1,5 @@
 *.o
 main
-test/iter
-test/str
-test/letter
+test/*
+!test/*.cpp
 *.d
