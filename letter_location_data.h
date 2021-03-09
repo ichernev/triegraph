@@ -9,6 +9,9 @@ struct NodePos {
 
     NodeLoc node;
     LetterLoc pos;
+
+    NodePos(NodeLoc node = 0, LetterLoc pos = 0) : node(node), pos(pos) {}
+    bool operator == (const NodePos &other) const = default;
 };
 
 template <typename NodePos_, typename Graph_>
