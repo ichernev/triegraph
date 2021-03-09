@@ -31,10 +31,8 @@ static std::vector<LetterLoc> trie2graph(const TrieG &tg, DnaKmer kmer) {
 }
 
 static void test_tiny_linear_graph() {
-    Graph g;
-    g.nodes.emplace_back(DnaStr("acgtacgtac"), "s1");
-    g.edge_start = { Graph::INV_SIZE };
-    g.redge_start = { Graph::INV_SIZE };
+    Graph::Builder b;
+    auto g = b.add_node(DnaStr("acgtacgtac"), "s1").build();
 
     auto builder = TB(std::move(g));
     auto tg = builder.build();
@@ -56,21 +54,16 @@ static void test_tiny_linear_graph() {
 }
 
 static void test_small_nonlinear_graph() {
-    Graph g;
-    g.nodes.emplace_back(DnaStr("a"), "s1");
-    g.nodes.emplace_back(DnaStr("cg"), "s2");
-    g.nodes.emplace_back(DnaStr("t"), "s3");
-    g.nodes.emplace_back(DnaStr("ac"), "s4");
-    g.edges.emplace_back(1, Graph::INV_SIZE);
-    g.edges.emplace_back(0, Graph::INV_SIZE);
-    g.edges.emplace_back(2, 0);
-    g.edges.emplace_back(0, Graph::INV_SIZE);
-    g.edges.emplace_back(3, Graph::INV_SIZE);
-    g.edges.emplace_back(1, Graph::INV_SIZE);
-    g.edges.emplace_back(3, Graph::INV_SIZE);
-    g.edges.emplace_back(2, 5);
-    g.edge_start = {2, 4, 6, Graph::INV_SIZE};
-    g.redge_start = {Graph::INV_SIZE, 1, 3, 7};
+    auto g = Graph::Builder()
+        .add_node(DnaStr("a"), "s1")
+        .add_node(DnaStr("cg"), "s2")
+        .add_node(DnaStr("t"), "s3")
+        .add_node(DnaStr("ac"), "s4")
+        .add_edge("s1", "s2")
+        .add_edge("s1", "s3")
+        .add_edge("s2", "s4")
+        .add_edge("s3", "s4")
+        .build();
 
     // std::cerr << g;
     auto builder = TB(std::move(g));
