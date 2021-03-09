@@ -17,6 +17,8 @@ struct DnaMapper {
                 return 2;
             case 'T': case 't':
                 return 3;
+            case 'E':
+                return 4;
             default:
                 throw "invalid letter";
         }
@@ -28,7 +30,7 @@ struct DnaUnmapper {
     using Holder = Holder_;
     using Human = Human_;
     constexpr Human operator()(Holder repr) {
-        return "acgt"[repr];
+        return "acgtE"[repr];
     }
 };
 
