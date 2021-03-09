@@ -43,6 +43,7 @@ template <typename Str_, typename Size_>
 struct RgfaGraph {
     using Str = Str_;
     using Size = Size_;
+    using NodeLoc = Size;
     using Node = RgfaNode<Str, Size>;
     using Edge = RgfaEdge<Size>;
     static constexpr Size INV_SIZE = -1;
@@ -71,7 +72,8 @@ struct RgfaGraph {
         ConstNodeIter(const RgfaGraph &g, Size edge_id) : graph(&g), edge_id(edge_id) {}
 
         reference operator*() const {
-            auto node_id = graph->edges[edge_id].to;
+            // TODO: This is a hack, support sentinel
+            auto node_id = graph->edges[edge_id == INV_SIZE ? 0 : edge_id].to;
             auto &node = graph->nodes[node_id];
             return IterNode { node.seg, node.seg_id, node_id, edge_id };
         }
@@ -107,7 +109,8 @@ struct RgfaGraph {
         return NeighbourHelper(*this, redge_start[node_id]);
     }
 
-    static RgfaGraph from_file(const std::string &file) {
+    struct Builder {
+        using Self = Builder;
         std::vector<Node> nodes;
         std::vector<Edge> edges;
         std::vector<Size> edge_start;
@@ -115,10 +118,59 @@ struct RgfaGraph {
 
         std::unordered_map<std::string, Size> seg2id;
 
+        bool nodes_done = false;
+
+        Self &add_node(Str &&seg, std::string &&seg_id) {
+            if (nodes_done) throw "can not add_node after add_edge";
+
+            nodes.emplace_back(std::move(seg), std::move(seg_id));
+            return *this;
+        }
+
+        void prep_for_edges() {
+            if (nodes_done) return;
+
+            Size i = 0;
+            for (Node &node : nodes) {
+                seg2id[node.seg_id] = i++;
+            }
+            edge_start.resize(nodes.size(), INV_SIZE);
+            redge_start.resize(nodes.size(), INV_SIZE);
+
+            nodes_done = true;
+        }
+
+        Self &add_edge(const std::string &seg_a, const std::string &seg_b) {
+            prep_for_edges();
+
+            NodeLoc a = seg2id[seg_a], b = seg2id[seg_b];
+            edges.emplace_back(b, edge_start[a]);
+            edge_start[a] = edges.size() - 1;
+            edges.emplace_back(a, edge_start[b]);
+            redge_start[b] = edges.size() - 1;
+
+            return *this;
+        }
+
+        RgfaGraph build() {
+            prep_for_edges();
+            return RgfaGraph(std::move(*this));
+        }
+    };
+
+    RgfaGraph(Builder &&b)
+        : nodes(std::move(b.nodes)),
+          edges(std::move(b.edges)),
+          edge_start(std::move(b.edge_start)),
+          redge_start(std::move(b.redge_start)) {}
+
+    static RgfaGraph from_file(const std::string &file) {
+
         std::ifstream io = std::ifstream(file);
 
+        Builder builder;
+
         std::string line;
-        bool processed_nodes = false;
         while (std::getline(io, line)) {
             char head;
             std::istringstream iss(line);
@@ -130,42 +182,24 @@ struct RgfaGraph {
                     Str seg;
                     iss >> seg_id >> seg;
 
-                    nodes.emplace_back(std::move(seg), std::move(seg_id));
+                    builder.add_node(std::move(seg), std::move(seg_id));
                     break;
                 }
                 case 'L': {
-                    if (!processed_nodes) {
-                        Size i = 0;
-                        for (Node &node : nodes) {
-                            seg2id[node.seg_id] = i++;
-                        }
-                        edge_start.resize(nodes.size(), INV_SIZE);
-                        redge_start.resize(nodes.size(), INV_SIZE);
-                        processed_nodes = true;
-                    }
                     std::string seg_a, seg_b, cigar;
                     char dir_a, dir_b;
                     iss >> seg_a >> dir_a >> seg_b >> dir_b >> cigar;
                     if (dir_a != '+' || dir_b != '+' || cigar != "0M") {
                         throw "does not support fancy links";
                     }
-                    Size a = seg2id[seg_a], b = seg2id[seg_b];
-                    edges.emplace_back(b, edge_start[a]);
-                    edge_start[a] = edges.size() - 1;
-                    edges.emplace_back(a, redge_start[b]);
-                    redge_start[b] = edges.size() - 1;
+                    builder.add_edge(seg_a, seg_b);
 
                     break;
                 }
             }
         }
 
-        return RgfaGraph {
-            std::move(nodes),
-            std::move(edges),
-            std::move(edge_start),
-            std::move(redge_start),
-        };
+        return RgfaGraph(std::move(builder));
     }
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {
