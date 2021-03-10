@@ -152,6 +152,10 @@ struct Str {
         return *this;
     }
 
+    Size size() const {
+        return length;
+    }
+
     void clear() {
         free(this->data);
         this->data = nullptr;

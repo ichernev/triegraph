@@ -28,8 +28,9 @@ struct Kmer {
     static constexpr Holder L2_SHIFT = (MAX_K - 1) * Letter::bits;
     static constexpr Holder L3_MASK = (H1 << 3 * Letter::bits) - 1;
     static constexpr Holder L3_SHIFT = (MAX_K - 4) * Letter::bits;
-    static constexpr Holder EMPTY = ON_MASK | L1_MASK |
-                                L2_MASK << L2_SHIFT | Holder(K-4) << L3_SHIFT;
+    static constexpr Holder EMPTY = K > Letter::mask + 1 ?
+        ON_MASK | L1_MASK | L2_MASK << L2_SHIFT | Holder(K-Letter::mask-1) << L3_SHIFT :
+        ON_MASK | L1_MASK | Holder(K-1) << L2_SHIFT;
     static_assert(std::is_unsigned_v<Holder>, "holder should be unsigned");
     static_assert(K <= MAX_K, "can not support big k, increase holder size");
 
@@ -132,10 +133,10 @@ decr_l2:
         if (alen == 0) {
             data |= L1_MASK;
             // _l2_set(0);
-        } else if (alen < 4) {
+        } else if (alen <= Letter::mask) {
             _l2_set(alen);
         } else {
-            _l3_set(alen - 3);
+            _l3_set(alen - Letter::mask);
         }
     }
 

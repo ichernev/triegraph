@@ -20,4 +20,16 @@ constexpr u64 div_up(u64 a, u64 b) {
     return (a + b - 1) / b;
 }
 
+template <typename T>
+struct quot_rem {
+    T quot;
+    T rem;
+};
+
+template <typename T>
+quot_rem<u32> div(T a, T b) {
+    T quot = a / b;
+    return { quot, a - b * quot };
+}
+
 #endif /* __UTIL_H__ */

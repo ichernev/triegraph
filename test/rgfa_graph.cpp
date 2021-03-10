@@ -29,6 +29,9 @@ static void test_small() {
 
     edge_helper = graph.forward_from(2);
     assert(std::distance(edge_helper.begin(), edge_helper.end()) == 1);
+
+    edge_helper = graph.forward_from(3);
+    assert(std::distance(edge_helper.begin(), edge_helper.end()) == 0);
 }
 
 int main() {

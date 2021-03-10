@@ -1,7 +1,9 @@
 #ifndef __EDGE_H__
 #define __EDGE_H__
 
-#include <string.h> /* memcpy */
+#include "util.h"
+
+#include <cstring> /* std::memcpy */
 #include <utility> /* std::forward */
 #include <iterator> /* std::forward_iterator_tag */
 #include <ostream>
@@ -82,11 +84,11 @@ struct EditEdge {
     }
 };
 
-template <typename Handle_, typename Letter_>
+template <typename Edge_>
 struct EdgeIterImplBase {
-    using Handle = Handle_;
-    using Letter = Letter_;
-    using Edge = EditEdge<Handle, Letter>;
+    using Edge = Edge_;
+    using Handle = Edge::Handle;
+    using Letter = Edge::Letter;
     using Self = EdgeIterImplBase;
 
     u32 state;
@@ -114,11 +116,11 @@ struct EdgeIterImplBase {
 // INS T p0
 //
 // DEL EPS p1
-template <typename Handle_, typename Letter_>
-struct EdgeIterImplGraphFwd : EdgeIterImplBase<Handle_, Letter_> {
-    using Handle = Handle_;
-    using Letter = Letter_;
-    using Edge = EditEdge<Handle, Letter>;
+template <typename Edge_>
+struct EdgeIterImplGraphFwd final : EdgeIterImplBase<Edge_> {
+    using Edge = Edge_;
+    using Handle = Edge::Handle;
+    using Letter = Edge::Letter;
 
     Letter actual;
     typename Handle::NodePos p0;
@@ -178,11 +180,11 @@ struct EdgeIterImplGraphFwd : EdgeIterImplBase<Handle_, Letter_> {
 // INS G p0
 // INS T p0
 
-template <typename Handle_, typename Letter_, typename Graph_>
-struct EdgeIterImplGraphSplit : EdgeIterImplBase<Handle_, Letter_> {
-    using Handle = Handle_;
-    using Letter = Letter_;
-    using Edge = EditEdge<Handle, Letter>;
+template <typename Edge_, typename Graph_>
+struct EdgeIterImplGraphSplit final : EdgeIterImplBase<Edge_> {
+    using Edge = Edge_;
+    using Handle = Edge::Handle;
+    using Letter = Edge::Letter;
 
     using Graph = Graph_;
 
@@ -192,7 +194,14 @@ struct EdgeIterImplGraphSplit : EdgeIterImplBase<Handle_, Letter_> {
 
     EdgeIterImplGraphSplit(Letter actual, typename Handle::NodePos p0,
             typename Graph::const_iterator it)
-        : actual(actual), p0(p0), it(it) {
+        : actual(actual), p0(p0), it(it)
+    {
+        // TODO: Fix this hack
+        if ((*it).edge_id == Graph::INV_SIZE) {
+            // skip edit edges generated from it
+            this->state = Letter::num_options + 1;
+        }
+
     }
 
     virtual u32 end_state() const {
@@ -234,18 +243,183 @@ struct EdgeIterImplGraphSplit : EdgeIterImplBase<Handle_, Letter_> {
     }
 };
 
-template <typename Handle_, typename Letter_, typename Graph_>
-union EditEdgeImplHolder {
-    using H = Handle_;
-    using L = Letter_;
-    using G = Graph_;
-    using NP = typename H::NodePos;
-    using Self = EditEdgeImplHolder;
-    using Edge = EditEdge<H, L>;
+// Kmer00 : kmer02=(kmer00+C), kmer03=(kmer00+G)
 
-    EdgeIterImplBase<H, L> base;
-    EdgeIterImplGraphFwd<H, L> graph_fwd;
-    EdgeIterImplGraphSplit<H, L, G> graph_split;
+// SUB A kmer02
+// MATCH C kmer02
+// SUB G kmer02
+// SUB T kmer02
+// DEL EPS kmer02
+// --
+// SUB A kmer03
+// SUB C kmer03
+// MATCH G kmer03
+// SUB T kmer03
+// DEL EPS kmer03
+// --
+// INS A kmer00
+// INS C kmer00
+// INS G kmer00
+// INS T kmer00
+
+template <typename Edge_, typename OptionsBitset_ = u32>
+struct EdgeIterImplTrieInner final : EdgeIterImplBase<Edge_> {
+    using Edge = Edge_;
+    using Handle = Edge::Handle;
+    using Letter = Edge::Letter;
+    using Kmer = Handle::Kmer;
+    using OptionsBitset = OptionsBitset_;
+    static constexpr decltype(EdgeIterImplBase<Edge>::state) num_letters_eps = Letter::num_options + 1;
+    // num_letter_eps can be u64, but being same as state helps speed up div
+    static_assert(sizeof(num_letters_eps) * BITS_PER_BYTE >= Letter::num_options,
+            "not enough space in num_letter_eps");
+
+    Kmer kmer;
+    OptionsBitset opts;
+
+    EdgeIterImplTrieInner(Kmer kmer, OptionsBitset opts) : kmer(kmer), opts(opts) {
+        after_inc();
+    }
+
+    virtual u32 end_state() const {
+        // some states are repeated / skipped
+        return (num_letters_eps + 1) * Letter::num_options;
+    }
+
+    virtual void after_inc() {
+        while (this->state < num_letters_eps * Letter::num_options)
+            if (auto dr = div(this->state, num_letters_eps);
+                    dr.rem == 0 && !(opts & OptionsBitset(1) << dr.quot))
+                this->state += num_letters_eps;
+            else
+                break;
+    }
+
+    virtual Edge get() const {
+        if (this->state < num_letters_eps * Letter::num_options) {
+            auto dr = div(this->state, num_letters_eps);
+            Letter k {dr.quot};
+            Letter e {dr.rem};
+            Kmer nkmer = kmer; nkmer.push(k);
+            return Edge {
+                nkmer,
+                dr.rem == Letter::num_options ? Edge::DEL :
+                    k == e ? Edge::MATCH : Edge::SUB,
+                e
+            };
+        } else {
+            return Edge {
+                kmer,
+                Edge::INS,
+                Letter { this->state % num_letters_eps }
+            };
+        }
+    }
+};
+
+template <typename Edge_, typename TrieGraphData_>
+struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
+    using Edge = Edge_;
+    using Letter = Edge::Letter;
+    using Kmer = Edge::Handle::Kmer;
+    using TrieGraphData = TrieGraphData_;
+    using Graph = TrieGraphData::Graph;
+    using TrieData = TrieGraphData::TrieData;
+    using T2GMap = decltype(TrieData::trie2graph);
+    using T2GMapIt = T2GMap::const_iterator;
+    using Base = EdgeIterImplBase<Edge>;
+
+    const TrieGraphData &trie_graph;
+    Kmer kmer;
+    T2GMapIt nps;
+    union {
+        char stupid;
+        EdgeIterImplGraphFwd<Edge> fwd;
+        EdgeIterImplGraphSplit<Edge, Graph> split;
+    } its;
+
+    EdgeIterImplTrieToGraph(Kmer kmer, const TrieGraphData &tg)
+        : trie_graph(tg), kmer(kmer), its{'x'} {}
+
+    virtual u32 end_state() const {
+        return Letter::num_options + 1;
+    }
+
+    virtual void after_inc() {
+        if (this->state == Letter::num_options) {
+            nps = trie_graph.trie_data.trie2graph.find(kmer);
+            if (!advance_its(true))
+                // finish
+                ++this->state;
+        } else if (this->state == Letter::num_options + 1) {
+            if (advance_its(false))
+                // keep it up
+                --this->state;
+        }
+    }
+
+    Base *base() { return reinterpret_cast<Base *>(&its); }
+    const Base *base() const { return reinterpret_cast<const Base *>(&its); }
+
+    bool advance_its(bool first_time) {
+        if (!first_time) {
+            base()->inc();
+            if (base()->state != base()->end_state())
+                return true;
+        }
+        // TODO: Do we NEED end-of-graph sentinels in trie2graph?
+        // if we hit the end-of-graph sentinel, skip it
+        while (nps != T2GMapIt() &&
+                nps->second == trie_graph.letter_loc.num_locations) {
+            ++nps;
+        }
+        if (nps != T2GMapIt()) {
+            auto letter_loc = nps->second;
+            auto np = trie_graph.letter_loc.expand(letter_loc);
+            const auto &node = trie_graph.graph.nodes[np.node];
+            if (node.seg.size() == np.pos + 1) {
+                new(&its.split) EdgeIterImplGraphSplit<Edge, Graph>(
+                        node.seg[np.pos],
+                        np,
+                        trie_graph.graph.forward_from(np.node).begin());
+            } else {
+                new(&its.fwd) EdgeIterImplGraphFwd<Edge>(
+                        node.seg[np.pos],
+                        np);
+            }
+            ++nps;
+            return true;
+        }
+        return false;
+    }
+
+    virtual Edge get() const {
+        if (this->state < Letter::num_options) {
+            return Edge {
+                kmer, Edge::INS, Letter(this->state)
+            };
+        } else {
+            return base()->get();
+        }
+    }
+
+};
+
+template <typename Handle_, typename Letter_, typename TrieGraphData_>
+union EditEdgeImplHolder {
+    using Handle = Handle_;
+    using Letter = Letter_;
+    using TrieGraphData = TrieGraphData_;
+    using Graph = TrieGraphData::Graph;
+    using NodePos = typename Handle::NodePos;
+    using Self = EditEdgeImplHolder;
+    using Edge = EditEdge<Handle, Letter>;
+
+    EdgeIterImplBase<Edge> base;
+    EdgeIterImplGraphFwd<Edge> graph_fwd;
+    EdgeIterImplGraphSplit<Edge, Graph> graph_split;
+    EdgeIterImplTrieInner<Edge> trie_inner;
+    EdgeIterImplTrieToGraph<Edge, TrieGraphData> trie_to_graph;
 
     EditEdgeImplHolder() {}
     EditEdgeImplHolder(const Self &h) { copyFrom(h); }
@@ -255,42 +429,48 @@ union EditEdgeImplHolder {
 
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wclass-memaccess"
-    void copyFrom(const Self &h) { memcpy(this, &h, sizeof(Self)); }
+    void copyFrom(const Self &h) { std::memcpy(this, &h, sizeof(Self)); }
     #pragma GCC diagnostic pop
 
-    // template <typename T, T Self::*field, typename... Args>
-    // static Self make(Args&&... args) {
-    //     return Self().set<T, field>(std::forward(args)...);
-    // }
     static Self make_base(u32 state) {
-        return Self().set<EdgeIterImplBase<H, L>, &Self::base>(state);
+        return Self().set<&Self::base>(state);
     }
-    static Self make_graph_fwd(L l, NP np) {
-        return Self().set<EdgeIterImplGraphFwd<H, L>, &Self::graph_fwd>(l, np);
+    template <typename... Args>
+    static Self make_graph_fwd(Args&&... args) {
+        return Self().set<&Self::graph_fwd>(std::forward<Args>(args)...);
     }
-    static Self make_graph_split(L l, NP np, typename G::const_iterator it) {
-        return Self().set<EdgeIterImplGraphSplit<H, L, G>, &Self::graph_split>(l, np, it);
+    template <typename... Args>
+    static Self make_graph_split(Args&&... args) {
+        return Self().set<&Self::graph_split>(std::forward<Args>(args)...);
+    }
+    template <typename... Args>
+    static Self make_trie_inner(Args&&... args) {
+        return Self().set<&Self::trie_inner>(std::forward<Args>(args)...);
+    }
+    template <typename... Args>
+    static Self make_trie_to_graph(Args&&... args) {
+        return Self().set<&Self::trie_to_graph>(std::forward<Args>(args)...);
     }
 
-    template <typename T, T Self::*field, typename... Args>
+    template <auto Self::*field, typename... Args>
     Self& set(Args&&... args) {
-        new(&(this->*field)) T(std::forward<Args>(args)...);
+        new(&(this->*field)) std::decay<decltype(this->*field)>::type(std::forward<Args>(args)...);
         return *this;
     }
 
     Self end_holder() const {
         Self end;
-        end.set<EdgeIterImplBase<H, L>, &Self::base>();
+        end.set<&Self::base>();
         end.base.state = end_state();
         return end;
     }
 
-    const EdgeIterImplBase<H, L> *basep() const {
-        return reinterpret_cast<const EdgeIterImplBase<H, L>*>(this);
+    const EdgeIterImplBase<Edge> *basep() const {
+        return reinterpret_cast<const EdgeIterImplBase<Edge>*>(this);
     }
 
-    EdgeIterImplBase<H, L> *basep() {
-        return reinterpret_cast<EdgeIterImplBase<H, L>*>(this);
+    EdgeIterImplBase<Edge> *basep() {
+        return reinterpret_cast<EdgeIterImplBase<Edge>*>(this);
     }
 
     // forwarder interface

@@ -5,11 +5,13 @@
 #include "trie_data.h"
 #include "dna_str.h"
 #include "kmer.h"
+#include "triegraph_data.h"
 #include "triegraph_builder.h"
-#include "triegraph.h"
 
 #include <assert.h>
 #include <iostream>
+
+namespace {
 
 using Graph = RgfaGraph<DnaStr, u32>;
 using NPos = NodePos<u32>;
@@ -18,10 +20,10 @@ constexpr u64 on_mask = u64(1) << 63;
 using DnaKmer = Kmer<DnaLetter, u64, 4, on_mask>;
 using TData = TrieData<DnaKmer, u32>;
 using LetterLoc = TData::LetterLoc;
-using TrieG = Triegraph<Graph, LLData, TData>;
-using TB = TriegraphBuilder<Graph, LLData, TData, TrieG>;
+using TrieGraphData = TrieGraphData<Graph, LLData, TData>;
+using TB = TriegraphBuilder<TrieGraphData>;
 
-static std::vector<LetterLoc> trie2graph(const TrieG &tg, DnaKmer kmer) {
+static std::vector<LetterLoc> trie2graph(const TrieGraphData &tg, DnaKmer kmer) {
     auto pos_it = tg.trie_data.trie2graph.equal_range(kmer);
     std::vector<LetterLoc> pos;
     std::transform(pos_it.first, pos_it.second, std::back_inserter(pos),
@@ -34,8 +36,8 @@ static void test_tiny_linear_graph() {
     Graph::Builder b;
     auto g = b.add_node(DnaStr("acgtacgtac"), "s1").build();
 
-    auto builder = TB(std::move(g));
-    auto tg = builder.build();
+    // auto builder = ;
+    auto tg = TB(std::move(g)).build();
 
     auto pos = trie2graph(tg, DnaKmer::from_str("acgt"));
     assert(pos.size() == 2);
@@ -65,9 +67,17 @@ static void test_small_nonlinear_graph() {
         .add_edge("s3", "s4")
         .build();
 
+    /****************
+     *     12       *
+     *     cg       *
+     *  a /  \ ac   *
+     *  0 \  / 45 6 *
+     *     t        *
+     *     3        *
+     ***************/
+
     // std::cerr << g;
-    auto builder = TB(std::move(g));
-    auto tg = builder.build();
+    auto tg = TB(std::move(g)).build();
 
     {
         auto pos = trie2graph(tg, DnaKmer::from_str("acga"));
@@ -99,6 +109,8 @@ static void test_small_nonlinear_graph() {
     // assert(tg.trie_data.active_trie.contains(DnaKmer::from_str("gac")));
     // assert(tg.trie_data.active_trie.size() == 6);
 }
+
+} // anonymous namespace
 
 int main() {
     test_tiny_linear_graph();

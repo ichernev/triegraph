@@ -4,16 +4,12 @@
 #include <utility>
 #include <tuple>
 
-// struct nodeloc {
-//     u32 node;
-//     u32 pos;
-// };
-
-template<typename Graph_, typename LetterLocData_, typename TrieData_>
-struct Triegraph {
-    using Graph = Graph_;
-    using LetterLocData = LetterLocData_;
-    using TrieData = TrieData_;
+template<typename TrieGraphData_>
+struct TrieGraph {
+    using TrieGraphData = TrieGraphData_;
+    using Graph = TrieGraphData::Graph;
+    using LetterLocData = TrieGraphData::LetterLocData;
+    using TrieData = TrieGraphDataA::TrieData;
     using Size = typename Graph::Size;
     using NodeLoc = Size;
     using LetterLoc = Size;
@@ -23,9 +19,7 @@ struct Triegraph {
     using TrieDepth = typename TrieData::Kmer::klen_type;
     using Self = Triegraph;
 
-    Graph graph;
-    LetterLocData letter_loc;
-    TrieData trie_data;
+    TrieGraphData data;
 
     // std::tuple<NodeLoc, NodeLoc, LetterLoc> graph_size() const {
     //     return std::make_tuple(

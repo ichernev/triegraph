@@ -36,16 +36,16 @@ struct LetterLocData {
         node_start.push_back(num_locations);
     }
 
-    NodeLoc loc2node(LetterLoc loc) {
-        return std::lower_bound(node_start.begin(), node_start.end(), loc) - node_start.begin();
+    NodeLoc loc2node(LetterLoc loc) const {
+        return std::upper_bound(node_start.begin(), node_start.end(), loc) - node_start.begin() - 1;
     }
 
-    NodePos expand(LetterLoc loc) {
+    NodePos expand(LetterLoc loc) const {
         NodeLoc node = loc2node(loc);
         return NodePos(node, loc - node_start[node]);
     }
 
-    LetterLoc compress(NodePos handle) {
+    LetterLoc compress(NodePos handle) const {
         return handle.node == num_locations ? num_locations :
             node_start[handle.node] + handle.pos;
     }

@@ -14,40 +14,42 @@
 #include <queue>
 #include <limits>
 
-template <typename Graph_, typename LetterLocData_, typename TrieData_, typename Triegraph_>
+template <typename TrieGraphData_>
 struct TriegraphBuilder {
-    using Graph = Graph_;
+    using TrieGraphData = TrieGraphData_;
+    using Graph = TrieGraphData::Graph;
+    using LetterLocData = TrieGraphData::LetterLocData;
+    using TrieData = TrieGraphData::TrieData;
     using Str = typename Graph::Str;
     using Size = typename Graph::Size;
     using NodeLoc = Size;
     using LetterLoc = Size; /* letter location */
-    using LetterLocData = LetterLocData_;
     using NodePos = typename LetterLocData::NodePos;
-    using TrieData = TrieData_;
     using Kmer = typename TrieData::Kmer;
-    using Triegraph = Triegraph_;
     using kmer_len_type = u16; // assume no more than 64k kmers end in a given letter location
 
-    Graph graph;
-    LetterLocData letter_loc;
-    TrieData trie_data;
+    TrieGraphData data;
 
-    TriegraphBuilder(Graph &&graph) : graph(std::move(graph)) {}
+    TriegraphBuilder(Graph &&graph) : data(std::move(graph)) {}
+
     TriegraphBuilder(const TriegraphBuilder &) = delete;
     TriegraphBuilder &operator= (const TriegraphBuilder &) = delete;
+    TriegraphBuilder(TriegraphBuilder &&) = default;
+    TriegraphBuilder &operator= (TriegraphBuilder &&) = default;
 
-    Triegraph build() {
-        auto comps = ConnectedComp::build(graph);
+    TrieGraphData &&build() && {
+        auto comps = ConnectedComp::build(data.graph);
         auto starts = _compute_starts(std::move(comps));
-        letter_loc.init(graph);
+        data.letter_loc.init(data.graph);
         auto kmer_data = _bfs_trie(std::move(starts));
         _fill_trie_data(std::move(kmer_data));
 
-        return Triegraph {
-            std::move(graph),
-            std::move(letter_loc),
-            std::move(trie_data)
-        };
+        return std::move(data);
+        // return Triegraph {
+        //     std::move(graph),
+        //     std::move(letter_loc),
+        //     std::move(trie_data)
+        // };
     }
 
     struct ConnectedComp {
@@ -93,6 +95,7 @@ struct TriegraphBuilder {
     };
 
     std::vector<NodeLoc> _compute_starts(ConnectedComp comps) const {
+        auto &graph = data.graph;
         std::vector<NodeLoc> starts;
         std::unordered_set<NodeLoc> done_comps;
 
@@ -124,6 +127,8 @@ struct TriegraphBuilder {
     };
 
     KmerBuildData _bfs_trie(const std::vector<NodeLoc> &starts) {
+        auto &graph = data.graph;
+        auto &letter_loc = data.letter_loc;
         KmerBuildData kb(letter_loc.num_locations);
 
         std::queue<NodePos> q;
@@ -180,7 +185,8 @@ struct TriegraphBuilder {
     }
 
     void _fill_trie_data(KmerBuildData kb) {
-        for (LetterLoc i = 0; i <= letter_loc.num_locations; ++i) {
+        auto &trie_data = data.trie_data;
+        for (LetterLoc i = 0; i <= data.letter_loc.num_locations; ++i) {
             if (kb.kmers[i].size() > std::numeric_limits<typename decltype(kb.done_idx)::value_type>::max()) {
                 std::cerr << "got " << kb.kmers[i].size() << " kmers at " << i << std::endl;
                 throw "too-many-kmers";
