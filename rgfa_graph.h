@@ -111,6 +111,27 @@ struct RgfaGraph {
         return NeighbourHelper(*this, redge_start[node_id]);
     }
 
+    void add_reverse_complement() {
+        nodes.reserve(nodes.size() * 2);
+        edges.reserve(edges.size() * 2);
+        edge_start.resize(edge_start.size() * 2, INV_SIZE);
+        redge_start.resize(redge_start.size() * 2, INV_SIZE);
+
+        auto split = nodes.size();
+        for (NodeLoc i = 0; i < split; ++i) {
+            auto &node = nodes[i];
+            nodes.emplace_back(node.seg.rev_comp(), "revcomp:" + node.seg_id);
+        }
+        for (EdgeLoc i = 0, sz = edges.size(); i < sz; i += 2) {
+            auto &edge_a = edges[i];
+            auto &edge_b = edges[i+1];
+            edges.emplace_back(edge_b.to + split, edge_start[edge_a.to + split]);
+            edge_start[edge_a.to + split] = edges.size() - 1;
+            edges.emplace_back(edge_a.to + split, redge_start[edge_b.to + split]);
+            redge_start[edge_b.to + split] = edges.size() - 1;
+        }
+    }
+
     struct Builder {
         using Self = Builder;
         std::vector<Node> nodes;
@@ -206,16 +227,16 @@ struct RgfaGraph {
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {
         for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
-            os << graph.nodes[i].seg_id << "," << i << " ->";
+            os << graph.nodes[i].seg_id << "," << i << " " << graph.nodes[i].seg << " ->";
             for (const auto &to_node : graph.forward_from(i)) {
                 os << " " << to_node.seg_id << "," << to_node.node_id;
             }
             os << std::endl;
-            os << graph.nodes[i].seg_id << "," << i << " <-";
-            for (const auto &to_node : graph.backward_from(i)) {
-                os << " " << to_node.seg_id << "," << to_node.node_id;
-            }
-            os << std::endl;
+            // os << graph.nodes[i].seg_id << "," << i << " " << graph.nodes[i].seg " <-";
+            // for (const auto &to_node : graph.backward_from(i)) {
+            //     os << " " << to_node.seg_id << "," << to_node.node_id;
+            // }
+            // os << std::endl;
         }
         return os;
     }

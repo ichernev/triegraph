@@ -1,6 +1,8 @@
 #ifndef __LETTER_LOC_DATA_H__
 #define __LETTER_LOC_DATA_H__
 
+#include <ostream>
+
 namespace triegraph {
 
 template <typename NodeLoc_, typename NodeLen_ = NodeLoc_>
@@ -13,6 +15,10 @@ struct NodePos {
 
     NodePos(NodeLoc node = 0, NodeLen pos = 0) : node(node), pos(pos) {}
     bool operator == (const NodePos &other) const = default;
+
+    friend std::ostream &operator << (std::ostream &os, const NodePos &np) {
+        return os << "nodepos:" << np.node << ":" << np.pos;
+    }
 };
 
 template <typename NodePos_, typename Graph_, typename LetterLoc_>

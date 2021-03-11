@@ -33,6 +33,10 @@ struct Letter {
     bool operator == (const Letter &other) const  = default;
     auto operator <=> (const Letter &other) const = default;
 
+    Letter rev_comp() {
+        return Letter(data ^ Letter::mask);
+    }
+
     friend std::ostream &operator<< (std::ostream &os, const Letter &l) {
         return os << Decoder()(l.data);
     }

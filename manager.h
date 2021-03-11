@@ -53,8 +53,29 @@ struct Manager : Cfg {
     using TrieGraph = triegraph::TrieGraph<
         TrieGraphData>;
 
-    static TrieGraph triegraph_from_rgfa_file(const std::string &file) {
-        auto graph = Graph::from_file(file);
+    struct Settings {
+        using Self = Settings;
+        bool add_reverse_complement_;
+        u64 trie_depth_;
+
+        Settings() : add_reverse_complement_(true), trie_depth_(Kmer::K) {}
+        bool add_reverse_complement() const { return add_reverse_complement_; }
+        Self &add_reverse_complement(bool val) { add_reverse_complement_ = val; return *this; }
+        u64 trie_depth() const { return trie_depth_; }
+        Self &trie_depth(u64 val) { trie_depth_ = val; return *this; }
+    };
+
+    static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s) {
+        return triegraph_from_graph(Graph::from_file(file), s);
+    }
+
+    static TrieGraph triegraph_from_graph(Graph &&graph, Settings s) {
+        if (s.add_reverse_complement()) {
+            graph.add_reverse_complement();
+        }
+        if (s.trie_depth() != Kmer::K) {
+            throw "trie depth doesn't match Kmer::K";
+        }
         auto tg_data = TrieGraphBuilder(std::move(graph)).build();
         return TrieGraph(std::move(tg_data));
     }

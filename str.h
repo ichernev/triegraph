@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include <iterator>
+#include <sstream>
 
 namespace triegraph {
 
@@ -66,6 +67,23 @@ struct Str {
         ISize cid;
     };
     using const_iterator = ConstStrIter<u8>;
+
+    Str rev_comp() const {
+        auto rc = Str();
+        rc.capacity = div_up(this->length, letters_per_store);
+        rc.length = this->length;
+        rc.data = static_cast<Holder *>(realloc(rc.data, rc.capacity * sizeof(Holder)));
+
+        Size i = 0;
+        for (Letter l : *this) {
+            // std::cerr << rc.length - (i + 1) << l << " " << l.rev_comp() << std::endl;
+            rc.set(rc.length - ++i, l.rev_comp());
+        }
+
+        // std::cerr << *this << " " << rc << std::endl;
+
+        return rc;
+    }
 
     struct View {
         const Str *base;
@@ -191,6 +209,12 @@ struct Str {
         return this->length;
     }
 
+    // void set(Size idx, Letter l) {
+    //     auto dr = div(idx, letter_per_store);
+    //     this->data[dr.quot] &= ~(Letter::mask << (Letter::bits * dr.rem))
+    //     this->data[dr.quot] |= l.data << (Letter::bits * dr.rem);
+    // }
+
     operator View() const { return get_view(); }
 
     View get_view(Size offset, Size length) const { return View(this, offset, length); }
@@ -205,9 +229,11 @@ struct Str {
     }
 
     void set(Size idx, Letter val) {
+        // std::cerr << idx << " " << val << std::endl;
+
         Size cell = idx / letters_per_store;
         int cell_bit = (idx % letters_per_store) * Letter::bits;
-        this->data[cell] &= Letter::mask << cell_bit;
+        this->data[cell] &= ~(Letter::mask << cell_bit);
         this->data[cell] |= val << cell_bit;
     }
 
@@ -222,6 +248,12 @@ struct Str {
         s.append(seq);
 
         return is;
+    }
+
+    std::basic_string<typename Letter::Human> to_str() const {
+        std::ostringstream os;
+        os << *this;
+        return os.str();
     }
 
     const_iterator begin() const { return const_iterator(data, 0); }

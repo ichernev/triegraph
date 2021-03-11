@@ -29,7 +29,7 @@ struct Handle {
     Handle(NodePos np) : nodepos(np) {}
 
     bool is_trie() const { return kmer.data & Kmer::ON_MASK; }
-    TrieDepth depth() const { return kmer.get_len(); }
+    TrieDepth depth_in_trie() const { return kmer.get_len(); }
 
     bool is_graph() const { return !is_trie(); }
     NodeLoc node() const { return nodepos.node; }
@@ -52,7 +52,7 @@ struct Handle {
 
     friend std::ostream &operator<< (std::ostream &os, const Handle &h) {
         if (h.is_trie())
-            os << "trie:" << h.depth() << ":" << h.kmer;
+            os << "trie:" << h.depth_in_trie() << ":" << h.kmer;
         else
             os << "graph:" << h.node() << ":" << h.pos();
         return os;
@@ -391,7 +391,10 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                         node.seg[np.pos],
                         np);
             }
+            auto kmer = nps->first;
             ++nps;
+            if (nps->first != kmer)
+                nps = T2GMapIt();
             return true;
         }
         return false;
