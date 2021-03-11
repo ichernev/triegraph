@@ -1,25 +1,27 @@
-#ifndef __LETTER_LOCATION_DATA_H__
-#define __LETTER_LOCATION_DATA_H__
+#ifndef __LETTER_LOC_DATA_H__
+#define __LETTER_LOC_DATA_H__
 
-template <typename Size_>
+namespace triegraph {
+
+template <typename NodeLoc_, typename NodeLen_ = NodeLoc_>
 struct NodePos {
-    using Size = Size_;
-    using NodeLoc = Size;
-    using LetterLoc = Size;
+    using NodeLoc = NodeLoc_;
+    using NodeLen = NodeLen_;
 
     NodeLoc node;
-    LetterLoc pos;
+    NodeLen pos;
 
-    NodePos(NodeLoc node = 0, LetterLoc pos = 0) : node(node), pos(pos) {}
+    NodePos(NodeLoc node = 0, NodeLen pos = 0) : node(node), pos(pos) {}
     bool operator == (const NodePos &other) const = default;
 };
 
-template <typename NodePos_, typename Graph_>
+template <typename NodePos_, typename Graph_, typename LetterLoc_>
 struct LetterLocData {
     using NodePos = NodePos_;
     using Graph = Graph_;
-    using NodeLoc = typename NodePos::NodeLoc;
-    using LetterLoc = typename NodePos::LetterLoc;
+    using NodeLoc = NodePos::NodeLoc;
+    using NodeLen = NodePos::NodeLen;
+    using LetterLoc = LetterLoc_;
 
     std::vector<LetterLoc> node_start;
     LetterLoc num_locations;
@@ -51,4 +53,6 @@ struct LetterLocData {
     }
 };
 
-#endif /* __LETTER_LOCATION_DATA_H__ */
+} /* namespace triegraph */
+
+#endif /* __LETTER_LOC_DATA_H__ */

@@ -5,6 +5,10 @@
 
 #include <iostream>
 
+using namespace triegraph;
+using dna::DnaLetters;
+using dna::DnaLetter;
+
 using TLetter = Letter<unsigned char, 4, char, void, void>;
 void get_tletter(TLetter t) {
     assert(true && "got tletter");

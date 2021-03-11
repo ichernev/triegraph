@@ -8,6 +8,10 @@
 #include <unordered_map>
 #include <unordered_set>
 
+using namespace triegraph;
+using dna::DnaLetter;
+using dna::DnaLetters;
+
 using DnaKmer31 = Kmer<DnaLetter, u64, 31>;
 
 static void test_sanity() {

@@ -3,8 +3,10 @@
 
 #include "letter.h"
 
+namespace triegraph::dna {
+
 template <typename Holder_, typename Human_ = char>
-struct DnaMapper {
+struct DnaEncoder {
     using Holder = Holder_;
     using Human = Human_;
     constexpr Holder operator()(Human letter) {
@@ -26,7 +28,7 @@ struct DnaMapper {
 };
 
 template <typename Holder_, typename Human_ = char>
-struct DnaUnmapper {
+struct DnaDecoder {
     using Holder = Holder_;
     using Human = Human_;
     constexpr Human operator()(Holder repr) {
@@ -34,14 +36,16 @@ struct DnaUnmapper {
     }
 };
 
-using DnaLetter = Letter<u8, 4, char, DnaMapper<u8>, DnaUnmapper<u8>>;
+using DnaLetter = Letter<u8, 4, char, DnaEncoder<u8>, DnaDecoder<u8>>;
 
 struct DnaLetters {
-    static constexpr auto A = DnaLetter(DnaLetter::Mapper()('A'));
-    static constexpr auto C = DnaLetter(DnaLetter::Mapper()('C'));
-    static constexpr auto G = DnaLetter(DnaLetter::Mapper()('G'));
-    static constexpr auto T = DnaLetter(DnaLetter::Mapper()('T'));
+    static constexpr auto A = DnaLetter(DnaLetter::Encoder()('A'));
+    static constexpr auto C = DnaLetter(DnaLetter::Encoder()('C'));
+    static constexpr auto G = DnaLetter(DnaLetter::Encoder()('G'));
+    static constexpr auto T = DnaLetter(DnaLetter::Encoder()('T'));
     static constexpr auto EPS = DnaLetter(DnaLetter::num_options);
 };
+
+} /* namespace triegraph::dna */
 
 #endif /* __DNA_LETTER_H__ */

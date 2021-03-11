@@ -6,14 +6,15 @@
 #include <type_traits>
 #include <ostream>
 
-using u64 = unsigned long long;
+namespace triegraph {
+
 template <typename Holder_, u64 options_,
-         typename Human_, typename Mapper_, typename Unmapper_>
+         typename Human_, typename Encoder_, typename Decoder_>
 struct Letter {
     using Holder = Holder_;
     using Human = Human_;
-    using Mapper = Mapper_;
-    using Unmapper = Unmapper_;
+    using Encoder = Encoder_;
+    using Decoder = Decoder_;
     static constexpr u64 num_options = options_;
     static constexpr Holder EPS = num_options;
     static constexpr int bits = log2_ceil(num_options);
@@ -33,10 +34,12 @@ struct Letter {
     auto operator <=> (const Letter &other) const = default;
 
     friend std::ostream &operator<< (std::ostream &os, const Letter &l) {
-        return os << Unmapper()(l.data);
+        return os << Decoder()(l.data);
     }
 
     Holder data;
 };
+
+} /* namespace triegraph */
 
 #endif /* __LETTER_H__ */

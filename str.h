@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <iterator>
 
+namespace triegraph {
+
 template <
     typename Letter_,
     typename Holder_ = typename Letter_::Holder,
@@ -114,10 +116,10 @@ struct Str {
 
 
         friend std::ostream &operator<<(std::ostream &os, const View &sv) {
-            typename Letter::Unmapper unmapper;
+            typename Letter::Decoder letter_dec;
             std::transform(sv.begin(), sv.end(),
                     std::ostream_iterator<typename Letter::Human>(os),
-                    unmapper);
+                    letter_dec);
             return os;
         }
 
@@ -164,7 +166,7 @@ struct Str {
     }
 
     Size append(Input human) {
-        auto mapper = typename Letter::Mapper();
+        auto letter_enc = typename Letter::Encoder();
 
         Size ncap = div_up(this->length + human.size(), letters_per_store);
         if (ncap > this->capacity) {
@@ -182,7 +184,7 @@ struct Str {
                 oit += 1;
                 *oit = 0;
             }
-            Letter bin = mapper(*iit);
+            Letter bin = letter_enc(*iit);
             *oit |= bin << (sub_idx * Letter::bits);
             sub_idx += 1;
         }
@@ -225,5 +227,7 @@ struct Str {
     const_iterator begin() const { return const_iterator(data, 0); }
     const_iterator end() const { return const_iterator(data, length); }
 };
+
+} /* namespace triegraph */
 
 #endif /* __STR_H__ */

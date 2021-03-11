@@ -1,6 +1,8 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+namespace triegraph {
+
 using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
@@ -31,5 +33,7 @@ quot_rem<u32> div(T a, T b) {
     T quot = a / b;
     return { quot, a - b * quot };
 }
+
+} /* namespace triegraph */
 
 #endif /* __UTIL_H__ */

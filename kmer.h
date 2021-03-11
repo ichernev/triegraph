@@ -8,6 +8,8 @@
 #include <iterator>
 #include <sstream>
 
+namespace triegraph {
+
 template<typename Letter_, typename Holder_, unsigned K_, Holder_ ON_MASK_=0>
 struct Kmer {
     using Letter = Letter_;
@@ -187,22 +189,22 @@ decr_l2:
                     std::ostream_iterator<std::string>(os),
                     binary_unmapper());
         } else {
-            typename Letter::Unmapper unmapper;
+            typename Letter::Decoder letter_dec;
             std::transform(kmer.begin(), kmer.end(),
                     std::ostream_iterator<typename Letter::Human>(os),
-                    unmapper);
+                    letter_dec);
         }
         return os;
     }
 
     friend std::istream &operator>>(std::istream &is, Kmer &kmer) {
-        typename Letter::Mapper mapper;
+        typename Letter::Encoder letter_enc;
         using is_it = std::istream_iterator<typename Letter::Human>;
 
         kmer.data = EMPTY;
         std::transform(is_it(is), is_it(),
                 std::back_inserter<Kmer>(kmer),
-                mapper);
+                letter_enc);
         return is;
     }
 
@@ -222,13 +224,14 @@ decr_l2:
     // };
 };
 
+} /* namespace triegraph */
+
 template<typename Letter, typename Holder, unsigned k, Holder on_mask>
-struct std::hash<Kmer<Letter, Holder, k, on_mask>> {
+struct std::hash<triegraph::Kmer<Letter, Holder, k, on_mask>> {
     static constexpr hash<Holder> hasher {};
-    std::size_t operator() (const Kmer<Letter, Holder, k, on_mask> &kmr) const {
+    std::size_t operator() (const triegraph::Kmer<Letter, Holder, k, on_mask> &kmr) const {
         return hasher(kmr.data);
     }
 };
-
 
 #endif /* __KMER_H__ */

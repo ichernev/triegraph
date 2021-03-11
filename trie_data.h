@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+namespace triegraph {
+
 template <typename Kmer_, typename LetterLoc_>
 struct TrieData {
     using Kmer = Kmer_;
@@ -19,5 +21,7 @@ struct TrieData {
 
     TrieData() {}
 };
+
+} /* namespace triegraph */
 
 #endif /* __TRIE_DATA_H__ */

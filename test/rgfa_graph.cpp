@@ -1,8 +1,13 @@
 #include "rgfa_graph.h"
-#include "dna_str.h"
+#include "dna_letter.h"
+#include "str.h"
 
 #include <algorithm>
 #include <assert.h>
+
+using namespace triegraph;
+
+using DnaStr = Str<dna::DnaLetter, u32>;
 
 static void test_small() {
     auto graph = RgfaGraph<DnaStr, u32>::from_file("data/simpler.gfa");
@@ -13,13 +18,6 @@ static void test_small() {
     assert(graph.redge_start.size() == graph.nodes.size());
 
     std::cerr << graph;
-    // for (u32 i = 0; i < graph.nodes.size(); ++i) {
-    //     std::cerr << graph.nodes[i].seg_id << "," << i << " ->";
-    //     for (const auto &to_node : graph.forward_from(i)) {
-    //         std::cerr << " " << to_node.seg_id << "," << to_node.node_id;
-    //     }
-    //     std::cerr << std::endl;
-    // }
 
     auto edge_helper = graph.forward_from(0);
     assert(std::distance(edge_helper.begin(), edge_helper.end()) == 2);

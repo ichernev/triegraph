@@ -9,10 +9,11 @@
 #include <unordered_map>
 #include <vector>
 
-template<typename Str_, typename Size_ = typename Str_::Size>
+namespace triegraph {
+
+template<typename Str_>
 struct RgfaNode {
     using Str = Str_;
-    using Size = Size_;
 
     // RgfaNode(const Str &seg, const std::string &seg_id) : seg(seg), seg_id(seg_id) { }
     RgfaNode(Str &&seg, const std::string &seg_id) : seg(std::move(seg)), seg_id(seg_id) { }
@@ -28,36 +29,37 @@ struct RgfaNode {
     std::string seg_id;
 };
 
-template<typename Size_>
+template<typename NodeLoc_, typename EdgeLoc_ = NodeLoc_>
 struct RgfaEdge {
-    using Size = Size_;
+    using NodeLoc = NodeLoc_;
+    using EdgeLoc = EdgeLoc_;
 
     RgfaEdge() {}
-    RgfaEdge(Size to, Size next) : to(to), next(next) {}
+    RgfaEdge(NodeLoc to, EdgeLoc next) : to(to), next(next) {}
 
-    Size to;
-    Size next;
+    NodeLoc to;
+    EdgeLoc next;
 };
 
-template <typename Str_, typename Size_>
+template <typename Str_, typename NodeLoc_, typename EdgeLoc_ = NodeLoc_>
 struct RgfaGraph {
     using Str = Str_;
-    using Size = Size_;
-    using NodeLoc = Size;
-    using Node = RgfaNode<Str, Size>;
-    using Edge = RgfaEdge<Size>;
-    static constexpr Size INV_SIZE = -1;
+    using NodeLoc = NodeLoc_;
+    using EdgeLoc = EdgeLoc_;
+    using Node = RgfaNode<Str>;
+    using Edge = RgfaEdge<NodeLoc, EdgeLoc>;
+    static constexpr EdgeLoc INV_SIZE = -1;
 
     std::vector<Node> nodes; // N
     std::vector<Edge> edges; // M * 2
-    std::vector<Size> edge_start;
-    std::vector<Size> redge_start;
+    std::vector<EdgeLoc> edge_start;
+    std::vector<EdgeLoc> redge_start;
 
     struct IterNode {
         const Str &seg;
         const std::string &seg_id;
-        Size node_id;
-        Size edge_id;
+        NodeLoc node_id;
+        EdgeLoc edge_id;
     };
 
     struct ConstNodeIter {
@@ -69,7 +71,7 @@ struct RgfaGraph {
         using Self              = ConstNodeIter;
 
         ConstNodeIter() : graph(nullptr), edge_id(INV_SIZE) {}
-        ConstNodeIter(const RgfaGraph &g, Size edge_id) : graph(&g), edge_id(edge_id) {}
+        ConstNodeIter(const RgfaGraph &g, EdgeLoc edge_id) : graph(&g), edge_id(edge_id) {}
 
         reference operator*() const {
             // TODO: This is a hack, support sentinel
@@ -88,7 +90,7 @@ struct RgfaGraph {
         friend bool operator== (const Self& a, const Self& b) { return a.edge_id == b.edge_id; }
 
         const RgfaGraph *graph;
-        Size edge_id;
+        EdgeLoc edge_id;
     };
     using const_iterator = ConstNodeIter;
 
@@ -96,16 +98,16 @@ struct RgfaGraph {
         const_iterator begin() const { return beg; }
         const_iterator end() const { return const_iterator(); }
 
-        NeighbourHelper(const RgfaGraph &g, Size edge_id) : beg(g, edge_id) {}
+        NeighbourHelper(const RgfaGraph &g, EdgeLoc edge_id) : beg(g, edge_id) {}
     private:
         const_iterator beg;
     };
 
-    NeighbourHelper forward_from(Size node_id) const {
+    NeighbourHelper forward_from(NodeLoc node_id) const {
         return NeighbourHelper(*this, edge_start[node_id]);
     }
 
-    NeighbourHelper backward_from(Size node_id) const {
+    NeighbourHelper backward_from(NodeLoc node_id) const {
         return NeighbourHelper(*this, redge_start[node_id]);
     }
 
@@ -113,10 +115,10 @@ struct RgfaGraph {
         using Self = Builder;
         std::vector<Node> nodes;
         std::vector<Edge> edges;
-        std::vector<Size> edge_start;
-        std::vector<Size> redge_start;
+        std::vector<NodeLoc> edge_start;
+        std::vector<EdgeLoc> redge_start;
 
-        std::unordered_map<std::string, Size> seg2id;
+        std::unordered_map<std::string, NodeLoc> seg2id;
 
         bool nodes_done = false;
 
@@ -130,7 +132,7 @@ struct RgfaGraph {
         void prep_for_edges() {
             if (nodes_done) return;
 
-            Size i = 0;
+            NodeLoc i = 0;
             for (Node &node : nodes) {
                 seg2id[node.seg_id] = i++;
             }
@@ -203,7 +205,7 @@ struct RgfaGraph {
     }
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {
-        for (Size i = 0; i < graph.nodes.size(); ++i) {
+        for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
             os << graph.nodes[i].seg_id << "," << i << " ->";
             for (const auto &to_node : graph.forward_from(i)) {
                 os << " " << to_node.seg_id << "," << to_node.node_id;
@@ -218,5 +220,7 @@ struct RgfaGraph {
         return os;
     }
 };
+
+} /* namespace triegraph */
 
 #endif /* __RGFA_GRAPH_H__ */

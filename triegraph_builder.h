@@ -14,28 +14,29 @@
 #include <queue>
 #include <limits>
 
+namespace triegraph {
+
 template <typename TrieGraphData_>
-struct TriegraphBuilder {
+struct TrieGraphBuilder {
     using TrieGraphData = TrieGraphData_;
     using Graph = TrieGraphData::Graph;
     using LetterLocData = TrieGraphData::LetterLocData;
     using TrieData = TrieGraphData::TrieData;
-    using Str = typename Graph::Str;
-    using Size = typename Graph::Size;
-    using NodeLoc = Size;
-    using LetterLoc = Size; /* letter location */
-    using NodePos = typename LetterLocData::NodePos;
-    using Kmer = typename TrieData::Kmer;
+    using Str = Graph::Str;
+    using NodeLoc = Graph::NodeLoc;
+    using LetterLoc = LetterLocData::LetterLoc;
+    using NodePos = LetterLocData::NodePos;
+    using Kmer = TrieData::Kmer;
     using kmer_len_type = u16; // assume no more than 64k kmers end in a given letter location
 
     TrieGraphData data;
 
-    TriegraphBuilder(Graph &&graph) : data(std::move(graph)) {}
+    TrieGraphBuilder(Graph &&graph) : data(std::move(graph)) {}
 
-    TriegraphBuilder(const TriegraphBuilder &) = delete;
-    TriegraphBuilder &operator= (const TriegraphBuilder &) = delete;
-    TriegraphBuilder(TriegraphBuilder &&) = default;
-    TriegraphBuilder &operator= (TriegraphBuilder &&) = default;
+    TrieGraphBuilder(const TrieGraphBuilder &) = delete;
+    TrieGraphBuilder &operator= (const TrieGraphBuilder &) = delete;
+    TrieGraphBuilder(TrieGraphBuilder &&) = default;
+    TrieGraphBuilder &operator= (TrieGraphBuilder &&) = default;
 
     TrieGraphData &&build() && {
         auto comps = ConnectedComp::build(data.graph);
@@ -70,7 +71,7 @@ struct TriegraphBuilder {
         }
 
         void _bfs_2way(NodeLoc start, NodeLoc comp) {
-            std::queue<Size> q;
+            std::queue<NodeLoc> q;
 
             q.push(start);
             comp_id[start] = comp;
@@ -217,5 +218,7 @@ struct TriegraphBuilder {
         }
     }
 };
+
+} /* namespace triegraph */
 
 #endif /* __TRIEGRAPH_BUILDER_H__ */

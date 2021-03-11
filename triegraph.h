@@ -4,12 +4,14 @@
 #include <utility>
 #include <tuple>
 
+namespace triegraph {
+
 template<typename TrieGraphData_>
 struct TrieGraph {
     using TrieGraphData = TrieGraphData_;
     using Graph = TrieGraphData::Graph;
     using LetterLocData = TrieGraphData::LetterLocData;
-    using TrieData = TrieGraphDataA::TrieData;
+    using TrieData = TrieGraphData::TrieData;
     using Size = typename Graph::Size;
     using NodeLoc = Size;
     using LetterLoc = Size;
@@ -17,7 +19,7 @@ struct TrieGraph {
     using NodePos = typename LetterLocData::NodePos;
     using TrieSize = typename TrieData::Kmer::Holder;
     using TrieDepth = typename TrieData::Kmer::klen_type;
-    using Self = Triegraph;
+    using Self = TrieGraph;
 
     TrieGraphData data;
 
@@ -68,11 +70,6 @@ struct TrieGraph {
 
 };
 
-
-// using dfl_trigraph = trigraph<
-//     rgfa_node<dna_str>,
-//     rgfa_edge<typename dna_str::size_type>,
-//     kmer<dna_letter, u64, 31>,
-//     nodeloc>;
+} /* namespace triegraph */
 
 #endif /* __TRIEGRAPH_H__ */

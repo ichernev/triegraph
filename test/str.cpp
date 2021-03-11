@@ -8,12 +8,19 @@
 // * revcomp copy
 // * revcomp view
 
-#include "dna_str.h"
+#include "dna_letter.h"
+#include "str.h"
 
 #include <assert.h>
 
 #include <iostream>
 #include <sstream>
+
+using namespace triegraph;
+using dna::DnaLetter;
+using dna::DnaLetters;
+
+using DnaStr = Str<dna::DnaLetter, u32>;
 
 static void test_create() {
     auto dna_str = DnaStr("acgt");
