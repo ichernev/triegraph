@@ -28,16 +28,12 @@ struct Letter {
     // operator=(&)
     // operator=(&&)
 
-    constexpr operator Holder() {
-        return data;
-    }
-    bool operator == (const Letter &other) const { return data == other.data; }
-    bool operator != (const Letter &other) const { return data != other.data; }
+    constexpr operator Holder() const { return data; }
+    bool operator == (const Letter &other) const  = default;
+    auto operator <=> (const Letter &other) const = default;
 
     friend std::ostream &operator<< (std::ostream &os, const Letter &l) {
-        Unmapper unmapper;
-        os << unmapper(l.data);
-        return os;
+        return os << Unmapper()(l.data);
     }
 
     Holder data;
