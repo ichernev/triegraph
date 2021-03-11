@@ -33,7 +33,7 @@ struct LetterLocData {
             node_start.push_back(num_locations);
             num_locations += node.seg.length;
         }
-        node_start.push_back(num_locations);
+        // node_start.push_back(num_locations);
     }
 
     NodeLoc loc2node(LetterLoc loc) const {

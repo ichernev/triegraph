@@ -167,13 +167,11 @@ static void test_trie_to_graph() {
 
     Helper h(ImplHolder::make_trie_to_graph(Kmer::from_str("ac"), tg));
 
-    // TODO: Should we emit INS nodes, when there are already INS nodes in the
-    // graph.
     std::vector<EditEdge> expected = {
-        EditEdge { Kmer::from_str("ac"), EditEdge::INS,   DnaLetters::A },
-        EditEdge { Kmer::from_str("ac"), EditEdge::INS,   DnaLetters::C },
-        EditEdge { Kmer::from_str("ac"), EditEdge::INS,   DnaLetters::G },
-        EditEdge { Kmer::from_str("ac"), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::A },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::C },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::G },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::T },
 
         EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::C },

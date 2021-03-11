@@ -173,6 +173,9 @@ struct TriegraphBuilder {
                 for (auto t: targets) {
                     auto tc = letter_loc.compress(t);
                     auto &t_kmers = kb.kmers[tc];
+                    if (std::find(t_kmers.begin(), t_kmers.end(), kmer) != t_kmers.end())
+                        // do not add kmer twice
+                        continue;
                     auto t_done = kb.done_idx[tc];
                     t_kmers.emplace_back(kmer);
                     if (t_done + 1u == t_kmers.size()) {

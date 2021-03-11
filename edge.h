@@ -330,7 +330,6 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     using Base = EdgeIterImplBase<Edge>;
 
     const TrieGraphData &trie_graph;
-    Kmer kmer;
     T2GMapIt nps;
     union {
         char stupid;
@@ -339,19 +338,21 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     } its;
 
     EdgeIterImplTrieToGraph(Kmer kmer, const TrieGraphData &tg)
-        : trie_graph(tg), kmer(kmer), its{'x'} {}
+        : trie_graph(tg), nps(trie_graph.trie_data.trie2graph.find(kmer)), its{'x'}
+    {
+        after_inc();
+    }
 
     virtual u32 end_state() const {
-        return Letter::num_options + 1;
+        return 1;
     }
 
     virtual void after_inc() {
-        if (this->state == Letter::num_options) {
-            nps = trie_graph.trie_data.trie2graph.find(kmer);
+        if (this->state == 0) {
             if (!advance_its(true))
                 // finish
                 ++this->state;
-        } else if (this->state == Letter::num_options + 1) {
+        } else if (this->state == 1) {
             if (advance_its(false))
                 // keep it up
                 --this->state;
@@ -369,17 +370,19 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
         }
         // TODO: Do we NEED end-of-graph sentinels in trie2graph?
         // if we hit the end-of-graph sentinel, skip it
-        while (nps != T2GMapIt() &&
-                nps->second == trie_graph.letter_loc.num_locations) {
-            ++nps;
-        }
+        // while (nps != T2GMapIt() &&
+        //         nps->second == trie_graph.letter_loc.num_locations) {
+        //     ++nps;
+        // }
         if (nps != T2GMapIt()) {
             auto letter_loc = nps->second;
             auto np = trie_graph.letter_loc.expand(letter_loc);
             const auto &node = trie_graph.graph.nodes[np.node];
-            if (node.seg.size() == np.pos + 1) {
+            if (np.pos + 1 >= node.seg.size()) {
                 new(&its.split) EdgeIterImplGraphSplit<Edge, Graph>(
-                        node.seg[np.pos],
+                        np.pos == node.seg.size() ?
+                            Letter(Letter::EPS) :
+                            node.seg[np.pos],
                         np,
                         trie_graph.graph.forward_from(np.node).begin());
             } else {
@@ -394,13 +397,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     }
 
     virtual Edge get() const {
-        if (this->state < Letter::num_options) {
-            return Edge {
-                kmer, Edge::INS, Letter(this->state)
-            };
-        } else {
-            return base()->get();
-        }
+        return base()->get();
     }
 
 };
