@@ -18,6 +18,7 @@ struct Str {
     using Holder = Holder_;
     using Size = Size_;
     using Input = const std::basic_string<typename Letter::Human> &;
+    using value_type = Letter;
     // using letter_human_type = typename Letter::human_type;
     // static constexpr int letter_bits = Letter::bits;
     // static constexpr int letters_per_holder = sizeof(Letter) * BITS_PER_BYTE / letter_bits;
@@ -86,6 +87,7 @@ struct Str {
     }
 
     struct View {
+        using value_type = Letter;
         const Str *base;
         Size offset;
         Size length;
@@ -107,6 +109,7 @@ struct Str {
         //     }
         //     return base->data[(idx+offset) / letters_per_holder];
         // }
+        Size size() const { return length; }
 
         Size fast_match(const View &other) const {
             Size mlen = std::min(length, other.length), i;

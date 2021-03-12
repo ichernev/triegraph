@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
+#include <type_traits>
 
 namespace triegraph {
 
@@ -51,6 +52,12 @@ struct Kmer {
         std::istringstream(s) >> k;
         return k;
     }
+    template <typename Cont>
+    static Kmer from_sv(const Cont &c) {
+        auto kmer = Kmer::empty();
+        std::copy(c.begin(), c.end(), std::back_inserter(kmer));
+        return kmer;
+    }
     std::basic_string<typename Letter::Human> to_str() const {
         std::ostringstream os;
         os << *this;
@@ -72,6 +79,10 @@ struct Kmer {
         } else {
             return K - (1 + l2);
         }
+    }
+
+    klen_type size() const {
+        return get_len();
     }
 
     void push(Letter l) {

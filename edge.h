@@ -60,6 +60,8 @@ struct Handle {
             os << "graph:" << h.node() << ":" << h.pos();
         return os;
     }
+
+    static Handle invalid() { return Handle(); }
 };
 
 template <typename Handle_>
