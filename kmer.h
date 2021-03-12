@@ -53,7 +53,9 @@ struct Kmer {
         return k;
     }
     template <typename Cont>
-    static Kmer from_sv(const Cont &c) {
+    static Kmer from_sv(const Cont &c)
+        requires std::is_same_v<typename Cont::value_type, Letter>
+    {
         auto kmer = Kmer::empty();
         std::copy(c.begin(), c.end(), std::back_inserter(kmer));
         return kmer;
