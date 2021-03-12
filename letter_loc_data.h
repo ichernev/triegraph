@@ -10,10 +10,11 @@ struct NodePos {
     using NodeLoc = NodeLoc_;
     using NodeLen = NodeLen_;
 
-    NodeLoc node;
+    // TODO: Add tests in handle that verify byte order
     NodeLen pos;
+    NodeLoc node;
 
-    NodePos(NodeLoc node = 0, NodeLen pos = 0) : node(node), pos(pos) {}
+    NodePos(NodeLoc node = 0, NodeLen pos = 0) : pos(pos), node(node) {}
     bool operator == (const NodePos &other) const = default;
 
     friend std::ostream &operator << (std::ostream &os, const NodePos &np) {

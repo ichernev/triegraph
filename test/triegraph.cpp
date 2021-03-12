@@ -174,6 +174,48 @@ static void test_next_edit_edges_trie_to_graph() {
     assert(std::equal(h.begin(), h.end(), expected.begin()));
 }
 
+template<typename IT>
+static std::vector<typename IT::value_type> _collect_it(IT it) {
+    std::vector<typename IT::value_type> res;
+    while (it.has_more()) {
+        res.emplace_back(*it);
+        ++it;
+    }
+    return res;
+}
+
+static void test_prev_handles_linear() {
+    auto tg = M4::triegraph_from_graph(
+            build_graph(),
+            M4::Settings()
+                .add_reverse_complement(false)
+                .trie_depth(4));
+
+    auto h = tg.prev_graph_handles(M4::Handle(0, 1));
+    auto expected = std::vector<M4::Handle> { { 0, 0 } };
+    assert(std::equal(h.begin(), h.end(), expected.begin()));
+
+    auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(0, 1)));
+    assert(std::equal(itv.begin(), itv.end(), expected.begin()));
+}
+
+static void test_prev_handles_split() {
+    auto tg = M4::triegraph_from_graph(
+            build_graph(),
+            M4::Settings()
+                .add_reverse_complement(false)
+                .trie_depth(4));
+
+    auto h = tg.prev_graph_handles(M4::Handle(3, 0));
+    auto expected = std::vector<M4::Handle> { { 2, 2 }, { 1, 1 } };
+    // std::copy(h.begin(), h.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    assert(std::equal(h.begin(), h.end(), expected.begin()));
+
+    auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(3, 0)));
+    // std::copy(itv.begin(), itv.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    assert(std::equal(itv.begin(), itv.end(), expected.begin()));
+}
+
 } /* unnamed namespace */
 
 int main() {
@@ -182,6 +224,9 @@ int main() {
     test_next_edit_edges_trie_inner();
     test_next_edit_edges_trie_edge();
     test_next_edit_edges_trie_to_graph();
+
+    test_prev_handles_linear();
+    test_prev_handles_split();
 
     return 0;
 }

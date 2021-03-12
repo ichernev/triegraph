@@ -89,6 +89,8 @@ struct RgfaGraph {
 
         friend bool operator== (const Self& a, const Self& b) { return a.edge_id == b.edge_id; }
 
+        bool has_more() const { return edge_id != INV_SIZE; }
+
         const RgfaGraph *graph;
         EdgeLoc edge_id;
     };
@@ -169,7 +171,7 @@ struct RgfaGraph {
             NodeLoc a = seg2id[seg_a], b = seg2id[seg_b];
             edges.emplace_back(b, edge_start[a]);
             edge_start[a] = edges.size() - 1;
-            edges.emplace_back(a, edge_start[b]);
+            edges.emplace_back(a, redge_start[b]);
             redge_start[b] = edges.size() - 1;
 
             return *this;
@@ -232,11 +234,14 @@ struct RgfaGraph {
                 os << " " << to_node.seg_id << "," << to_node.node_id;
             }
             os << std::endl;
-            // os << graph.nodes[i].seg_id << "," << i << " " << graph.nodes[i].seg " <-";
-            // for (const auto &to_node : graph.backward_from(i)) {
-            //     os << " " << to_node.seg_id << "," << to_node.node_id;
-            // }
-            // os << std::endl;
+        }
+        std::cerr << "REVERSE" << std::endl;
+        for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
+            os << graph.nodes[i].seg_id << "," << i << " " << graph.nodes[i].seg << " <-";
+            for (const auto &to_node : graph.backward_from(i)) {
+                os << " " << to_node.seg_id << "," << to_node.node_id;
+            }
+            os << std::endl;
         }
         return os;
     }

@@ -2,6 +2,7 @@
 #define __TRIEGRAPH_H__
 
 #include "edge.h"
+#include "triegraph_handle_iter.h"
 
 #include <utility>
 #include <tuple>
@@ -24,6 +25,8 @@ struct TrieGraph {
     using Handle = triegraph::Handle<Kmer, NodePos>;
     using EdgeIter = EditEdgeIter<Handle, TrieGraphData>;
     using EdgeIterHelper = EditEdgeIterHelper<EdgeIter>;
+    using PrevHandleIter = triegraph::PrevHandleIter<Handle, Graph>;
+    using PrevHandleIterHelper = triegraph::PrevHandleIterHelper<Handle, Graph>;
     using Self = TrieGraph;
 
     TrieGraphData data;
@@ -86,6 +89,11 @@ struct TrieGraph {
                         data.graph.forward_from(h.node()).begin());
             }
         }
+    }
+
+    PrevHandleIterHelper prev_graph_handles(Handle h) const { return prev_graph_handles_it(h); }
+    PrevHandleIter prev_graph_handles_it(Handle h) const {
+        return PrevHandleIter::make(data.graph, h);
     }
 };
 
