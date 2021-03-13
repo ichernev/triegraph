@@ -37,13 +37,13 @@ struct TrieGraph {
         return std::make_tuple(
                 data.graph.nodes.size(),
                 data.graph.edges.size() / 2,
-                data.letter_loc.num_letters);
+                data.letter_loc.num_locations);
     }
 
-    std::pair<TrieSize, TrieSize> trie_size() const {
-        return std::make_pair(
-                // NOTE: This is wrong
+    std::tuple<TrieSize, u32, TrieSize> trie_size() const {
+        return std::make_tuple(
                 data.trie_data.trie2graph.size(),
+                data.trie_data.trie2graph.key_size(),
                 data.trie_data.active_trie.size());
     }
 
