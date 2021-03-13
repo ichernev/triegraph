@@ -2,6 +2,10 @@
 #include "dna_letter.h"
 #include "str.h"
 
+#include "dna_config.h"
+#include "manager.h"
+#include <iostream>
+
 #include <algorithm>
 #include <assert.h>
 
@@ -30,6 +34,20 @@ static void test_small() {
 
     edge_helper = graph.forward_from(3);
     assert(std::distance(edge_helper.begin(), edge_helper.end()) == 0);
+}
+
+
+using TG = triegraph::Manager<triegraph::dna::DnaConfig<31>>;
+
+static void test_HG22_linear() {
+    auto tg = TG::triegraph_from_rgfa_file("data/pasgal-MHC1.gfa", TG::Settings());
+    auto [a, b, c] = tg.graph_size();
+    auto [d, e] = tg.trie_size();
+
+    std::cerr << a << " " << b << " " << c << std::endl;
+    std::cerr << d << " " << e << std::endl;
+
+    //auto graph = RgfaGraph<DnaStr, u32>::from_file("data/HG_22_linear.gfa");
 }
 
 template <typename ITH> /* iter helper */
@@ -72,6 +90,13 @@ static void test_revcomp() {
 int main() {
     test_small();
     test_revcomp();
+
+    try {
+        test_HG22_linear();
+    }
+    catch (char const *exceptionString) {
+        std::cout << exceptionString << std::endl;
+    }
 
     return 0;
 }
