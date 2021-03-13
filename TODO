@@ -1,3 +1,11 @@
 # store special value in trie2graph to mark matching-end
 # add check if todo_idx overflows
 # figure out edge iterators
+
+# with K=16
+graph nodes:               959062
+graph edges:              1318376
+graph letters:           10276724
+total kmer-handle pairs: 19947224
+unique kmers:            16048814
+trie inner:              49726103
