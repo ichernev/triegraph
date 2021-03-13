@@ -59,7 +59,7 @@ struct PrevHandleIterGraphToTrie final : PrevHandleIterBase<Handle_> {
     virtual void inc() {
         auto letter_loc = it->first;
         ++it;
-        if (it->first != letter_loc) {
+        if (it == MapIter() || it->first != letter_loc) {
             it = MapIter();
         }
     }
