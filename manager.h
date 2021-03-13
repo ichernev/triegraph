@@ -51,8 +51,8 @@ struct Manager : Cfg {
     using EditEdgeIter = triegraph::EditEdgeIter<Handle, TrieGraphData>;
     using EditEdgeIterHelper = triegraph::EditEdgeIterHelper<EditEdgeIter>;
 
-    using PrevHandleIter = triegraph::PrevHandleIter<Handle, Graph>;
-    using PrevHandleIterHelper = triegraph::PrevHandleIterHelper<Handle, Graph>;
+    using PrevHandleIter = triegraph::PrevHandleIter<Handle, TrieGraphData>;
+    using PrevHandleIterHelper = triegraph::PrevHandleIterHelper<Handle, TrieGraphData>;
 
     using TrieGraph = triegraph::TrieGraph<
         TrieGraphData>;

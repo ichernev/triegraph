@@ -16,7 +16,7 @@ static void test_linear() {
         .build();
 
     // testing auto conversion from Iter to Helper
-    TG::PrevHandleIterHelper h = TG::PrevHandleIter::make(g, TG::Handle(0, 2));
+    TG::PrevHandleIterHelper h = TG::PrevHandleIter::make_graph(g, TG::Handle(0, 2));
     auto expected = std::vector<TG::Handle> { { 0, 1 } };
 
     assert(std::equal(h.begin(), h.end(), expected.begin()));
@@ -32,7 +32,7 @@ static void test_split() {
         .build();
 
     // testing auto conversion from Iter to Helper
-    TG::PrevHandleIterHelper h = TG::PrevHandleIter::make(g, TG::Handle(2, 0));
+    TG::PrevHandleIterHelper h = TG::PrevHandleIter::make_graph(g, TG::Handle(2, 0));
     auto expected = std::vector<TG::Handle> { { 1, 0 }, { 0, 0 } };
 
     assert(std::equal(h.begin(), h.end(), expected.begin()));

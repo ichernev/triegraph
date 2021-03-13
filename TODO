@@ -1,0 +1,3 @@
+# store special value in trie2graph to mark matching-end
+# add check if todo_idx overflows
+# figure out edge iterators
