@@ -332,11 +332,11 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     using Graph = TrieGraphData::Graph;
     using TrieData = TrieGraphData::TrieData;
     using T2GMap = decltype(TrieData::trie2graph);
-    using T2GMapIt = T2GMap::const_iterator;
+    using T2GMapIt = T2GMap::local_value_iterator;
     using Base = EdgeIterImplBase<Edge>;
 
     const TrieGraphData &trie_graph;
-    T2GMapIt nps;
+    std::pair<T2GMapIt, T2GMapIt> nps;
     union {
         char stupid;
         EdgeIterImplGraphFwd<Edge> fwd;
@@ -344,7 +344,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     } its;
 
     EdgeIterImplTrieToGraph(Kmer kmer, const TrieGraphData &tg)
-        : trie_graph(tg), nps(trie_graph.trie_data.trie2graph.find(kmer)), its{'x'}
+        : trie_graph(tg), nps(trie_graph.trie_data.trie2graph.values_for(kmer)), its{'x'}
     {
         after_inc();
     }
@@ -380,8 +380,8 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
         //         nps->second == trie_graph.letter_loc.num_locations) {
         //     ++nps;
         // }
-        if (nps != T2GMapIt()) {
-            auto letter_loc = nps->second;
+        if (nps.first != nps.second) {
+            auto letter_loc = *nps.first;
             auto np = trie_graph.letter_loc.expand(letter_loc);
             const auto &node = trie_graph.graph.nodes[np.node];
             if (np.pos + 1 >= node.seg.size()) {
@@ -396,10 +396,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                         node.seg[np.pos],
                         np);
             }
-            auto kmer = nps->first;
-            ++nps;
-            if (nps->first != kmer)
-                nps = T2GMapIt();
+            ++ nps.first;
             return true;
         }
         return false;

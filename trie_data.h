@@ -74,6 +74,7 @@ struct PMMultiMap {
             return map_it == other.map_it;
         }
     };
+    using const_iterator = GlobalIter;
 
     void add(const Key &k, const Val &v) {
         auto pos = key2id.find(k);
@@ -85,6 +86,10 @@ struct PMMultiMap {
         ++ num_vals;
     }
 
+    bool contains(const Key &k) const {
+        return key2id.contains(k);
+    }
+
     // maybe implement keyvalues_for that returns KeyValueIter
     std::pair<ValueIter, ValueIter> values_for(const Key &k) const {
         auto pos = key2id.find(k);
@@ -93,6 +98,7 @@ struct PMMultiMap {
         }
         return std::make_pair(vals[0].end(), vals[0].end());
     }
+    using local_value_iterator = ValueIter;
 
     GlobalIter begin() const { return GlobalIter(*this, key2id.cbegin()); }
     GlobalIter end() const { return GlobalIter(*this, key2id.cend()); }

@@ -43,27 +43,23 @@ struct PrevHandleIterSplit final : PrevHandleIterBase<Handle_> {
     virtual bool has_more() const { return it.has_more(); }
 };
 
-template <typename Handle_, typename MapIter_>
+template <typename Handle_, typename ValueIter_>
 struct PrevHandleIterGraphToTrie final : PrevHandleIterBase<Handle_> {
     using Handle = Handle_;
-    using MapIter = MapIter_;
+    using ValueIter = ValueIter_;
     // using Graph = Graph_;
     // using GraphIter = Graph::const_iterator;
 
-    MapIter it;
-    PrevHandleIterGraphToTrie(MapIter it = {}) : it(it) {}
+    std::pair<ValueIter, ValueIter> its;
+    PrevHandleIterGraphToTrie(std::pair<ValueIter, ValueIter> its = {}) : its(its) {}
 
     virtual Handle get() const {
-        return Handle(it->second);
+        return Handle(*its.first);
     }
     virtual void inc() {
-        auto letter_loc = it->first;
-        ++it;
-        if (it == MapIter() || it->first != letter_loc) {
-            it = MapIter();
-        }
+        ++ its.first;
     }
-    virtual bool has_more() const { return it != MapIter(); }
+    virtual bool has_more() const { return its.first != its.second; }
 };
 
 template <typename Handle_, typename TrieGraphData_>
@@ -74,13 +70,13 @@ struct PrevHandleIter {
     using Self = PrevHandleIter;
     // using Kmer = Handle::Kmer;
     // using LetterLoc = TrieGraphData::LetterLocData::LetterLoc;
-    using MapIter = decltype(TrieGraphData::TrieData::graph2trie)::const_iterator;
+    using ValueIter = decltype(TrieGraphData::TrieData::graph2trie)::local_value_iterator;
 
     union {
         PrevHandleIterBase<Handle> base;
         PrevHandleIterSingle<Handle> single;
         PrevHandleIterSplit<Handle, Graph> split;
-        PrevHandleIterGraphToTrie<Handle, MapIter> graph_to_trie;
+        PrevHandleIterGraphToTrie<Handle, ValueIter> graph_to_trie;
     };
 
     PrevHandleIter() : base() {}
@@ -139,7 +135,7 @@ struct PrevHandleIter {
         } else {
             // from graph to trie
             auto letter_loc = tg.letter_loc.compress(h.nodepos);
-            return make_graph_to_trie(tg.trie_data.graph2trie.find(letter_loc));
+            return make_graph_to_trie(tg.trie_data.graph2trie.values_for(letter_loc));
         }
     }
 

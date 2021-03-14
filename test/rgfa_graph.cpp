@@ -42,10 +42,10 @@ using TG = triegraph::Manager<triegraph::dna::DnaConfig<31>>;
 static void test_HG22_linear() {
     auto tg = TG::triegraph_from_rgfa_file("data/pasgal-MHC1.gfa", TG::Settings());
     auto [a, b, c] = tg.graph_size();
-    auto [d, e] = tg.trie_size();
+    auto [d, e, f] = tg.trie_size();
 
     std::cerr << a << " " << b << " " << c << std::endl;
-    std::cerr << d << " " << e << std::endl;
+    std::cerr << d << " " << e << " " << f << std::endl;
 
     //auto graph = RgfaGraph<DnaStr, u32>::from_file("data/HG_22_linear.gfa");
 }

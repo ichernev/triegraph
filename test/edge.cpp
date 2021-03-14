@@ -183,20 +183,16 @@ static void test_trie_to_graph() {
     // Helper h(ImplHolder::make_trie_to_graph();
 
     std::vector<EditEdge> expected = {
-        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::A },
-        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::C },
-        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::G },
-        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::T },
 
-        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::A },
-        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::C },
-        EditEdge { NodePos(3, 0), EditEdge::MATCH, DnaLetters::G },
-        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::T },
-        EditEdge { NodePos(3, 0), EditEdge::DEL,   DnaLetters::EPS },
-        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::A },
-        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::C },
-        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::G },
-        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::A },
+        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::C },
+        EditEdge { NodePos(1, 1), EditEdge::MATCH, DnaLetters::G },
+        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::A },
+        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::C },
+        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::G },
+        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(1, 1), EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos(2, 1), EditEdge::MATCH, DnaLetters::A },
         EditEdge { NodePos(2, 1), EditEdge::SUB,   DnaLetters::C },
@@ -208,15 +204,21 @@ static void test_trie_to_graph() {
         EditEdge { NodePos(2, 0), EditEdge::INS,   DnaLetters::T },
         EditEdge { NodePos(2, 1), EditEdge::DEL,   DnaLetters::EPS },
 
-        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::A },
-        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::C },
-        EditEdge { NodePos(1, 1), EditEdge::MATCH, DnaLetters::G },
-        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::T },
-        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::A },
-        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::C },
-        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::G },
-        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::T },
-        EditEdge { NodePos(1, 1), EditEdge::DEL,   DnaLetters::EPS },
+        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::A },
+        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::C },
+        EditEdge { NodePos(3, 0), EditEdge::MATCH, DnaLetters::G },
+        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos(3, 0), EditEdge::DEL,   DnaLetters::EPS },
+
+        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::A },
+        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::C },
+        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::G },
+        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::T },
+
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::A },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::C },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::G },
+        EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::T },
     };
 
     // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
@@ -227,9 +229,9 @@ static void test_trie_to_graph() {
 } /* unnamed namespace */
 
 int main() {
-    test_graph_fwd();
-    test_graph_split();
-    test_trie_inner();
+    // test_graph_fwd();
+    // test_graph_split();
+    // test_trie_inner();
     test_trie_to_graph();
 
     return 0;

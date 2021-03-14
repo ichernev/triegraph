@@ -32,10 +32,9 @@ using MGR = Manager<Cfg>;
 // using TB = TriegraphBuilder<TrieGraphData>;
 
 static std::vector<MGR::LetterLoc> trie2graph(const MGR::TrieGraphData &tg, MGR::Kmer kmer) {
-    auto pos_it = tg.trie_data.trie2graph.equal_range(kmer);
+    auto pos_it = tg.trie_data.trie2graph.values_for(kmer);
     std::vector<MGR::LetterLoc> pos;
-    std::transform(pos_it.first, pos_it.second, std::back_inserter(pos),
-            [](const std::pair<MGR::Kmer, MGR::LetterLoc> &a) { return a.second; });
+    std::copy(pos_it.first, pos_it.second, std::back_inserter(pos));
     std::sort(pos.begin(), pos.end());
     return pos;
 }
