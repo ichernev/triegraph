@@ -17,9 +17,9 @@ struct DnaConfig {
     using NodeLen = u32;
     using EdgeLoc = u32;
     using LetterLoc = u32;
-    using KmerHolder = u64;
+    using KmerHolder = u32;
     static constexpr u64 KmerLen = trie_depth;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
+    static constexpr KmerHolder on_mask = KmerHolder(1) << (sizeof(KmerHolder) * 8 - 1);
 };
 
 } /* namespace triedata::dna */

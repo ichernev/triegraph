@@ -8,6 +8,7 @@
 #include "trie_data.h"
 #include "triegraph_data.h"
 #include "triegraph_builder.h"
+#include "triegraph_builder_bt.h"
 #include "edge.h"
 #include "triegraph_handle_iter.h"
 #include "triegraph.h"
@@ -45,6 +46,8 @@ struct Manager : Cfg {
         TrieData>;
     using TrieGraphBuilder = triegraph::TrieGraphBuilder<
         TrieGraphData>;
+    using TrieGraphBTBuilder = triegraph::TrieGraphBTBuilder<
+        TrieGraphData>;
 
     using Handle = triegraph::Handle<Kmer, NodePos>;
     using EditEdge = triegraph::EditEdge<Handle>;
@@ -69,10 +72,12 @@ struct Manager : Cfg {
         Self &trie_depth(u64 val) { trie_depth_ = val; return *this; }
     };
 
+    template<typename Builder=TrieGraphBuilder>
     static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s) {
-        return triegraph_from_graph(Graph::from_file(file), s);
+        return triegraph_from_graph<Builder>(Graph::from_file(file), s);
     }
 
+    template<typename Builder=TrieGraphBuilder>
     static TrieGraph triegraph_from_graph(Graph &&graph, Settings s) {
         if (s.add_reverse_complement()) {
             graph.add_reverse_complement();
@@ -80,7 +85,7 @@ struct Manager : Cfg {
         if (s.trie_depth() != Kmer::K) {
             throw "trie depth doesn't match Kmer::K";
         }
-        auto tg_data = TrieGraphBuilder(std::move(graph)).build();
+        auto tg_data = Builder(std::move(graph)).build();
         return TrieGraph(std::move(tg_data));
     }
 };

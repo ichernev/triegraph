@@ -110,6 +110,10 @@ struct Kmer {
         _dec_len(len);
     }
 
+    void pop_back() {
+        pop();
+    }
+
     Holder _l2_get() const { return data >> L2_SHIFT & L2_MASK; }
     Holder _l3_get() const { return data >> L3_SHIFT & L3_MASK; }
     void _l2_set(Holder l2) {
