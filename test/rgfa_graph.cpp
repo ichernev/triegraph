@@ -37,10 +37,21 @@ static void test_small() {
 }
 
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<15>>;
+using TG = triegraph::Manager<triegraph::dna::DnaConfig<14>>;
 
-static void test_HG22_linear() {
+static void test_pasgal_mhc1() {
     auto tg = TG::triegraph_from_rgfa_file("data/pasgal-MHC1.gfa", TG::Settings());
+    auto [a, b, c] = tg.graph_size();
+    auto [d, e, f] = tg.trie_size();
+
+    std::cerr << a << " " << b << " " << c << std::endl;
+    std::cerr << d << " " << e << " " << f << std::endl;
+
+    //auto graph = RgfaGraph<DnaStr, u32>::from_file("data/HG_22_linear.gfa");
+}
+
+static void test_hg22_linear() {
+    auto tg = TG::triegraph_from_rgfa_file("data/HG_22_linear.gfa", TG::Settings());
     auto [a, b, c] = tg.graph_size();
     auto [d, e, f] = tg.trie_size();
 
@@ -90,13 +101,8 @@ static void test_revcomp() {
 int main() {
     test_small();
     test_revcomp();
-
-    try {
-        test_HG22_linear();
-    }
-    catch (char const *exceptionString) {
-        std::cout << exceptionString << std::endl;
-    }
+    test_pasgal_mhc1();
+    test_hg22_linear();
 
     return 0;
 }
