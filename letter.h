@@ -30,12 +30,14 @@ struct Letter {
     // operator=(&&)
 
     constexpr operator Holder() const { return data; }
-    bool operator == (const Letter &other) const  = default;
-    auto operator <=> (const Letter &other) const = default;
+    bool operator== (const Letter &other) const  = default;
+    auto operator<=> (const Letter &other) const = default;
+    template <typename T>
+        requires (std::is_integral<T>::value)
+    bool operator== (T other) { return data == other; }
 
-    Letter rev_comp() {
-        return Letter(data ^ Letter::mask);
-    }
+    Letter rev_comp() { return Letter(data ^ Letter::mask); }
+
 
     friend std::ostream &operator<< (std::ostream &os, const Letter &l) {
         return os << Decoder()(l.data);

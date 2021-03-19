@@ -18,9 +18,9 @@ struct Cfg {
     using NodeLen = u32;
     using EdgeLoc = u32;
     using LetterLoc = u32;
-    using KmerHolder = u64;
-    static constexpr u64 KmerLen = 31;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
+    using KmerHolder = u32;
+    static constexpr u64 KmerLen = 15;
+    static constexpr KmerHolder on_mask = KmerHolder(1) << 31;
 };
 
 using MGR = Manager<Cfg>;
@@ -141,9 +141,9 @@ struct Cfg2 {
     using NodeLen = u32;
     using EdgeLoc = u32;
     using LetterLoc = u32;
-    using KmerHolder = u64;
+    using KmerHolder = u32;
     static constexpr u64 KmerLen = 2;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
+    static constexpr KmerHolder on_mask = KmerHolder(1) << 31;
 };
 
 static void test_trie_to_graph() {
@@ -229,9 +229,9 @@ static void test_trie_to_graph() {
 } /* unnamed namespace */
 
 int main() {
-    // test_graph_fwd();
-    // test_graph_split();
-    // test_trie_inner();
+    test_graph_fwd();
+    test_graph_split();
+    test_trie_inner();
     test_trie_to_graph();
 
     return 0;

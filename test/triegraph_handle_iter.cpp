@@ -8,7 +8,7 @@ namespace {
 
 using namespace triegraph;
 
-using TG = Manager<dna::DnaConfig<>>;
+using TG = Manager<dna::DnaConfig<15>>;
 
 static void test_linear() {
     auto g = TG::Graph::Builder()

@@ -33,9 +33,14 @@ struct PMMultiMap {
     using ValueIter = std::vector<Val>::const_iterator;
     using Map = HashPolicy<Key, Size>::Map;
 
-    Map key2id;
-    std::vector<std::vector<Val>> vals;
-    Size num_vals;
+    std::unordered_multimap<Key, Val> key2id;
+    // Map key2id;
+    // std::vector<std::vector<Val>> vals;
+    // Size num_vals;
+
+    void reserve(Size sz) {
+        key2id.reserve(sz);
+    }
 
     struct GlobalIter {
         using MapIter = Map::const_iterator;
@@ -77,32 +82,35 @@ struct PMMultiMap {
     using const_iterator = GlobalIter;
 
     void add(const Key &k, const Val &v) {
-        auto pos = key2id.find(k);
-        if (pos == key2id.end()) {
-            pos = key2id.insert(std::make_pair(k, vals.size())).first;
-            vals.push_back({});
-        }
-        vals[pos->second].push_back(v);
-        ++ num_vals;
+        key2id.emplace(k, v);
     }
+    // void add(const Key &k, const Val &v) {
+    //     auto pos = key2id.find(k);
+    //     if (pos == key2id.end()) {
+    //         pos = key2id.insert(std::make_pair(k, vals.size())).first;
+    //         vals.push_back({});
+    //     }
+    //     vals[pos->second].push_back(v);
+    //     ++ num_vals;
+    // }
 
     bool contains(const Key &k) const {
         return key2id.contains(k);
     }
 
     // maybe implement keyvalues_for that returns KeyValueIter
-    std::pair<ValueIter, ValueIter> values_for(const Key &k) const {
-        auto pos = key2id.find(k);
-        if (pos != key2id.end()) {
-            return std::make_pair(vals[pos->second].cbegin(), vals[pos->second].cend());
-        }
-        return std::make_pair(vals[0].end(), vals[0].end());
-    }
-    using local_value_iterator = ValueIter;
+    // std::pair<ValueIter, ValueIter> values_for(const Key &k) const {
+    //     auto pos = key2id.find(k);
+    //     if (pos != key2id.end()) {
+    //         return std::make_pair(vals[pos->second].cbegin(), vals[pos->second].cend());
+    //     }
+    //     return std::make_pair(vals[0].end(), vals[0].end());
+    // }
+    // using local_value_iterator = ValueIter;
 
-    GlobalIter begin() const { return GlobalIter(*this, key2id.cbegin()); }
-    GlobalIter end() const { return GlobalIter(*this, key2id.cend()); }
-    Size size() const { return num_vals; }
+    // GlobalIter begin() const { return GlobalIter(*this, key2id.cbegin()); }
+    // GlobalIter end() const { return GlobalIter(*this, key2id.cend()); }
+    Size size() const { return key2id.size(); }
     Size key_size() const { return key2id.size(); }
 };
 
@@ -112,11 +120,11 @@ struct TrieData {
     using Kmer = Kmer_;
     using LetterLoc = LetterLoc_;
     using NumKmers = NumKmers_;
-
+private:
     PMMultiMap<Kmer_, NumKmers_, LetterLoc_> trie2graph;
     PMMultiMap<LetterLoc_, NumKmers_, Kmer_> graph2trie;
-
     HashPolicy<Kmer>::Set active_trie;
+public:
 };
 
 

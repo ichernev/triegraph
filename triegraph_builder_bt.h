@@ -36,7 +36,7 @@ struct TrieGraphBTBuilder {
 
         std::cerr << "BT builder" << std::endl;
         data.letter_loc.init(data.graph);
-        this->data.trie_data.active_trie.insert(Kmer::empty());
+        // this->data.trie_data.active_trie.insert(Kmer::empty());
         auto &nodes = data.graph.nodes;
         for (NodeLoc i = 0, nsz = nodes.size(); i < nsz; ++i) {
             auto &node = nodes[i];
@@ -49,23 +49,12 @@ struct TrieGraphBTBuilder {
         auto time_02 = std::chrono::steady_clock::now();
         std::cerr << "Backtrack done: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_02 - time_01).count() << "ms" << std::endl;
 
-        std::cerr << "num pairs: " << fast_pairs.size() << std::endl;
+        // std::cerr << "num pairs: " << fast_pairs.size() << std::endl;
+        // for (auto &x : fast_pairs) {
+        //     std::cerr << x.first << " -> " << x.second << std::endl;
+        // }
 
-        this->data.trie_data.trie2graph.reserve(fast_pairs.size());
-        this->data.trie_data.graph2trie.reserve(fast_pairs.size());
-        this->data.trie_data.active_trie.reserve(fast_pairs.size() * 3);
-        for (const auto &p : fast_pairs) {
-            this->data.trie_data.trie2graph.add(p.first, p.second);
-            this->data.trie_data.graph2trie.add(p.second, p.first);
-            Kmer km = p.first;
-            while (true) {
-                km.pop_back();
-                if (this->data.trie_data.active_trie.contains(km))
-                    break;
-                this->data.trie_data.active_trie.insert(km);
-            }
-        }
-
+        this->data.trie_data.init(std::move(fast_pairs), this->data.letter_loc);
 
         auto time_03 = std::chrono::steady_clock::now();
         std::cerr << "HT full: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_02).count() << "ms" << std::endl;

@@ -6,6 +6,7 @@
 #include "rgfa_graph.h"
 #include "letter_loc_data.h"
 #include "trie_data.h"
+#include "trie_data_opt.h"
 #include "triegraph_data.h"
 #include "triegraph_builder.h"
 #include "triegraph_builder_bt.h"
@@ -37,7 +38,7 @@ struct Manager : Cfg {
         NodePos,
         Graph,
         typename Cfg::LetterLoc>;
-    using TrieData = triegraph::TrieData<
+    using TrieData = triegraph::TrieDataOpt<
         Kmer,
         typename Cfg::LetterLoc>;
     using TrieGraphData = triegraph::TrieGraphData<

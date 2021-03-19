@@ -144,6 +144,90 @@ static void test_to_from_str() {
     assert(Kmer4::from_str("acgta").to_str() == "cgta");
 }
 
+static void test_cmp() {
+    assert(DnaKmer31::from_str("acgt") < DnaKmer31::from_str("actt"));
+    assert(DnaKmer31::from_str("acgt") == DnaKmer31::from_str("acgt"));
+}
+
+static void test_indexing() {
+    auto k = DnaKmer31::from_str("acgt");
+    assert(k[0] == 0);
+    assert(k[1] == 1);
+    assert(k[2] == 2);
+    assert(k[3] == 3);
+}
+
+static void test_level_beg() {
+    {
+        using Letter = triegraph::Letter<u8, 4, char, void, void>;
+        using Kmer = triegraph::Kmer<Letter, u32, 4, u32(1) << 31>;
+
+        std::vector<u64> beg = {0, 1, 5, 21, 85};
+        assert(std::equal(Kmer::beg.begin(), Kmer::beg.end(), beg.begin()));
+    }
+
+    {
+        using Letter = triegraph::Letter<u8, 2, char, void, void>;
+        using Kmer = triegraph::Kmer<Letter, u32, 2, u32(1) << 31>;
+
+        std::vector<u64> beg = {0, 1, 3};
+        assert(std::equal(Kmer::beg.begin(), Kmer::beg.end(), beg.begin()));
+    }
+}
+
+static void test_compressed_2x2() {
+    using Letter = triegraph::Letter<u8, 2, char, void, void>;
+    using Kmer = triegraph::Kmer<Letter, u32, 2, u32(1) << 31>;
+
+    auto fc = [](int i) { return Kmer::from_compressed(i); };
+
+    assert(Kmer::NUM_LEAFS == 4);
+    assert(Kmer::NUM_COMPRESSED == 7);
+    assert(Kmer::TrieElems<2>::value == 3);
+
+    assert(fc(0).size() == 0);
+    assert(fc(1).size() == 1 && fc(1)[0] == 0);
+    assert(fc(2).size() == 1 && fc(2)[0] == 1);
+    assert(fc(3).size() == 2 && fc(3)[0] == 0 && fc(3)[1] == 0);
+    assert(fc(4).size() == 2 && fc(4)[0] == 0 && fc(4)[1] == 1);
+    assert(fc(5).size() == 2 && fc(5)[0] == 1 && fc(5)[1] == 0);
+    assert(fc(6).size() == 2 && fc(6)[0] == 1 && fc(6)[1] == 1);
+
+    for (typename Kmer::Holder i = 0; i < Kmer::NUM_COMPRESSED; ++i) {
+        assert(fc(i).compress() == i);
+    }
+    for (typename Kmer::Holder i = 0; i < Kmer::NUM_LEAFS; ++i) {
+        assert(Kmer::from_compressed_leaf(i).compress_leaf() == i);
+    }
+}
+
+static void test_compressed_4x2() {
+    using Letter = triegraph::Letter<u8, 4, char, void, void>;
+    using Kmer = triegraph::Kmer<Letter, u32, 2, u32(1) << 31>;
+
+    auto fc = [](int i) { return Kmer::from_compressed(i); };
+
+    assert(Kmer::NUM_LEAFS == 16);
+    assert(Kmer::NUM_COMPRESSED == 21);
+    assert(Kmer::TrieElems<2>::value == 5);
+
+    assert(fc(0).size() == 0);
+    assert(fc(1).size() == 1 && fc(1)[0] == 0);
+    assert(fc(2).size() == 1 && fc(2)[0] == 1);
+    assert(fc(3).size() == 1 && fc(3)[0] == 2);
+    assert(fc(4).size() == 1 && fc(4)[0] == 3);
+    assert(fc(5).size() == 2 && fc(5)[0] == 0 && fc(5)[1] == 0);
+    assert(fc(6).size() == 2 && fc(6)[0] == 0 && fc(6)[1] == 1);
+    assert(fc(20).size() == 2 && fc(20)[0] == 3 && fc(20)[1] == 3);
+
+    for (typename Kmer::Holder i = 0; i < Kmer::NUM_COMPRESSED; ++i) {
+        assert(fc(i).compress() == i);
+    }
+    for (typename Kmer::Holder i = 0; i < Kmer::NUM_LEAFS; ++i) {
+        assert(Kmer::from_compressed_leaf(i).compress_leaf() == i);
+    }
+}
+
 int main() {
     test_sanity();
     test_push();
@@ -153,6 +237,11 @@ int main() {
     test_on_mask();
     test_map_friendly();
     test_to_from_str();
+    test_cmp();
+    test_level_beg();
+    test_indexing();
+    test_compressed_2x2();
+    test_compressed_4x2();
 
     return 0;
 }

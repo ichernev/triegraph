@@ -11,6 +11,26 @@
 
 namespace triegraph {
 
+// The following crap is used just to compute where each trie-level begins
+// at compile time
+template<u64 D, u64 S, template<u64,u64> class F, u64... args>
+struct TrieLevelBeg {
+    static constexpr auto val = TrieLevelBeg<D-1, S, F, F<D,S>::value, args...>::val;
+};
+template<u64 S, template<u64,u64> class F, u64... args>
+struct TrieLevelBeg<0, S, F, args...> {
+    static constexpr std::array<u64, 1 + sizeof...(args)> val = {F<0,S>::value, args...};
+};
+template<u64 depth, u64 split> struct TrieElems {
+    using prev = TrieElems<depth-1, split>;
+    static constexpr u64 power = prev::power * split;
+    static constexpr u64 value = prev::value + prev::power;
+};
+template<u64 split> struct TrieElems<0, split> {
+    static constexpr u64 power = 1;
+    static constexpr u64 value = 0;
+};
+
 template<typename Letter_, typename Holder_, unsigned K_, Holder_ ON_MASK_=0>
 struct Kmer {
     using Letter = Letter_;
@@ -20,7 +40,9 @@ struct Kmer {
     // use one bit to encode less-than-maxk length
     static constexpr Holder ON_MASK = ON_MASK_;
     static constexpr Holder H1 = 1;
-    static constexpr klen_type MAX_K = (sizeof(Holder) * BITS_PER_BYTE - 1) / Letter::bits;
+    static constexpr klen_type MAX_K = (sizeof(Holder) * BITS_PER_BYTE - 1) / Letter::bits -
+        // make space for on_mask if bits is 1 (num_options == 2)
+        (ON_MASK && Letter::bits == 1 ? 1 : 0);
     static constexpr klen_type K = K_;
     static constexpr Holder _kmer_mask(klen_type anti_len) {
         return (H1 << (K - anti_len) * Letter::bits) - 1;
@@ -34,23 +56,53 @@ struct Kmer {
     static constexpr Holder EMPTY = K > Letter::mask + 1 ?
         ON_MASK | L1_MASK | L2_MASK << L2_SHIFT | Holder(K-Letter::mask-1) << L3_SHIFT :
         ON_MASK | L1_MASK | Holder(K-1) << L2_SHIFT;
+    static constexpr u64 num_options = Letter::num_options;
+    static constexpr std::array<u64, K+1> beg = TrieLevelBeg<K, num_options, TrieElems>::val;
+    static constexpr u64 NUM_LEAFS = TrieElems<K, num_options>::power;
+    static constexpr u64 NUM_COMPRESSED = TrieElems<K+1, num_options>::value;
+    template <u64 lvl>
+    using TrieElems = TrieElems<lvl, num_options>;
     static_assert(std::is_unsigned_v<Holder>, "holder should be unsigned");
     static_assert(K <= MAX_K, "can not support big k, increase holder size");
 
     Holder data;
+    // receive just the "clean" data, without the len
+    // operator Holder() const { return data & _kmer_mask(K - get_len()); }
 
     // Kmer() {}
-    // Kmer(Holder data) : data(data) {}
+    // explicit Kmer(Holder data) { this->data = ON_MASK | (data & KMER_MASK); }
+    // explicit Kmer(Holder data, u64 len) {
+    //     this->data = ON_MASK | data & _kmer_mask(K-len);
+    //     _set_len(len);
+    // }
     // Kmer(const Kmer &kmer) : data(kmer.data) {}
     // Kmer(Kmer &&kmer) : data(kmer.data) {}
     // Kmer &operator= (const Kmer &kmer) { data = kmer.data; }
     // Kmer &operator= (Kmer &&kmer) { data = kmer.data; }
 
-    static Kmer empty() { return Kmer {EMPTY}; }
-    static Kmer from_str(std::basic_string<typename Letter::Human> s) {
+    static Kmer from_compressed_leaf(Holder h) { return { ON_MASK | (h & KMER_MASK) }; }
+    static Kmer from_compressed(Holder h) {
+        auto len = std::upper_bound(beg.begin(), beg.end(), h) - beg.begin() - 1;
+        // std::copy(beg.begin(), beg.end(), std::ostream_iterator<u64>(std::cerr, "\n"));
+        // std::cerr << h << " len " << len << std::endl;
         Kmer k;
-        std::istringstream(s) >> k;
+        k.data = ON_MASK | ((h-beg[len]) & _kmer_mask(K-len));
+        // std::cerr << std::hex << k.data << " ";
+        k._set_len(len);
+        // std::cerr << std::hex << k.data << std::dec << " " << k.size() << std::endl;
         return k;
+    }
+    Holder compress_leaf() const { return data & KMER_MASK; }
+    Holder compress() const {
+        auto sz = size();
+        return beg[sz] + (data & _kmer_mask(K-sz));
+    }
+
+    static Kmer empty() { return { EMPTY }; }
+    static Kmer from_str(std::basic_string<typename Letter::Human> s) {
+        auto kmer = Kmer::empty();
+        std::istringstream(s) >> kmer;
+        return kmer;
     }
     template <typename Cont>
     static Kmer from_sv(const Cont &c)
@@ -114,6 +166,10 @@ struct Kmer {
         pop();
     }
 
+    Letter operator[] (klen_type idx) const {
+        return (data >> (size() - idx - 1) * Letter::bits) & Letter::mask;
+    }
+
     Holder _l2_get() const { return data >> L2_SHIFT & L2_MASK; }
     Holder _l3_get() const { return data >> L3_SHIFT & L3_MASK; }
     void _l2_set(Holder l2) {
@@ -156,6 +212,27 @@ decr_l2:
             _l2_set(alen);
         } else {
             _l3_set(alen - Letter::mask);
+        }
+    }
+
+    void _set_len(klen_type len) {
+        klen_type alen = K - len;
+        if (alen == 0) {
+            // std::cerr << "h1----" << std::endl;
+            // std::cerr << std::hex << ON_MASK << std::dec << std::endl;
+            // std::cerr << std::hex << L1_MASK << std::dec << std::endl;
+            // std::cerr << std::hex << MAX_K << std::dec << std::endl;
+            // data |= L1_MASK;
+            // _l2_set(0);
+        } else if (alen <= Letter::mask) {
+            // std::cerr << "h2" << std::endl;
+            data |= L1_MASK;
+            _l2_set(alen - 1);
+        } else {
+            // std::cerr << "h3" << std::endl;
+            data |= L1_MASK;
+            _l2_set(Letter::mask);
+            _l3_set(alen - Letter::mask - 1);
         }
     }
 
@@ -226,6 +303,9 @@ decr_l2:
     }
 
     bool operator== (const Kmer &other) const { return data == other.data; }
+    bool operator== (u64 other) const { return is_complete() && (data & KMER_MASK) == other; }
+    bool operator!= (u64 other) const { return !(*this == other); }
+    bool operator< (const Kmer &other) const { return data < other.data; }
 
     // friend struct std::hash<Kmer> {
     //     static constexpr hash<Holder> hasher();

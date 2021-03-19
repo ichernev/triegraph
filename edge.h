@@ -19,8 +19,13 @@ struct Handle {
     using TrieDepth = typename Kmer::klen_type;
     static constexpr NodeLen INV_NODE_LEN = std::numeric_limits<NodeLen>::max();
 
+    static_assert(sizeof(Kmer) == 4 && sizeof(NodePos) == 8, "remove filler or rework");
+    // TODO: THIS IS UGLYYY
     union {
-        Kmer kmer;
+        struct {
+            u32  filler;
+            Kmer kmer;
+        };
         NodePos nodepos;
     };
 
@@ -331,20 +336,22 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     using TrieGraphData = TrieGraphData_;
     using Graph = TrieGraphData::Graph;
     using TrieData = TrieGraphData::TrieData;
-    using T2GMap = decltype(TrieData::trie2graph);
-    using T2GMapIt = T2GMap::local_value_iterator;
+    // using T2GMap = decltype(TrieData::trie2graph);
+    // using T2GMapIt = T2GMap::const_value_iterator;
     using Base = EdgeIterImplBase<Edge>;
 
     const TrieGraphData &trie_graph;
-    std::pair<T2GMapIt, T2GMapIt> nps;
-    union {
+    typename TrieData::t2g_values_view nps;
+    union IterU {
+        IterU() : stupid('x') {}
         char stupid;
         EdgeIterImplGraphFwd<Edge> fwd;
         EdgeIterImplGraphSplit<Edge, Graph> split;
     } its;
 
     EdgeIterImplTrieToGraph(Kmer kmer, const TrieGraphData &tg)
-        : trie_graph(tg), nps(trie_graph.trie_data.trie2graph.values_for(kmer)), its{'x'}
+        // TODO: This should be changed to compress, or just
+        : trie_graph(tg), nps(trie_graph.trie_data.t2g_values_for(kmer))
     {
         after_inc();
     }
@@ -380,8 +387,8 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
         //         nps->second == trie_graph.letter_loc.num_locations) {
         //     ++nps;
         // }
-        if (nps.first != nps.second) {
-            auto letter_loc = *nps.first;
+        if (!nps.empty()) {
+            auto letter_loc = *nps;
             auto np = trie_graph.letter_loc.expand(letter_loc);
             const auto &node = trie_graph.graph.nodes[np.node];
             if (np.pos + 1 >= node.seg.size()) {
@@ -396,7 +403,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                         node.seg[np.pos],
                         np);
             }
-            ++ nps.first;
+            ++ nps;
             return true;
         }
         return false;

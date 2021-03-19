@@ -8,7 +8,7 @@ namespace triegraph::dna {
 
 using namespace triegraph;
 
-template<u64 trie_depth = 31>
+template<u64 trie_depth = 15>
 struct DnaConfig {
     using Letter = DnaLetter;
     using Letters = DnaLetters;
@@ -19,7 +19,8 @@ struct DnaConfig {
     using LetterLoc = u32;
     using KmerHolder = u32;
     static constexpr u64 KmerLen = trie_depth;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << (sizeof(KmerHolder) * 8 - 1);
+    static constexpr KmerHolder on_mask = KmerHolder(1) << (
+            sizeof(KmerHolder) * BITS_PER_BYTE - 1);
 };
 
 } /* namespace triedata::dna */

@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <algorithm>
 
 using namespace triegraph;
 
@@ -32,9 +33,9 @@ using MGR = Manager<Cfg>;
 // using TB = TriegraphBuilder<TrieGraphData>;
 
 static std::vector<MGR::LetterLoc> trie2graph(const MGR::TrieGraphData &tg, MGR::Kmer kmer) {
-    auto pos_it = tg.trie_data.trie2graph.values_for(kmer);
+    auto pos_it = tg.trie_data.t2g_values_for(kmer);
     std::vector<MGR::LetterLoc> pos;
-    std::copy(pos_it.first, pos_it.second, std::back_inserter(pos));
+    std::ranges::copy(pos_it, std::back_inserter(pos));
     std::sort(pos.begin(), pos.end());
     return pos;
 }
@@ -43,6 +44,11 @@ static void test_tiny_linear_graph() {
     MGR::Graph::Builder b;
     auto g = b.add_node(MGR::Str("acgtacgtac"), "s1").build();
     auto tg = MGR::TrieGraphBTBuilder(std::move(g)).build();
+
+    // for (const auto &x : tg.trie_data.trie2graph) {
+    //     std::cerr << x.first << " : " << x.second << std::endl;
+    // }
+
     auto pos = trie2graph(tg, MGR::Kmer::from_str("acgt"));
     assert(pos.size() == 2);
     assert(pos[0] == 4);
@@ -100,16 +106,16 @@ static void test_small_nonlinear_graph() {
         assert(pos[0] == 6);
     }
 
-    std::cerr << tg.trie_data.active_trie.size() << std::endl;
-    for (const auto &kmer : tg.trie_data.active_trie) {
-        std::cerr << "at " << kmer << std::endl;;
-    }
-    assert(tg.trie_data.active_trie.contains(MGR::Kmer::from_str("acg")));
-    assert(tg.trie_data.active_trie.contains(MGR::Kmer::from_str("cga")));
-    assert(tg.trie_data.active_trie.contains(MGR::Kmer::from_str("ata")));
-    // assert(tg.trie_data.active_trie.contains(DnaKmer::from_str("tac")));
-    assert(tg.trie_data.active_trie.contains(MGR::Kmer::from_str("cga")));
-    // assert(tg.trie_data.active_trie.contains(DnaKmer::from_str("gac")));
+    // std::cerr << tg.trie_data.active_trie.size() << std::endl;
+    // for (const auto &kmer : tg.trie_data.active_trie) {
+    //     std::cerr << "at " << kmer << std::endl;;
+    // }
+    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("acg")));
+    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("cga")));
+    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("ata")));
+    // assert(tg.trie_data.trie_inner_contains(DnaKmer::from_str("tac")));
+    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("cga")));
+    // assert(tg.trie_data.trie_inner_contains(DnaKmer::from_str("gac")));
     // assert(tg.trie_data.active_trie.size() == 6);
 }
 

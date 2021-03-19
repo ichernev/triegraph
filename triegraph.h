@@ -41,16 +41,17 @@ struct TrieGraph {
     }
 
     std::tuple<TrieSize, u32, TrieSize> trie_size() const {
-        return std::make_tuple(
-                data.trie_data.trie2graph.size(),
-                data.trie_data.trie2graph.key_size(),
-                data.trie_data.active_trie.size());
+        return std::make_tuple(0, 0, 0);
+                // data.trie_data.trie2graph.size(),
+                // data.trie_data.trie2graph.key_size(),
+                // data.trie_data.active_trie.size());
     }
 
     TrieDepth trie_depth() const {
         return Kmer::K;
     }
 
+    // TODO: Move to edge.h
     EdgeIterHelper next_edit_edges(Handle h) const {
         if (h.is_trie()) {
             if (h.depth_in_trie() + 1 < Kmer::K) {
@@ -58,7 +59,7 @@ struct TrieGraph {
                 u32 bitset = 0;
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
                     nkmer.push_back(l);
-                    if (data.trie_data.active_trie.contains(nkmer)) {
+                    if (data.trie_data.trie_inner_contains(nkmer)) {
                         bitset |= 1 << l;
                     }
                     nkmer.pop();
@@ -69,7 +70,7 @@ struct TrieGraph {
                 u32 bitset = 0;
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
                     nkmer.push_back(l);
-                    if (data.trie_data.trie2graph.contains(nkmer)) {
+                    if (data.trie_data.t2g_contains(nkmer)) {
                         bitset |= 1 << l;
                     }
                     nkmer.pop();
@@ -124,13 +125,7 @@ struct TrieGraph {
             return Handle::invalid();
         }
         auto kmer = Kmer::from_sv(sv);
-        auto present = false;
-        if (kmer.size() == trie_depth()) {
-            present = data.trie_data.trie2graph.contains(kmer);
-        } else {
-            present = data.trie_data.active_trie.contains(kmer);
-        }
-        return present ? kmer : Handle::invalid();
+        return data.trie_data.trie_contains(kmer) ? kmer : Handle::invalid();
     }
 };
 

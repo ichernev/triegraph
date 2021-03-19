@@ -9,3 +9,42 @@ graph letters:           10276724
 total kmer-handle pairs: 19947224
 unique kmers:            16048814
 trie inner:              49726103
+
+BT builder
+959062 1318376 10276724
+20027694 16048869 49727653
+./main  151.74s user 2.20s system 99% cpu 2:34.08 total
+
+current
+959062 1318376 10276724
+19947224 16048879 49726390
+ ./main  148.51s user 2.74s system 99% cpu 2:31.41 total
+
+
+Testing speed
+-------------
+
+fill 20M 64,32 and 32,64 unordered_maps: 14s    32s
+fill 20M ---/--- with type Kmer:         14s    28s
+fill 20M -----//----- + kmer + arrays:   35s    50s
+
+BT only : 19.4
+BT+end-of-graph: 19.6
+BT+ht only: 69s
+BT+mmap only: 52.8s
+BT+ht+set:pop: 157.5s
+BT+mmap+set:pop: 138s
+BT+ht+set:eager: 204s
+
+Optimum
+=======
+
+kmer -> loc:
+-- kmer_loc_start[]         NPairs
+-- kmer_all_locs[]          LetterLoc
+-- kmer_all_locs_begin[]    1bit
+
+loc -> kmer:
+-- loc_kmer_start[]         NPairs
+-- loc_all_kmers[]          Kmer
+-- loc_all_kmers_begin[]    1bit

@@ -37,7 +37,7 @@ static void test_small() {
 }
 
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<31>>;
+using TG = triegraph::Manager<triegraph::dna::DnaConfig<15>>;
 
 static void test_HG22_linear() {
     auto tg = TG::triegraph_from_rgfa_file("data/pasgal-MHC1.gfa", TG::Settings());

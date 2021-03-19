@@ -201,6 +201,15 @@ static void test_prev_handles_linear() {
                 .trie_depth(4));
 
     auto h = tg.prev_graph_handles(M4::Handle(0, 1));
+    // auto hh = h.begin();
+    // std::cerr << hh.single.h << std::endl;
+    // std::cerr << hh.single.has_more() << std::endl;
+    // ++hh;
+    // std::cerr << hh.single.h << std::endl;
+    // std::cerr << hh.single.has_more() << std::endl;
+    // for (const auto &x: h) {
+    //     std::cerr << "HHH " << std::endl;
+    // }
     auto expected = std::vector<M4::Handle> { { 0, 0 } };
     assert(std::equal(h.begin(), h.end(), expected.begin()));
 
@@ -237,7 +246,14 @@ static void test_prev_handles_graph_to_trie() {
         M4::Kmer::from_str("acgg"),
         M4::Kmer::from_str("cacg"),
     };
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    std::cerr << "expected" << std::endl;
+    std::copy(expected.begin(), expected.end(),
+            std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    std::cerr << "actual" << std::endl;
+    std::copy(h.begin(), h.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    // std::cerr << M4::Handle(M4::Kmer::from_str("acgg")).is_trie() << std::endl;
+    // std::cerr << M4::Handle(M4::Kmer::from_str("cacg")).is_trie() << std::endl;
+    // std::cerr << (M4::Kmer::from_str("acgg").data & M4::Kmer::ON_MASK) << std::endl;
     assert(std::equal(h.begin(), h.end(), expected.begin()));
 }
 
