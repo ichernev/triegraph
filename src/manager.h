@@ -1,18 +1,18 @@
 #ifndef __MANAGER_H__
 #define __MANAGER_H__
 
-#include "kmer.h"
-#include "str.h"
-#include "rgfa_graph.h"
-#include "letter_loc_data.h"
-#include "trie_data.h"
-#include "trie_data_opt.h"
-#include "triegraph_data.h"
-#include "triegraph_builder.h"
-#include "triegraph_builder_bt.h"
-#include "edge.h"
-#include "triegraph_handle_iter.h"
-#include "triegraph.h"
+#include "alphabet/str.h"
+#include "graph/letter_loc_data.h"
+#include "graph/rgfa_graph.h"
+#include "triegraph/triegraph_builder_bt.h"
+#include "triegraph/triegraph_builder.h"
+#include "triegraph/triegraph_data.h"
+#include "triegraph/triegraph_edge_iter.h"
+#include "triegraph/triegraph.h"
+#include "triegraph/triegraph_handle_iter.h"
+#include "trie/kmer.h"
+#include "trie/trie_data.h"
+#include "trie/trie_data_opt.h"
 
 namespace triegraph {
 

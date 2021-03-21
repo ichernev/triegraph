@@ -1,11 +1,10 @@
-#include "util.h"
-#include "dna_letter.h"
+#include "util/util.h"
+#include "alphabet/dna_letter.h"
 #include "manager.h"
-#include "edge.h"
+#include "triegraph/triegraph_edge_iter.h"
 
 #include <assert.h>
 #include <iostream>
-
 
 using namespace triegraph;
 
@@ -37,7 +36,7 @@ static void test_graph_fwd() {
     // using EdgeIterImplGraphFwd_X = EdgeIterImplGraphFwd<Handle, DnaLetter>;
     // auto it = EdgeIterGraphFwd_X { DnaLetters::C, NodePos { 4, 2 } };
     // Helper h(ImplHolder::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 }));
-    auto h = MGR::EditEdgeIterHelper::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 });
+    MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 });
     std::vector<EditEdge> expected = {
         EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos { 4, 3 }, EditEdge::MATCH, DnaLetters::C },
@@ -67,7 +66,7 @@ static void test_graph_split() {
         .add_edge("s1", "s2")
         .build();
 
-    auto h = MGR::EditEdgeIterHelper::make_graph_split(
+    MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_graph_split(
             DnaLetters::A,
             NodePos { 0, 0 },
             g.forward_from(0).begin());
@@ -93,7 +92,7 @@ static void test_graph_split() {
     assert(std::equal(h.begin(), h.end(), expected.begin()));
 
     // this simulates end-of-graph
-    h = MGR::EditEdgeIterHelper::make_graph_split(
+    h = MGR::EditEdgeIter::make_graph_split(
                 DnaLetters::A,
                 NodePos { 0, 0 },
                 g.forward_from(2).begin());
@@ -108,7 +107,7 @@ static void test_graph_split() {
 }
 
 static void test_trie_inner() {
-    auto h = MGR::EditEdgeIterHelper::make_trie_inner(
+    MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_trie_inner(
             Kmer::from_str("acgt"),
             (1 << 1) | (1 << 2));
 
@@ -178,7 +177,7 @@ static void test_trie_to_graph() {
 
     auto tg = MGR2::TrieGraphBuilder(std::move(g)).build();
 
-    auto h = MGR2::EditEdgeIterHelper::make_trie_to_graph(
+    MGR2::EditEdgeIterHelper h = MGR2::EditEdgeIter::make_trie_to_graph(
             Kmer::from_str("ac"), tg);
     // Helper h(ImplHolder::make_trie_to_graph();
 

@@ -8,8 +8,8 @@
 // * revcomp copy
 // * revcomp view
 
-#include "dna_letter.h"
-#include "str.h"
+#include "alphabet/dna_letter.h"
+#include "alphabet/str.h"
 
 #include <assert.h>
 

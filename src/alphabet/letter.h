@@ -1,7 +1,7 @@
 #ifndef __LETTER_H__
 #define __LETTER_H__
 
-#include "util.h"
+#include "util/util.h"
 
 #include <type_traits>
 #include <ostream>

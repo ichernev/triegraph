@@ -1,7 +1,7 @@
 #ifndef __TRIE_DATA_OPT_H__
 #define __TRIE_DATA_OPT_H__
 
-#include "util.h"
+#include "util/util.h"
 
 #include <type_traits>
 #include <utility>
@@ -26,7 +26,6 @@ struct PairFwd {
             return a.first == b.first ? a.second < b.second : a.first < b.first;
         }
     };
-    // TODO: Move compress_leaf to a separate class
     static A getA(const std::pair<A, B> &a) { return a.first; }
     static B getB(const std::pair<A, B> &a) { return a.second; }
 };
@@ -42,7 +41,6 @@ struct PairRev {
         }
     };
     static B getA(const std::pair<A, B> &a) { return a.second; }
-    // TODO: Move compress_leaf to a separate class
     static A getB(const std::pair<A, B> &a) { return a.first; }
 };
 

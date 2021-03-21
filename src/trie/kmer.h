@@ -1,7 +1,7 @@
 #ifndef __KMER_H__
 #define __KMER_H__
 
-#include "util.h"
+#include "util/util.h"
 #include <type_traits> /* for is_unsigned_v */
 #include <functional>  /* for hash */
 #include <iostream>

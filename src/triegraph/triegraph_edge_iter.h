@@ -1,7 +1,7 @@
-#ifndef __EDGE_H__
-#define __EDGE_H__
+#ifndef __TRIEGRAPH_EDGE_ITER_H__
+#define __TRIEGRAPH_EDGE_ITER_H__
 
-#include "util.h"
+#include "util/util.h"
 
 #include <cstring> /* std::memcpy */
 #include <utility> /* std::forward */
@@ -415,36 +415,142 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
 
 };
 
+// template <typename Handle_, typename TrieGraphData_>
+// union EditEdgeImplHolder {
+//     using Handle = Handle_;
+//     using Letter = Handle::Kmer::Letter;
+//     using TrieGraphData = TrieGraphData_;
+//     using Graph = TrieGraphData::Graph;
+//     using NodePos = typename Handle::NodePos;
+//     using Self = EditEdgeImplHolder;
+//     using Edge = EditEdge<Handle>;
+
+//     EdgeIterImplBase<Edge> base;
+//     EdgeIterImplGraphFwd<Edge> graph_fwd;
+//     EdgeIterImplGraphSplit<Edge, Graph> graph_split;
+//     EdgeIterImplTrieInner<Edge> trie_inner;
+//     EdgeIterImplTrieToGraph<Edge, TrieGraphData> trie_to_graph;
+
+//     EditEdgeImplHolder() {}
+//     EditEdgeImplHolder(const Self &h) { copyFrom(h); }
+//     EditEdgeImplHolder(Self &&h) { copyFrom(h); }
+//     Self &operator= (const Self &h) { copyFrom(h); return *this; }
+//     Self &operator= (Self &&h) { copyFrom(h); return *this; }
+
+//     #pragma GCC diagnostic push
+//     #pragma GCC diagnostic ignored "-Wclass-memaccess"
+//     void copyFrom(const Self &h) { std::memcpy(this, &h, sizeof(Self)); }
+//     #pragma GCC diagnostic pop
+
+//     static Self make_base(u32 state) {
+//         return Self().set<&Self::base>(state);
+//     }
+//     template <typename... Args>
+//     static Self make_graph_fwd(Args&&... args) {
+//         return Self().set<&Self::graph_fwd>(std::forward<Args>(args)...);
+//     }
+//     template <typename... Args>
+//     static Self make_graph_split(Args&&... args) {
+//         return Self().set<&Self::graph_split>(std::forward<Args>(args)...);
+//     }
+//     template <typename... Args>
+//     static Self make_trie_inner(Args&&... args) {
+//         return Self().set<&Self::trie_inner>(std::forward<Args>(args)...);
+//     }
+//     template <typename... Args>
+//     static Self make_trie_to_graph(Args&&... args) {
+//         return Self().set<&Self::trie_to_graph>(std::forward<Args>(args)...);
+//     }
+
+//     template <auto Self::*field, typename... Args>
+//     Self& set(Args&&... args) {
+//         new(&(this->*field)) std::decay<decltype(this->*field)>::type(std::forward<Args>(args)...);
+//         return *this;
+//     }
+
+//     Self end_holder() const {
+//         Self end;
+//         end.set<&Self::base>();
+//         end.base.state = end_state();
+//         return end;
+//     }
+
+//     const EdgeIterImplBase<Edge> *basep() const {
+//         return reinterpret_cast<const EdgeIterImplBase<Edge>*>(this);
+//     }
+
+//     EdgeIterImplBase<Edge> *basep() {
+//         return reinterpret_cast<EdgeIterImplBase<Edge>*>(this);
+//     }
+
+//     // forwarder interface
+//     Edge get() const { return basep()->get(); }
+//     void inc() { basep()->inc(); }
+//     u32 state() const { return basep()->state; }
+//     u32 end_state() const { return basep()->end_state(); }
+// };
+
 template <typename Handle_, typename TrieGraphData_>
-union EditEdgeImplHolder {
+struct EditEdgeIter {
     using Handle = Handle_;
-    using Letter = Handle::Kmer::Letter;
     using TrieGraphData = TrieGraphData_;
+    using Edge = EditEdge<Handle>;
     using Graph = TrieGraphData::Graph;
     using NodePos = typename Handle::NodePos;
-    using Self = EditEdgeImplHolder;
-    using Edge = EditEdge<Handle>;
+    // using Impl = EditEdgeImplHolder<Handle, TrieGraphData>;
 
-    EdgeIterImplBase<Edge> base;
-    EdgeIterImplGraphFwd<Edge> graph_fwd;
-    EdgeIterImplGraphSplit<Edge, Graph> graph_split;
-    EdgeIterImplTrieInner<Edge> trie_inner;
-    EdgeIterImplTrieToGraph<Edge, TrieGraphData> trie_to_graph;
+    using Self = EditEdgeIter;
 
-    EditEdgeImplHolder() {}
-    EditEdgeImplHolder(const Self &h) { copyFrom(h); }
-    EditEdgeImplHolder(Self &&h) { copyFrom(h); }
-    Self &operator= (const Self &h) { copyFrom(h); return *this; }
-    Self &operator= (Self &&h) { copyFrom(h); return *this; }
+    union {
+        EdgeIterImplBase<Edge> base;
+        EdgeIterImplGraphFwd<Edge> graph_fwd;
+        EdgeIterImplGraphSplit<Edge, Graph> graph_split;
+        EdgeIterImplTrieInner<Edge> trie_inner;
+        EdgeIterImplTrieToGraph<Edge, TrieGraphData> trie_to_graph;
+    };
+
+    EditEdgeIter() : base() {}
+    EditEdgeIter(const Self &other) { copyFrom(other); }
+    EditEdgeIter(Self &&other) { copyFrom(other); }
+    Self &operator= (const Self &other) { copyFrom(other); return *this; }
+    Self &operator= (Self &&other) { copyFrom(other); return *this; }
 
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wclass-memaccess"
-    void copyFrom(const Self &h) { std::memcpy(this, &h, sizeof(Self)); }
+    void copyFrom(const Self &other) { std::memcpy(this, &other, sizeof(Self)); }
     #pragma GCC diagnostic pop
 
-    static Self make_base(u32 state) {
-        return Self().set<&Self::base>(state);
+    // proxy interface
+
+    using IBase = EdgeIterImplBase<Edge>;
+    const IBase *basep() const { return reinterpret_cast<const IBase*>(this); }
+    IBase *basep() { return reinterpret_cast<IBase*>(this); }
+
+    Edge get() const { return basep()->get(); }
+    void inc() { basep()->inc(); }
+    u32 state() const { return basep()->state; }
+    u32 end_state() const { return basep()->end_state(); }
+    Self end() const {
+        Self end;
+        end.set<&Self::base>();
+        end.base.state = end_state();
+        return end;
     }
+
+
+    // Iterator interface
+
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = Edge;
+    using reference_type = value_type;
+
+    reference_type operator* () const { return get(); }
+    Self &operator++ () { inc(); return *this; }
+    Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+    bool operator== (const Self &other) const { return state() == other.state(); }
+
+    // helper factory methods
     template <typename... Args>
     static Self make_graph_fwd(Args&&... args) {
         return Self().set<&Self::graph_fwd>(std::forward<Args>(args)...);
@@ -461,79 +567,55 @@ union EditEdgeImplHolder {
     static Self make_trie_to_graph(Args&&... args) {
         return Self().set<&Self::trie_to_graph>(std::forward<Args>(args)...);
     }
-
     template <auto Self::*field, typename... Args>
     Self& set(Args&&... args) {
         new(&(this->*field)) std::decay<decltype(this->*field)>::type(std::forward<Args>(args)...);
         return *this;
     }
 
-    Self end_holder() const {
-        Self end;
-        end.set<&Self::base>();
-        end.base.state = end_state();
-        return end;
+    static Self make(Handle h, const TrieGraphData &tgd) {
+        using Kmer = Handle::Kmer;
+        using Letter = Kmer::Letter;
+        if (h.is_trie()) {
+            if (h.depth_in_trie() + 1 < Kmer::K) {
+                Kmer nkmer = h.kmer;
+                u32 bitset = 0;
+                for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
+                    nkmer.push_back(l);
+                    if (tgd.trie_data.trie_inner_contains(nkmer)) {
+                        bitset |= 1 << l;
+                    }
+                    nkmer.pop();
+                }
+                return make_trie_inner(h.kmer, bitset);
+            } else if (h.depth_in_trie() + 1 == Kmer::K) {
+                Kmer nkmer = h.kmer;
+                u32 bitset = 0;
+                for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
+                    nkmer.push_back(l);
+                    if (tgd.trie_data.t2g_contains(nkmer)) {
+                        bitset |= 1 << l;
+                    }
+                    nkmer.pop();
+                }
+                return make_trie_inner(h.kmer, bitset);
+            } else {
+                return make_trie_to_graph(h.kmer, tgd);
+            }
+        } else {
+            auto &node = tgd.graph.nodes[h.node()];
+            if (h.pos() + 1 < node.seg.size()) {
+                return make_graph_fwd(node.seg[h.pos()], h.nodepos);
+            } else {
+                return make_graph_split(
+                        h.pos() == node.seg.size() ?
+                            Letter(Letter::EPS) :
+                            node.seg[h.pos()],
+                        h.nodepos,
+                        tgd.graph.forward_from(h.node()).begin());
+            }
+        }
     }
-
-    const EdgeIterImplBase<Edge> *basep() const {
-        return reinterpret_cast<const EdgeIterImplBase<Edge>*>(this);
-    }
-
-    EdgeIterImplBase<Edge> *basep() {
-        return reinterpret_cast<EdgeIterImplBase<Edge>*>(this);
-    }
-
-    // forwarder interface
-    Edge get() const { return basep()->get(); }
-    void inc() { basep()->inc(); }
-    u32 state() const { return basep()->state; }
-    u32 end_state() const { return basep()->end_state(); }
-};
-
-template <typename Handle_, typename TrieGraphData_>
-struct EditEdgeIter {
-    using Handle = Handle_;
-    using TrieGraphData = TrieGraphData_;
-    using Impl = EditEdgeImplHolder<Handle, TrieGraphData>;
-
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    using value_type = typename Impl::Edge;
-    using reference_type = value_type;
-    using Self = EditEdgeIter;
-
-    EditEdgeIter() : impl() {}
-    EditEdgeIter(const Impl &impl) : impl(impl) {}
-    EditEdgeIter(Impl &&impl) : impl(std::move(impl)) {}
-
-    reference_type operator* () const { return impl.get(); }
-    Self &operator++ () { impl.inc(); return *this; }
-    Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
-    bool operator== (const Self &other) const { return impl.state() == other.impl.state(); }
-
-    // helper factory methods
-    template <typename... Args>
-    static Self make_graph_fwd(Args&&... args) {
-        return Self(Impl::make_graph_fwd(std::forward<Args>(args)...));
-    }
-    template <typename... Args>
-    static Self make_graph_split(Args&&... args) {
-        return Self(Impl::make_graph_split(std::forward<Args>(args)...));
-    }
-    template <typename... Args>
-    static Self make_trie_inner(Args&&... args) {
-        return Self(Impl::make_trie_inner(std::forward<Args>(args)...));
-    }
-    template <typename... Args>
-    static Self make_trie_to_graph(Args&&... args) {
-        return Self(Impl::make_trie_to_graph(std::forward<Args>(args)...));
-    }
-
-    Self end() const {
-        return Self(impl.end_holder());
-    }
-
-    Impl impl;
 };
 
 template <typename EditEdgeIter_>
@@ -541,11 +623,17 @@ struct EditEdgeIterHelper {
     // using Impl = Impl_;
     using EditEdgeIter = EditEdgeIter_;
     using Iter = EditEdgeIter;
-    using Impl = EditEdgeIter::Impl;
+    // using Impl = EditEdgeIter::Impl;
     using Self = EditEdgeIterHelper;
 
     EditEdgeIterHelper() : it() {}
+    EditEdgeIterHelper(const Iter &it) : it(it) {}
     EditEdgeIterHelper(Iter &&it) : it(std::move(it)) {}
+
+    EditEdgeIterHelper(const Self &) = default;
+    EditEdgeIterHelper(Self &&) = default;
+    Self &operator= (const Self &) = default;
+    Self &operator= (Self &&) = default;
 
     Iter begin() const { return it; }
     Iter end() const { return it.end(); }
@@ -553,22 +641,22 @@ struct EditEdgeIterHelper {
     Iter it;
 
     // helper factory methods
-    template <typename... Args>
-    static Self make_graph_fwd(Args&&... args) {
-        return Self(Iter::make_graph_fwd(std::forward<Args>(args)...));
-    }
-    template <typename... Args>
-    static Self make_graph_split(Args&&... args) {
-        return Self(Iter::make_graph_split(std::forward<Args>(args)...));
-    }
-    template <typename... Args>
-    static Self make_trie_inner(Args&&... args) {
-        return Self(Iter::make_trie_inner(std::forward<Args>(args)...));
-    }
-    template <typename... Args>
-    static Self make_trie_to_graph(Args&&... args) {
-        return Self(Iter::make_trie_to_graph(std::forward<Args>(args)...));
-    }
+    // template <typename... Args>
+    // static Self make_graph_fwd(Args&&... args) {
+    //     return Self(Iter::make_graph_fwd(std::forward<Args>(args)...));
+    // }
+    // template <typename... Args>
+    // static Self make_graph_split(Args&&... args) {
+    //     return Self(Iter::make_graph_split(std::forward<Args>(args)...));
+    // }
+    // template <typename... Args>
+    // static Self make_trie_inner(Args&&... args) {
+    //     return Self(Iter::make_trie_inner(std::forward<Args>(args)...));
+    // }
+    // template <typename... Args>
+    // static Self make_trie_to_graph(Args&&... args) {
+    //     return Self(Iter::make_trie_to_graph(std::forward<Args>(args)...));
+    // }
 };
 
 } /* namespace triegraph */

@@ -1,6 +1,6 @@
 #include "manager.h"
-#include "util.h"
-#include "dna_letter.h"
+#include "util/util.h"
+#include "alphabet/dna_letter.h"
 
 #include <iostream>
 

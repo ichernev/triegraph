@@ -1,7 +1,7 @@
 #ifndef __DNA_LETTER_H__
 #define __DNA_LETTER_H__
 
-#include "letter.h"
+#include "alphabet/letter.h"
 
 namespace triegraph::dna {
 

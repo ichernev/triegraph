@@ -124,7 +124,7 @@ struct PrevHandleIter {
             if (h.depth_in_trie() == 0) {
                 return make_single(Handle::invalid());
             } else {
-                Kmer nkmer(h.kmer);
+                typename Handle::Kmer nkmer(h.kmer);
                 nkmer.pop();
                 return make_single(nkmer);
             }

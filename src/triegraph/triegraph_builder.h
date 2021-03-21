@@ -1,8 +1,8 @@
 #ifndef __TRIEGRAPH_BUILDER_H__
 #define __TRIEGRAPH_BUILDER_H__
 
-#include "util.h"
-#include "compressed_vector.h"
+#include "util/util.h"
+#include "util/compressed_vector.h"
 
 #include <iostream>
 #include <fstream>

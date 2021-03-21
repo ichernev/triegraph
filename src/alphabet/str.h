@@ -1,7 +1,8 @@
 #ifndef __STR_H__
 #define __STR_H__
 
-#include "util.h"
+#include "util/util.h"
+
 #include <string>
 #include <algorithm>
 #include <iterator>

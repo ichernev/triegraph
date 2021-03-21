@@ -2,6 +2,7 @@
 #define __TRIEGRAPH_BUILDER_BT_H__
 
 #include <chrono>
+#include <assert.h>
 
 namespace triegraph {
 

@@ -59,35 +59,35 @@ struct compressed_vector {
     }
 
     T &operator[](size_t i) {
-        if (len <= real_cap) {
+        if (is_fast()) {
             return raw[i];
         }
         return vec[i];
     }
 
     const T &operator[](size_t i) const {
-        if (len <= real_cap) {
+        if (is_fast()) {
             return raw[i];
         }
         return vec[i];
     }
 
     unsigned size() const {
-        if (len <= real_cap) {
+        if (is_fast()) {
             return len;
         }
         return vec.size();
     }
 
     const_iterator begin() const {
-        if (len <= real_cap) {
+        if (is_fast()) {
             return const_iterator(&raw[0]);
         }
         return vec.begin();
     }
 
     const_iterator end() const {
-        if (len <= real_cap) {
+        if (is_fast()) {
             return const_iterator(&raw[len]);
         }
         return vec.end();
@@ -112,7 +112,7 @@ struct compressed_vector {
         return push_back(T(std::forward<Args>(args)...));
     }
 
-    bool is_fast() {
+    bool is_fast() const {
         return len <= real_cap;
     }
 };

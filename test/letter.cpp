@@ -1,5 +1,5 @@
-#include "letter.h"
-#include "dna_letter.h"
+#include "alphabet/letter.h"
+#include "alphabet/dna_letter.h"
 
 #include <assert.h>
 

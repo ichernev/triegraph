@@ -1,6 +1,6 @@
-#include "rgfa_graph.h"
-#include "dna_letter.h"
-#include "str.h"
+#include "graph/rgfa_graph.h"
+#include "alphabet/dna_letter.h"
+#include "alphabet/str.h"
 
 #include "dna_config.h"
 #include "manager.h"

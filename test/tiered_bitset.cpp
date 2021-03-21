@@ -1,8 +1,8 @@
-#include "util.h"
-#include "trie_data_opt.h"
-#include "kmer.h"
-#include "letter.h"
-#include "dna_letter.h"
+#include "util/util.h"
+#include "trie/trie_data_opt.h"
+#include "trie/kmer.h"
+#include "alphabet/letter.h"
+#include "alphabet/dna_letter.h"
 
 #include <vector>
 #include <algorithm>

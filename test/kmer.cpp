@@ -1,5 +1,5 @@
-#include "kmer.h"
-#include "dna_letter.h"
+#include "trie/kmer.h"
+#include "alphabet/dna_letter.h"
 
 #include <assert.h>
 #include <iostream>

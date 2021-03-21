@@ -1,7 +1,7 @@
 #ifndef __TRIE_DATA_H__
 #define __TRIE_DATA_H__
 
-#include "hash_policy.h"
+#include "trie/hash_policy.h"
 
 #include <utility>
 // #include <unordered_map>
