@@ -1,8 +1,8 @@
 SRCS := $(wildcard src/*.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
-DEPS := $(OBJS:%.o=%.d)
 TARGETS  := $(patsubst %.cpp,%,$(SRCS))
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
+DEPS := $(OBJS:%.o=%.d) $(TESTS:%=%.d)
 
 SHORT := -Wfatal-errors
 CPPFLAGS = -MMD $(SHORT) -std=c++20 -Isrc -Wall -O2
