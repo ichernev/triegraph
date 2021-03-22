@@ -1,7 +1,7 @@
-SRCS := $(wildcard src/**/*.cpp src/*.cpp)
+SRCS := $(wildcard src/*.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 DEPS := $(OBJS:%.o=%.d)
-TARGETS  := $(patsubst %.cpp,%,$(wildcard *.cpp))
+TARGETS  := $(patsubst %.cpp,%,$(SRCS))
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
 
 SHORT := -Wfatal-errors
