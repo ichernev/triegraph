@@ -18,6 +18,7 @@ struct Cfg {
     using EdgeLoc = u32;
     using LetterLoc = u32;
     using KmerHolder = u32;
+    static constexpr int LetterLocIdxShift = -1;
     static constexpr u64 KmerLen = 15;
     static constexpr KmerHolder on_mask = KmerHolder(1) << 31;
 };
@@ -141,6 +142,7 @@ struct Cfg2 {
     using EdgeLoc = u32;
     using LetterLoc = u32;
     using KmerHolder = u32;
+    static constexpr int LetterLocIdxShift = -1;
     static constexpr u64 KmerLen = 2;
     static constexpr KmerHolder on_mask = KmerHolder(1) << 31;
 };

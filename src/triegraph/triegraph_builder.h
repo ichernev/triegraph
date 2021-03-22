@@ -83,7 +83,7 @@ struct TrieGraphBuilder {
         std::cerr << "=== building trie === " << std::endl;
         auto comps = ConnectedComp::build(data.graph);
         auto starts = _compute_starts(std::move(comps));
-        data.letter_loc.init(data.graph);
+        data.letter_loc = LetterLocData(data.graph);
         auto kmer_data = _bfs_trie(std::move(starts));
         // _fill_trie_data(std::move(kmer_data));
         auto time_02 = std::chrono::steady_clock::now();

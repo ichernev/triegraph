@@ -38,7 +38,8 @@ struct Manager : Cfg {
     using LetterLocData = triegraph::LetterLocData<
         NodePos,
         Graph,
-        typename Cfg::LetterLoc>;
+        typename Cfg::LetterLoc,
+        Cfg::LetterLocIdxShift>;
     using TrieData = triegraph::TrieDataOpt<
         Kmer,
         typename Cfg::LetterLoc>;

@@ -18,6 +18,7 @@ struct DnaConfig {
     using EdgeLoc = u32;
     using LetterLoc = u32;
     using KmerHolder = u32;
+    static constexpr int LetterLocIdxShift = 4;
     static constexpr u64 KmerLen = trie_depth;
     static constexpr KmerHolder on_mask = KmerHolder(1) << (
             sizeof(KmerHolder) * BITS_PER_BYTE - 1);

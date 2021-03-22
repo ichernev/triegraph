@@ -22,7 +22,7 @@ struct NodePos {
     }
 };
 
-template <typename NodePos_, typename Graph_, typename LetterLoc_>
+template <typename NodePos_, typename Graph_, typename LetterLoc_, int expand_idx_shift = -1>
 struct LetterLocData {
     using NodePos = NodePos_;
     using Graph = Graph_;
@@ -33,25 +33,63 @@ struct LetterLocData {
     std::vector<LetterLoc> node_start;
     LetterLoc num_locations;
 
-    LetterLocData() {}
+    template <typename, bool>
+    struct index_t { };
+    template <typename NodeLoc>
+    struct index_t<NodeLoc, true> { std::vector<NodeLoc> index; };
 
-    void init(const Graph &graph) {
+    static constexpr bool expand_idx = expand_idx_shift >= 0;
+    static constexpr LetterLoc expand_idx_mask = expand_idx ? ((1 << expand_idx_shift) - 1) : 0;
+    [[no_unique_address]] index_t<NodeLoc, expand_idx> index;
+
+    LetterLocData() {}
+    LetterLocData(const Graph &graph) {
         node_start.reserve(graph.nodes.size() + 1);
         num_locations = 0;
         for (const auto &node: graph.nodes) {
             node_start.push_back(num_locations);
             num_locations += node.seg.length;
         }
-        // node_start.push_back(num_locations);
+        if constexpr (expand_idx) {
+            node_start.push_back(num_locations);
+            index.index.resize(((num_locations - 1) >> expand_idx_shift) + 1);
+            LetterLoc ll = 0;
+            for (NodeLoc np = 0; ll < num_locations; ++np)
+                for (; ll < node_start[np+1]; ++ll)
+                    if ((ll & expand_idx_mask) == 0)
+                        index.index[ll >> expand_idx_shift] = np;
+            index.index.push_back(node_start.size());
+            node_start.pop_back();
+        }
     }
+
+    LetterLocData(const LetterLocData &) = delete;
+    LetterLocData(LetterLocData &&) = default;
+    LetterLocData& operator= (const LetterLocData &) = delete;
+    LetterLocData& operator= (LetterLocData &&) = default;
 
     NodeLoc loc2node(LetterLoc loc) const {
         return std::upper_bound(node_start.begin(), node_start.end(), loc) - node_start.begin() - 1;
     }
 
     NodePos expand(LetterLoc loc) const {
-        NodeLoc node = loc2node(loc);
-        return NodePos(node, loc - node_start[node]);
+        if (loc == num_locations) {
+            return { num_locations, 0 };
+        }
+        if constexpr (expand_idx) {
+            NodeLoc lb = index.index[loc >> expand_idx_shift];
+            NodeLoc ub = index.index[(loc >> expand_idx_shift) + 1];
+            if (ub < node_start.size()) ++ub;
+            // std::cerr << loc << " lb " << lb << " ub " << ub << " " << node_start.size() << std::endl;
+            NodeLoc node = std::upper_bound(
+                    node_start.begin() + lb,
+                    node_start.begin() + ub, loc)
+                - node_start.begin() - 1;
+            return NodePos(node, loc - node_start[node]);
+        } else {
+            NodeLoc node = loc2node(loc);
+            return NodePos(node, loc - node_start[node]);
+        }
     }
 
     LetterLoc compress(NodePos handle) const {
