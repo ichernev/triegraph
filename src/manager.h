@@ -4,6 +4,7 @@
 #include "alphabet/str.h"
 #include "graph/letter_loc_data.h"
 #include "graph/rgfa_graph.h"
+#include "triegraph/handle.h"
 #include "triegraph/triegraph_builder_bt.h"
 #include "triegraph/triegraph_builder.h"
 #include "triegraph/triegraph_data.h"

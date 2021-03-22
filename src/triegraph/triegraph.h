@@ -1,6 +1,7 @@
 #ifndef __TRIEGRAPH_H__
 #define __TRIEGRAPH_H__
 
+#include "triegraph/handle.h"
 #include "triegraph/triegraph_edge_iter.h"
 #include "triegraph/triegraph_handle_iter.h"
 

@@ -33,8 +33,6 @@ struct TrieGraphBTBuilder {
     TrieGraphData &&build() && {
         auto time_01 = std::chrono::steady_clock::now();
 
-
-
         std::cerr << "BT builder" << std::endl;
         data.letter_loc.init(data.graph);
         // this->data.trie_data.active_trie.insert(Kmer::empty());
