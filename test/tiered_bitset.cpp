@@ -15,7 +15,7 @@ using triegraph::u32;
 using triegraph::u64;
 
 template<u64 nopts, u64 K,
-    typename Letter_ = triegraph::Letter<u8, nopts, char, void, void>>
+    typename Letter_ = triegraph::Letter<u8, nopts>>
 struct Helper {
     using Letter = Letter_;
     using Kmer = triegraph::Kmer<Letter, u32, K>;

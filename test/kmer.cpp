@@ -159,7 +159,7 @@ static void test_indexing() {
 
 static void test_level_beg() {
     {
-        using Letter = triegraph::Letter<u8, 4, char, void, void>;
+        using Letter = triegraph::Letter<u8, 4>;
         using Kmer = triegraph::Kmer<Letter, u32, 4, u32(1) << 31>;
 
         std::vector<u64> beg = {0, 1, 5, 21, 85};
@@ -167,7 +167,7 @@ static void test_level_beg() {
     }
 
     {
-        using Letter = triegraph::Letter<u8, 2, char, void, void>;
+        using Letter = triegraph::Letter<u8, 2>;
         using Kmer = triegraph::Kmer<Letter, u32, 2, u32(1) << 31>;
 
         std::vector<u64> beg = {0, 1, 3};
@@ -176,7 +176,7 @@ static void test_level_beg() {
 }
 
 static void test_compressed_2x2() {
-    using Letter = triegraph::Letter<u8, 2, char, void, void>;
+    using Letter = triegraph::Letter<u8, 2>;
     using Kmer = triegraph::Kmer<Letter, u32, 2, u32(1) << 31>;
 
     auto fc = [](int i) { return Kmer::from_compressed(i); };
@@ -202,7 +202,7 @@ static void test_compressed_2x2() {
 }
 
 static void test_compressed_4x2() {
-    using Letter = triegraph::Letter<u8, 4, char, void, void>;
+    using Letter = triegraph::Letter<u8, 4>;
     using Kmer = triegraph::Kmer<Letter, u32, 2, u32(1) << 31>;
 
     auto fc = [](int i) { return Kmer::from_compressed(i); };

@@ -5,11 +5,11 @@
 
 namespace triegraph::dna {
 
-template <typename Holder_, typename Human_ = char>
-struct DnaEncoder {
-    using Holder = Holder_;
-    using Human = Human_;
-    constexpr Holder operator()(Human letter) {
+struct DnaLetterCodec {
+    using ext_type = char;
+    using int_type = u8;
+
+    static constexpr int_type to_int(const ext_type &letter) {
         switch (letter) {
             case 'A': case 'a':
                 return 0;
@@ -25,24 +25,20 @@ struct DnaEncoder {
                 throw "invalid letter";
         }
     }
-};
 
-template <typename Holder_, typename Human_ = char>
-struct DnaDecoder {
-    using Holder = Holder_;
-    using Human = Human_;
-    constexpr Human operator()(Holder repr) {
-        return "acgtE"[repr];
+    static constexpr ext_type to_ext(const int_type &in) {
+        return "acgtE"[in];
     }
 };
 
-using DnaLetter = Letter<u8, 4, char, DnaEncoder<u8>, DnaDecoder<u8>>;
+
+using DnaLetter = Letter<typename DnaLetterCodec::int_type, 4, DnaLetterCodec>;
 
 struct DnaLetters {
-    static constexpr auto A = DnaLetter(DnaLetter::Encoder()('A'));
-    static constexpr auto C = DnaLetter(DnaLetter::Encoder()('C'));
-    static constexpr auto G = DnaLetter(DnaLetter::Encoder()('G'));
-    static constexpr auto T = DnaLetter(DnaLetter::Encoder()('T'));
+    static constexpr auto A = DnaLetter(DnaLetter::Codec::to_int('A'));
+    static constexpr auto C = DnaLetter(DnaLetter::Codec::to_int('C'));
+    static constexpr auto G = DnaLetter(DnaLetter::Codec::to_int('G'));
+    static constexpr auto T = DnaLetter(DnaLetter::Codec::to_int('T'));
     static constexpr auto EPS = DnaLetter(DnaLetter::num_options);
 };
 

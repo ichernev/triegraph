@@ -8,13 +8,11 @@
 
 namespace triegraph {
 
-template <typename Holder_, u64 options_,
-         typename Human_, typename Encoder_, typename Decoder_>
+template <typename Holder_, u64 options_, typename Codec_ = CodecIdentity<Holder_>>
 struct Letter {
     using Holder = Holder_;
-    using Human = Human_;
-    using Encoder = Encoder_;
-    using Decoder = Decoder_;
+    using Codec = Codec_;
+    using Human = Codec::ext_type;
     static constexpr u64 num_options = options_;
     static constexpr Holder EPS = num_options;
     static constexpr int bits = log2_ceil(num_options);
@@ -40,7 +38,7 @@ struct Letter {
 
 
     friend std::ostream &operator<< (std::ostream &os, const Letter &l) {
-        return os << Decoder()(l.data);
+        return os << Codec::to_ext(l.data);
     }
 
     Holder data;

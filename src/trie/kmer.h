@@ -283,22 +283,20 @@ decr_l2:
                     std::ostream_iterator<std::string>(os),
                     binary_unmapper());
         } else {
-            typename Letter::Decoder letter_dec;
             std::transform(kmer.begin(), kmer.end(),
                     std::ostream_iterator<typename Letter::Human>(os),
-                    letter_dec);
+                    Letter::Codec::to_ext);
         }
         return os;
     }
 
     friend std::istream &operator>>(std::istream &is, Kmer &kmer) {
-        typename Letter::Encoder letter_enc;
         using is_it = std::istream_iterator<typename Letter::Human>;
 
         kmer.data = EMPTY;
         std::transform(is_it(is), is_it(),
                 std::back_inserter<Kmer>(kmer),
-                letter_enc);
+                Letter::Codec::to_int);
         return is;
     }
 

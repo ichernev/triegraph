@@ -138,10 +138,9 @@ struct Str {
 
 
         friend std::ostream &operator<<(std::ostream &os, const View &sv) {
-            typename Letter::Decoder letter_dec;
             std::transform(sv.begin(), sv.end(),
                     std::ostream_iterator<typename Letter::Human>(os),
-                    letter_dec);
+                    Letter::Codec::to_ext);
             return os;
         }
 
@@ -188,8 +187,6 @@ struct Str {
     }
 
     Size append(Input human) {
-        auto letter_enc = typename Letter::Encoder();
-
         Size ncap = div_up(this->length + human.size(), letters_per_store);
         if (ncap > this->capacity) {
             this->capacity = ncap;
@@ -206,7 +203,7 @@ struct Str {
                 oit += 1;
                 *oit = 0;
             }
-            Letter bin = letter_enc(*iit);
+            Letter bin = Letter::Codec::to_int(*iit);
             *oit |= bin << (sub_idx * Letter::bits);
             sub_idx += 1;
         }
