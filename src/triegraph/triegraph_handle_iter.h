@@ -34,14 +34,14 @@ template <typename Handle_, typename Graph_>
 struct PrevHandleIterSplit final : PrevHandleIterBase<Handle_> {
     using Handle = Handle_;
     using Graph = Graph_;
-    using GraphIter = Graph::const_iterator;
+    using GraphIterView = Graph::const_iter_view;
 
-    GraphIter it;
-    PrevHandleIterSplit(GraphIter it = {}) : it(it) {}
+    GraphIterView ith;
+    PrevHandleIterSplit(GraphIterView ith = {}) : ith(ith) {}
 
-    virtual Handle get() const { auto to = *it; return { to.node_id, to.seg.size() - 1 }; }
-    virtual void inc() { ++it; }
-    virtual bool has_more() const { return it.has_more(); }
+    virtual Handle get() const { auto to = *ith; return { to.node_id, to.seg.size() - 1 }; }
+    virtual void inc() { ++ith; }
+    virtual bool has_more() const { return !ith.empty(); }
 };
 
 template <typename Handle_, typename ValueView_>
@@ -113,7 +113,7 @@ struct PrevHandleIter {
         if (!h.is_valid() || h.is_trie()) {
             return make_single(Handle::invalid());
         } else if (h.pos() == 0) {
-            return make_split(g.backward_from(h.node()).begin());
+            return make_split(g.backward_from(h.node()));
         } else {
             std::cerr << "here nice " << h.node() << " " << h.pos() -1 << std::endl;
             return make_single(Handle(h.node(), h.pos() - 1));

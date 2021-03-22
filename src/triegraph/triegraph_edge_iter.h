@@ -142,18 +142,16 @@ struct EdgeIterImplGraphSplit final : EdgeIterImplBase<Edge_> {
 
     Letter actual;
     typename Handle::NodePos p0;
-    typename Graph::const_iterator it;
+    typename Graph::const_iter_view ith;
 
     EdgeIterImplGraphSplit(Letter actual, typename Handle::NodePos p0,
-            typename Graph::const_iterator it)
-        : actual(actual), p0(p0), it(it)
+            typename Graph::const_iter_view ith)
+        : actual(actual), p0(p0), ith(ith)
     {
-        // TODO: Fix this hack
-        if ((*it).edge_id == Graph::INV_SIZE) {
+        if (ith.empty()) {
             // skip edit edges generated from it
             this->state = Letter::num_options + 1;
         }
-
     }
 
     virtual u32 end_state() const {
@@ -162,9 +160,7 @@ struct EdgeIterImplGraphSplit final : EdgeIterImplBase<Edge_> {
     }
 
     virtual void after_inc() {
-        // TODO: This is a hack (together with ++it code
-        if (this->state == Letter::num_options + 1 &&
-                (*++it).edge_id != Graph::INV_SIZE) {
+        if (this->state == Letter::num_options + 1 && !(++ith).empty()) {
             this->state = 0;
         }
     }
@@ -176,7 +172,7 @@ struct EdgeIterImplGraphSplit final : EdgeIterImplBase<Edge_> {
                 Letter c { this->state % Letter::num_options };
                 auto last = this->state == Letter::num_options;
                 return Edge {
-                    Handle((*it).node_id, 0),
+                    Handle((*ith).node_id, 0),
                     last ? Edge::DEL : c == actual ? Edge::MATCH : Edge::SUB,
                     last ? Letter {Letter::EPS} : c,
                 };
@@ -291,7 +287,6 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     } its;
 
     EdgeIterImplTrieToGraph(Kmer kmer, const TrieGraphData &tg)
-        // TODO: This should be changed to compress, or just
         : trie_graph(tg), nps(trie_graph.trie_data.t2g_values_for(kmer))
     {
         after_inc();
@@ -322,12 +317,6 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
             if (base()->state != base()->end_state())
                 return true;
         }
-        // TODO: Do we NEED end-of-graph sentinels in trie2graph?
-        // if we hit the end-of-graph sentinel, skip it
-        // while (nps != T2GMapIt() &&
-        //         nps->second == trie_graph.letter_loc.num_locations) {
-        //     ++nps;
-        // }
         if (!nps.empty()) {
             auto letter_loc = *nps;
             auto np = trie_graph.letter_loc.expand(letter_loc);
@@ -338,7 +327,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                             Letter(Letter::EPS) :
                             node.seg[np.pos],
                         np,
-                        trie_graph.graph.forward_from(np.node).begin());
+                        trie_graph.graph.forward_from(np.node));
             } else {
                 new(&its.fwd) EdgeIterImplGraphFwd<Edge>(
                         node.seg[np.pos],
@@ -355,81 +344,6 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     }
 
 };
-
-// template <typename Handle_, typename TrieGraphData_>
-// union EditEdgeImplHolder {
-//     using Handle = Handle_;
-//     using Letter = Handle::Kmer::Letter;
-//     using TrieGraphData = TrieGraphData_;
-//     using Graph = TrieGraphData::Graph;
-//     using NodePos = typename Handle::NodePos;
-//     using Self = EditEdgeImplHolder;
-//     using Edge = EditEdge<Handle>;
-
-//     EdgeIterImplBase<Edge> base;
-//     EdgeIterImplGraphFwd<Edge> graph_fwd;
-//     EdgeIterImplGraphSplit<Edge, Graph> graph_split;
-//     EdgeIterImplTrieInner<Edge> trie_inner;
-//     EdgeIterImplTrieToGraph<Edge, TrieGraphData> trie_to_graph;
-
-//     EditEdgeImplHolder() {}
-//     EditEdgeImplHolder(const Self &h) { copyFrom(h); }
-//     EditEdgeImplHolder(Self &&h) { copyFrom(h); }
-//     Self &operator= (const Self &h) { copyFrom(h); return *this; }
-//     Self &operator= (Self &&h) { copyFrom(h); return *this; }
-
-//     #pragma GCC diagnostic push
-//     #pragma GCC diagnostic ignored "-Wclass-memaccess"
-//     void copyFrom(const Self &h) { std::memcpy(this, &h, sizeof(Self)); }
-//     #pragma GCC diagnostic pop
-
-//     static Self make_base(u32 state) {
-//         return Self().set<&Self::base>(state);
-//     }
-//     template <typename... Args>
-//     static Self make_graph_fwd(Args&&... args) {
-//         return Self().set<&Self::graph_fwd>(std::forward<Args>(args)...);
-//     }
-//     template <typename... Args>
-//     static Self make_graph_split(Args&&... args) {
-//         return Self().set<&Self::graph_split>(std::forward<Args>(args)...);
-//     }
-//     template <typename... Args>
-//     static Self make_trie_inner(Args&&... args) {
-//         return Self().set<&Self::trie_inner>(std::forward<Args>(args)...);
-//     }
-//     template <typename... Args>
-//     static Self make_trie_to_graph(Args&&... args) {
-//         return Self().set<&Self::trie_to_graph>(std::forward<Args>(args)...);
-//     }
-
-//     template <auto Self::*field, typename... Args>
-//     Self& set(Args&&... args) {
-//         new(&(this->*field)) std::decay<decltype(this->*field)>::type(std::forward<Args>(args)...);
-//         return *this;
-//     }
-
-//     Self end_holder() const {
-//         Self end;
-//         end.set<&Self::base>();
-//         end.base.state = end_state();
-//         return end;
-//     }
-
-//     const EdgeIterImplBase<Edge> *basep() const {
-//         return reinterpret_cast<const EdgeIterImplBase<Edge>*>(this);
-//     }
-
-//     EdgeIterImplBase<Edge> *basep() {
-//         return reinterpret_cast<EdgeIterImplBase<Edge>*>(this);
-//     }
-
-//     // forwarder interface
-//     Edge get() const { return basep()->get(); }
-//     void inc() { basep()->inc(); }
-//     u32 state() const { return basep()->state; }
-//     u32 end_state() const { return basep()->end_state(); }
-// };
 
 template <typename Handle_, typename TrieGraphData_>
 struct EditEdgeIter {
@@ -553,7 +467,7 @@ struct EditEdgeIter {
                             Letter(Letter::EPS) :
                             node.seg[h.pos()],
                         h.nodepos,
-                        tgd.graph.forward_from(h.node()).begin());
+                        tgd.graph.forward_from(h.node()));
             }
         }
     }

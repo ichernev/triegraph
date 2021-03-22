@@ -153,7 +153,7 @@ struct TrieGraphBuilder {
 
         starts.reserve(comps.num_comp);
         for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
-            if (auto bw = graph.backward_from(i); bw.begin() == bw.end()) {
+            if (graph.backward_from(i).empty()) {
                 starts.push_back(i);
                 done_comps.insert(comps.comp_id[i]);
             }

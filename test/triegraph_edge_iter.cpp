@@ -70,7 +70,7 @@ static void test_graph_split() {
     MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_graph_split(
             DnaLetters::A,
             NodePos { 0, 0 },
-            g.forward_from(0).begin());
+            g.forward_from(0));
     std::vector<EditEdge> expected = {
         EditEdge { NodePos { 1, 0 }, EditEdge::MATCH, DnaLetters::A },
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::C },
@@ -96,7 +96,7 @@ static void test_graph_split() {
     h = MGR::EditEdgeIter::make_graph_split(
                 DnaLetters::A,
                 NodePos { 0, 0 },
-                g.forward_from(2).begin());
+                g.forward_from(2));
     expected = {
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::C },

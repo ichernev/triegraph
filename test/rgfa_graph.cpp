@@ -4,14 +4,25 @@
 
 #include "dna_config.h"
 #include "manager.h"
-#include <iostream>
 
-#include <algorithm>
+#include <iostream>
+#include <ranges>
 #include <assert.h>
 
 using namespace triegraph;
 
 using DnaStr = Str<dna::DnaLetter, u32>;
+
+template <std::ranges::input_range R>
+static void func(R &&) {}
+
+static void test_iter_concept() {
+    using Graph = RgfaGraph<DnaStr, u32>;
+    auto graph = Graph::Builder()
+        .add_node(DnaStr("a"), "s1")
+        .build();
+    func(graph.forward_from(0));
+}
 
 static void test_small() {
     auto graph = RgfaGraph<DnaStr, u32>::from_file("data/simpler.gfa");
@@ -24,16 +35,16 @@ static void test_small() {
     // std::cerr << graph;
 
     auto edge_helper = graph.forward_from(0);
-    assert(std::distance(edge_helper.begin(), edge_helper.end()) == 2);
+    assert(std::ranges::distance(edge_helper) == 2);
 
     edge_helper = graph.forward_from(1);
-    assert(std::distance(edge_helper.begin(), edge_helper.end()) == 2);
+    assert(std::ranges::distance(edge_helper) == 2);
 
     edge_helper = graph.forward_from(2);
-    assert(std::distance(edge_helper.begin(), edge_helper.end()) == 1);
+    assert(std::ranges::distance(edge_helper) == 1);
 
     edge_helper = graph.forward_from(3);
-    assert(std::distance(edge_helper.begin(), edge_helper.end()) == 0);
+    assert(std::ranges::distance(edge_helper) == 0);
 }
 
 
@@ -64,11 +75,11 @@ static void test_hg22_linear() {
 template <typename ITH> /* iter helper */
 std::vector<u32> node_collector(ITH ith) {
     std::vector<u32> res;
-    std::transform(
-            ith.begin(), ith.end(),
+    std::ranges::transform(
+            ith,
             std::back_inserter(res),
             [](auto e) { return e.node_id; });
-    std::sort(res.begin(), res.end());
+    std::ranges::sort(res);
     return res;
 }
 
@@ -99,6 +110,7 @@ static void test_revcomp() {
 }
 
 int main() {
+    test_iter_concept();
     test_small();
     test_revcomp();
     test_pasgal_mhc1();

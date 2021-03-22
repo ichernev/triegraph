@@ -1,6 +1,8 @@
 #ifndef __RGFA_GRAPH_H__
 #define __RGFA_GRAPH_H__
 
+#include "util/util.h"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -62,55 +64,44 @@ struct RgfaGraph {
         EdgeLoc edge_id;
     };
 
+    struct ConstNodeIterSent {};
     struct ConstNodeIter {
         using iterator_category = std::forward_iterator_tag;
         using difference_type   = std::ptrdiff_t;
-        using value_type        = Node;
-        // using pointer           = value_type*;  // or also value_type*
-        using reference         = IterNode;
+        using value_type        = IterNode;
+        using reference         = value_type;
         using Self              = ConstNodeIter;
+        using Sent              = ConstNodeIterSent;
 
         ConstNodeIter() : graph(nullptr), edge_id(INV_SIZE) {}
         ConstNodeIter(const RgfaGraph &g, EdgeLoc edge_id) : graph(&g), edge_id(edge_id) {}
 
         reference operator*() const {
-            // TODO: This is a hack, support sentinel
-            auto node_id = graph->edges[edge_id == INV_SIZE ? 0 : edge_id].to;
+            auto node_id = graph->edges[edge_id].to;
             auto &node = graph->nodes[node_id];
             return IterNode { node.seg, node.seg_id, node_id, edge_id };
         }
-        // pointer operator->() const { return &foo; }
 
-        Self& operator++() {
-            edge_id = graph->edges[edge_id].next;
-            return *this;
-        }
+        Self& operator++() { edge_id = graph->edges[edge_id].next; return *this; }
         Self operator++(int) { Self tmp = *this; ++(*this); return tmp; }
 
-        friend bool operator== (const Self& a, const Self& b) { return a.edge_id == b.edge_id; }
-
-        bool has_more() const { return edge_id != INV_SIZE; }
+        bool operator== (const Self& other) const { return edge_id == other.edge_id; }
+        bool operator== (const Sent& other) const { return edge_id == INV_SIZE; }
 
         const RgfaGraph *graph;
         EdgeLoc edge_id;
     };
     using const_iterator = ConstNodeIter;
+    using const_iterator_sent = ConstNodeIterSent;
+    using const_iter_view = iter_pair<const_iterator, const_iterator_sent>;
+    static_assert(sizeof(const_iterator) == sizeof(const_iter_view));
 
-    struct NeighbourHelper {
-        const_iterator begin() const { return beg; }
-        const_iterator end() const { return const_iterator(); }
-
-        NeighbourHelper(const RgfaGraph &g, EdgeLoc edge_id) : beg(g, edge_id) {}
-    private:
-        const_iterator beg;
-    };
-
-    NeighbourHelper forward_from(NodeLoc node_id) const {
-        return NeighbourHelper(*this, edge_start[node_id]);
+    const_iter_view forward_from(NodeLoc node_id) const {
+        return { {*this, edge_start[node_id]}, {} };
     }
 
-    NeighbourHelper backward_from(NodeLoc node_id) const {
-        return NeighbourHelper(*this, redge_start[node_id]);
+    const_iter_view backward_from(NodeLoc node_id) const {
+        return { {*this, redge_start[node_id]}, {} };
     }
 
     void add_reverse_complement() {

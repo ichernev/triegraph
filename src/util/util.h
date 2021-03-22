@@ -67,20 +67,18 @@ struct iter_codec {
     //       CodecIdentity<typename std::iterator_traits<IT>::value_type>;
 
     iter_codec(IT it = {}) : it(it) {}
-    // iter_codec(SelfSimilar it) : it(it) {}
-
-
-    iter_codec(const iter_codec &) = default;
-    iter_codec(iter_codec &&) = default;
-    Self &operator= (const iter_codec &) = default;
-    Self &operator= (iter_codec &&) = default;
+    iter_codec(const Self &) = default;
+    iter_codec(Self &&) = default;
+    Self &operator= (const Self &) = default;
+    Self &operator= (Self &&) = default;
 
     reference_type operator* () const { return Codec::to_ext(*it); }
     Self &operator++ () { ++it; return *this; }
     Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
-    bool operator== (const Self &other) const { return it == other.it; }
+    template <typename OtherIt, typename OtherCodec>
+    bool operator== (const iter_codec<OtherIt, OtherCodec> &other) const { return it == other.it; }
 
-    IT it;
+    [[no_unique_address]] IT it; // this could be sentinel
 
     template <typename OtherCodec>
     operator iter_codec<IT, OtherCodec>() const { return {it}; }
@@ -104,15 +102,17 @@ struct iter_pair : std::ranges::view_base {
         first = other.begin(); second = other.end(); return *this;
     }
 
+    iter_pair(const iter_pair &) = default;
     iter_pair(iter_pair &&) = default;
+    Self &operator= (const iter_pair &) = default;
     Self &operator= (iter_pair &&) = default;
 
     iter_codec<IT1, Codec> first;
     [[no_unique_address]] iter_codec<IT2, Codec> second;
     iter_pair(IT1 begin, IT2 end) : first(begin), second(end) {}
 
-    decltype(first) begin() const { return first; }
-    decltype(second) end() const { return second; }
+    decltype(first) begin() const noexcept { return first; }
+    decltype(second) end() const noexcept { return second; }
 
     value_type operator* () const { return *first; }
     Self &operator++ () { ++first; return *this; }

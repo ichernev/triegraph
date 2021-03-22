@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <ranges>
 
 using namespace triegraph;
 
@@ -59,7 +60,7 @@ static void test_next_edit_edges_fwd() {
         EditEdge { NodePos { 2, 2 }, EditEdge::DEL,   DnaLetters::EPS },
     };
 
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_next_edit_edges_split() {
@@ -89,7 +90,8 @@ static void test_next_edit_edges_split() {
         EditEdge { NodePos { 0, 1 }, EditEdge::INS,   DnaLetters::T },
     };
 
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_next_edit_edges_trie_inner() {
@@ -120,8 +122,8 @@ static void test_next_edit_edges_trie_inner() {
         EditEdge { Kmer::from_str("cg"), EditEdge::INS, DnaLetters::T },
     };
 
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_next_edit_edges_trie_edge() {
@@ -146,8 +148,8 @@ static void test_next_edit_edges_trie_edge() {
         EditEdge { Kmer::from_str("cga"), EditEdge::INS, DnaLetters::T },
     };
 
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
 
@@ -179,8 +181,8 @@ static void test_next_edit_edges_trie_to_graph() {
         EditEdge { NodePos { 3, 1 }, EditEdge::DEL,   DnaLetters::EPS },
     };
 
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
 template<typename IT>
@@ -211,10 +213,10 @@ static void test_prev_handles_linear() {
     //     std::cerr << "HHH " << std::endl;
     // }
     auto expected = std::vector<M4::Handle> { { 0, 0 } };
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    assert(std::ranges::equal(h, expected));
 
     auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(0, 1)));
-    assert(std::equal(itv.begin(), itv.end(), expected.begin()));
+    assert(std::ranges::equal(itv, expected));
 }
 
 static void test_prev_handles_split() {
@@ -226,12 +228,12 @@ static void test_prev_handles_split() {
 
     auto h = tg.prev_graph_handles(M4::Handle(3, 0));
     auto expected = std::vector<M4::Handle> { { 2, 2 }, { 1, 1 } };
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 
     auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(3, 0)));
-    // std::copy(itv.begin(), itv.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    assert(std::equal(itv.begin(), itv.end(), expected.begin()));
+    // std::ranges::copy(itv, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    assert(std::ranges::equal(itv, expected));
 }
 
 static void test_prev_handles_graph_to_trie() {
@@ -250,11 +252,11 @@ static void test_prev_handles_graph_to_trie() {
     std::copy(expected.begin(), expected.end(),
             std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
     std::cerr << "actual" << std::endl;
-    std::copy(h.begin(), h.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
     // std::cerr << M4::Handle(M4::Kmer::from_str("acgg")).is_trie() << std::endl;
     // std::cerr << M4::Handle(M4::Kmer::from_str("cacg")).is_trie() << std::endl;
     // std::cerr << (M4::Kmer::from_str("acgg").data & M4::Kmer::ON_MASK) << std::endl;
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_prev_handles_trie() {
@@ -266,8 +268,8 @@ static void test_prev_handles_trie() {
 
     auto h = tg.prev_trie_handles(M4::Kmer::from_str("acac"));
     auto expected = std::vector<M4::Handle> { M4::Kmer::from_str("aca") };
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_up_handle_trie() {
