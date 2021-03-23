@@ -312,18 +312,20 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     bool advance_its(bool first_time) {
         if (!first_time) {
             base()->inc();
-            if (base()->state != base()->end_state())
+            if (base()->state != base()->end_state()) {
+                // std::cerr << "more from base" << std::endl;
                 return true;
+            }
         }
         if (!nps.empty()) {
-            std::cerr << "state 1" << std::endl;
+            // std::cerr << "state 1" << std::endl;
             auto letter_loc = *nps;
-            std::cerr << "state 1.1 " << letter_loc << std::endl;
+            // std::cerr << "state 1.1 " << letter_loc << std::endl;
             auto np = trie_graph.letter_loc.expand(letter_loc);
-            std::cerr << "np" << np << std::endl;
-            const auto &node = trie_graph.graph.nodes[np.node];
+            // std::cerr << "np: " << np << " " << letter_loc << std::endl;
+            const auto &node = trie_graph.graph.node(np.node);
             if (np.pos + 1 >= node.seg.size()) {
-                std::cerr << "making split " << np.pos + 1 << " " << node.seg.size() << std::endl;
+                // std::cerr << "making split " << np.pos + 1 << " " << node.seg.size() << std::endl;
                 new(&its.split) EdgeIterImplGraphSplit<Edge, Graph>(
                         np.pos == node.seg.size() ?
                             Letter(Letter::EPS) :
@@ -331,20 +333,21 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                         np,
                         trie_graph.graph.forward_from(np.node));
             } else {
-                std::cerr << "making fwd" << std::endl;
+                // std::cerr << "making fwd" << std::endl;
                 new(&its.fwd) EdgeIterImplGraphFwd<Edge>(
                         node.seg[np.pos],
                         np);
             }
-            std::cerr << "state 2" << std::endl;
+            // std::cerr << "state 2" << std::endl;
             ++ nps;
-            std::cerr << "state 2.1" << std::endl;
+            // std::cerr << "state 2.1" << std::endl;
             return true;
         }
         return false;
     }
 
     virtual Edge get() const {
+        // std::cerr << "getting " << base()->get() << std::endl;
         return base()->get();
     }
 
@@ -460,7 +463,7 @@ struct EditEdgeIter {
                 return make_trie_to_graph(h.kmer, tgd);
             }
         } else {
-            auto &node = tgd.graph.nodes[h.node()];
+            auto &node = tgd.graph.node(h.node());
             if (h.pos() + 1 < node.seg.size()) {
                 return make_graph_fwd(node.seg[h.pos()], h.nodepos);
             } else {

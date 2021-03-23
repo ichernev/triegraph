@@ -1,5 +1,4 @@
-#include "util/util.h"
-#include "alphabet/dna_letter.h"
+#include "dna_config.h"
 #include "manager.h"
 
 #include <assert.h>
@@ -8,70 +7,60 @@
 
 using namespace triegraph;
 
-struct Cfg {
-    using Letter = dna::DnaLetter;
-    using StrHolder = u32;
-    using NodeLoc = u32;
-    using NodeLen = u32;
-    using EdgeLoc = u32;
-    using LetterLoc = u32;
-    using KmerHolder = u64;
-    static constexpr int LetterLocIdxShift = -1;
-    static constexpr u64 KmerLen = 4;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
-};
+// struct Cfg {
+//     using Letter = dna::DnaLetter;
+//     using StrHolder = u32;
+//     using NodeLoc = u32;
+//     using NodeLen = u32;
+//     using EdgeLoc = u32;
+//     using LetterLoc = u32;
+//     using KmerHolder = u64;
+//     static constexpr int LetterLocIdxShift = -1;
+//     static constexpr u64 KmerLen = 4;
+//     static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
+// };
 
-using MGR = Manager<Cfg>;
+using TG = Manager<dna::DnaConfig<4>>;
 
-// using Graph = RgfaGraph<DnaStr, u32>;
-// using NPos = NodePos<u32>;
-// using LLData = LetterLocData<NPos, Graph>;
-// constexpr u64 on_mask = u64(1) << 63;
-// using DnaKmer = Kmer<dna::DnaLetter, u64, 4, on_mask>;
-// using TData = TrieData<DnaKmer, u32>;
-// using LetterLoc = TData::LetterLoc;
-// using TrieGraphData = TrieGraphData<Graph, LLData, TData>;
-// using TB = TriegraphBuilder<TrieGraphData>;
-
-static std::vector<MGR::LetterLoc> trie2graph(const MGR::TrieGraphData &tg, MGR::Kmer kmer) {
+static std::vector<TG::LetterLoc> trie2graph(const TG::TrieGraphData &tg, TG::Kmer kmer) {
     auto pos_it = tg.trie_data.t2g_values_for(kmer);
-    std::vector<MGR::LetterLoc> pos;
+    std::vector<TG::LetterLoc> pos;
     std::ranges::copy(pos_it, std::back_inserter(pos));
     std::sort(pos.begin(), pos.end());
     return pos;
 }
 
 static void test_tiny_linear_graph() {
-    MGR::Graph::Builder b;
-    auto g = b.add_node(MGR::Str("acgtacgtac"), "s1").build();
-    auto tg = MGR::TrieGraphBuilder(std::move(g)).build();
-    auto pos = trie2graph(tg, MGR::Kmer::from_str("acgt"));
-    assert(pos.size() == 2);
-    assert(pos[0] == 4);
-    assert(pos[1] == 8);
+    auto g = TG::Graph::Builder()
+        .add_node(TG::Str("acgtacgtac"), "s1")
+        .build({ .add_reverse_complement = false });
+    auto tg = TG::TrieGraphBuilder(std::move(g)).build();
+    auto pos = trie2graph(tg, TG::Kmer::from_str("acgt"));
 
-    pos = trie2graph(tg, MGR::Kmer::from_str("cgta"));
-    assert(pos.size() == 2);
-    assert(pos[0] == 5);
-    assert(pos[1] == 9);
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("acgt")),
+                std::vector<TG::LetterLoc> { 4, 8 }));
 
-    pos = trie2graph(tg, MGR::Kmer::from_str("gtac"));
-    assert(pos.size() == 2);
-    assert(pos[0] == 6);
-    assert(pos[1] == tg.letter_loc.num_locations);
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("cgta")),
+                std::vector<TG::LetterLoc> { 5, 9 }));
+
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("gtac")),
+                std::vector<TG::LetterLoc> { 6, 10 }));
 }
 
 static void test_small_nonlinear_graph() {
-    auto g = MGR::Graph::Builder()
-        .add_node(MGR::Str("a"), "s1")
-        .add_node(MGR::Str("cg"), "s2")
-        .add_node(MGR::Str("t"), "s3")
-        .add_node(MGR::Str("ac"), "s4")
+    auto g = TG::Graph::Builder()
+        .add_node(TG::Str("a"), "s1")
+        .add_node(TG::Str("cg"), "s2")
+        .add_node(TG::Str("t"), "s3")
+        .add_node(TG::Str("ac"), "s4")
         .add_edge("s1", "s2")
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build();
+        .build({ .add_reverse_complement = false });
 
     /****************
      *     12       *
@@ -81,42 +70,76 @@ static void test_small_nonlinear_graph() {
      *     t        *
      *     3        *
      ***************/
-    auto tg = MGR::TrieGraphBuilder(std::move(g)).build();
+    auto tg = TG::TrieGraphBuilder(std::move(g)).build();
 
-    {
-        auto pos = trie2graph(tg, MGR::Kmer::from_str("acga"));
-        assert(pos.size() == 1);
-        assert(pos[0] == 5);
-    }
-
-    {
-        auto pos = trie2graph(tg, MGR::Kmer::from_str("atac"));
-        assert(pos.size() == 1);
-        assert(pos[0] == 6);
-    }
-
-    {
-        auto pos = trie2graph(tg, MGR::Kmer::from_str("cgac"));
-        assert(pos.size() == 1);
-        assert(pos[0] == 6);
-    }
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("acga")),
+                std::vector<TG::LetterLoc> { 5 }));
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("atac")),
+                std::vector<TG::LetterLoc> { 6 }));
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("cgac")),
+                std::vector<TG::LetterLoc> { 6 }));
 
     // std::cerr << tg.trie_data.active_trie.size() << std::endl;
     // for (const auto &kmer : tg.trie_data.active_trie) {
     //     std::cerr << "at " << kmer << std::endl;;
     // }
-    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("acg")));
-    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("cga")));
-    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("ata")));
-    // assert(tg.trie_data.trie_inner_contains(DnaKmer::from_str("tac")));
-    assert(tg.trie_data.trie_inner_contains(MGR::Kmer::from_str("cga")));
-    // assert(tg.trie_data.trie_inner_contains(DnaKmer::from_str("gac")));
-    // assert(tg.trie_data.active_trie.size() == 6);
+    assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("acg")));
+    assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("cga")));
+    assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("ata")));
+    assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("cga")));
 }
+
+static void test_multiple_ends() {
+    auto g = TG::Graph::Builder()
+        .add_node(TG::Str("acg"), "s1")
+        .add_node(TG::Str("c"), "s2")
+        .add_node(TG::Str("g"), "s3")
+        .add_edge("s1", "s2")
+        .add_edge("s1", "s3")
+        .build({ .add_reverse_complement = false });
+
+    /*****************
+     *       3   5   *
+     *       c - a   *
+     *  acg /        *
+     *  012 \        *
+     *       g - a   *
+     *       4   6   *
+     *****************/
+    auto tg = TG::TrieGraphBuilder(std::move(g)).build();
+
+    // for (const auto &x : tg.trie_data.trie2graph) {
+    //     std::cerr << x.first << "|" << TG::Kmer::from_compressed_leaf(x.first)
+    //         << " : " << x.second << std::endl;
+    // }
+
+    // finishing at both ends should work
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("acgc")),
+                std::vector<TG::LetterLoc> { 5 }));
+
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("acgg")),
+                std::vector<TG::LetterLoc> { 6 }));
+
+    // finishing at dummy extends should not work
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("cgca")),
+                std::vector<TG::LetterLoc> { }));
+
+    assert(std::ranges::equal(
+                trie2graph(tg, TG::Kmer::from_str("cgga")),
+                std::vector<TG::LetterLoc> { }));
+}
+
 
 int main() {
     test_tiny_linear_graph();
     test_small_nonlinear_graph();
+    test_multiple_ends();
 
     return 0;
 }

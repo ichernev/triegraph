@@ -25,7 +25,16 @@ static TG::Graph build_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build();
+        .build({ .add_reverse_complement = false });
+
+     /*******************
+      *       [1]       *
+      *  [0]  A   [3][4]*
+      *  ACGT/4  \ AA-a *
+      *  0123\[2]/ 89 9 *
+      *       CGT       *
+      *       567       *
+      ******************/
 }
 
 static std::vector<std::pair<TG::LetterLoc, TG::NodePos>> get_expected() {
@@ -40,7 +49,7 @@ static std::vector<std::pair<TG::LetterLoc, TG::NodePos>> get_expected() {
         { 7,  { 2,  2 } },
         { 8,  { 3,  0 } },
         { 9,  { 3,  1 } },
-        { 10, { 10, 0 } },
+        { 10, { 4,  0 } },
     };
 }
 
@@ -49,7 +58,7 @@ static void test_lloc_no_idx() {
     auto ll = TG::LetterLocData(g);
     auto expected = get_expected();
 
-    assert(ll.num_locations == 10);
+    assert(ll.num_locations == 11);
 
     for (auto e : expected) {
         // std::cerr << e.first << " " << e.second << std::endl;
@@ -66,7 +75,7 @@ static void test_lloc_with_idx() {
     auto ll = TG2::LetterLocData(g);
     auto expected = get_expected();
 
-    assert(ll.num_locations == 10);
+    assert(ll.num_locations == 11);
 
     for (auto e : expected) {
         // std::cerr << e.first << " " << e.second << std::endl;

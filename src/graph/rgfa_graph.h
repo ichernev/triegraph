@@ -43,6 +43,7 @@ struct RgfaEdge {
     EdgeLoc next;
 };
 
+
 template <typename Str_, typename NodeLoc_, typename EdgeLoc_ = NodeLoc_>
 struct RgfaGraph {
     using Str = Str_;
@@ -52,10 +53,26 @@ struct RgfaGraph {
     using Edge = RgfaEdge<NodeLoc, EdgeLoc>;
     static constexpr EdgeLoc INV_SIZE = -1;
 
-    std::vector<Node> nodes; // N
-    std::vector<Edge> edges; // M * 2
-    std::vector<EdgeLoc> edge_start;
-    std::vector<EdgeLoc> redge_start;
+    struct GraphData {
+        std::vector<Node> nodes; // N
+        std::vector<Edge> edges; // M * 2
+        std::vector<EdgeLoc> edge_start;  // N
+        std::vector<EdgeLoc> redge_start; // N
+    } data;
+
+    struct Settings {
+        bool add_reverse_complement = true;
+        bool add_extends = true;
+    } settings;
+
+    RgfaGraph(GraphData &&d, Settings s)
+        : data(std::move(d)),
+          settings(s) {
+    }
+
+    NodeLoc num_nodes() const { return data.nodes.size(); }
+    EdgeLoc num_edges() const { return data.edges.size(); }
+    const Node &node(NodeLoc id) const { return data.nodes[id]; }
 
     struct IterNode {
         const Str &seg;
@@ -74,7 +91,7 @@ struct RgfaGraph {
         using Sent              = ConstNodeIterSent;
 
         ConstNodeIter() : graph(nullptr), edge_id(INV_SIZE) {}
-        ConstNodeIter(const RgfaGraph &g, EdgeLoc edge_id) : graph(&g), edge_id(edge_id) {}
+        ConstNodeIter(const GraphData &g, EdgeLoc edge_id) : graph(&g), edge_id(edge_id) {}
 
         reference operator*() const {
             auto node_id = graph->edges[edge_id].to;
@@ -88,7 +105,7 @@ struct RgfaGraph {
         bool operator== (const Self& other) const { return edge_id == other.edge_id; }
         bool operator== (const Sent& other) const { return edge_id == INV_SIZE; }
 
-        const RgfaGraph *graph;
+        const GraphData *graph;
         EdgeLoc edge_id;
     };
     using const_iterator = ConstNodeIter;
@@ -97,91 +114,134 @@ struct RgfaGraph {
     static_assert(sizeof(const_iterator) == sizeof(const_iter_view));
 
     const_iter_view forward_from(NodeLoc node_id) const {
-        return { {*this, edge_start[node_id]}, {} };
+        return const_iterator {this->data, data.edge_start[node_id]};
     }
 
     const_iter_view backward_from(NodeLoc node_id) const {
-        return { {*this, redge_start[node_id]}, {} };
-    }
-
-    void add_reverse_complement() {
-        nodes.reserve(nodes.size() * 2);
-        edges.reserve(edges.size() * 2);
-        edge_start.resize(edge_start.size() * 2, INV_SIZE);
-        redge_start.resize(redge_start.size() * 2, INV_SIZE);
-
-        auto split = nodes.size();
-        for (NodeLoc i = 0; i < split; ++i) {
-            auto &node = nodes[i];
-            nodes.emplace_back(node.seg.rev_comp(), "revcomp:" + node.seg_id);
-        }
-        for (EdgeLoc i = 0, sz = edges.size(); i < sz; i += 2) {
-            auto &edge_a = edges[i];
-            auto &edge_b = edges[i+1];
-            edges.emplace_back(edge_b.to + split, edge_start[edge_a.to + split]);
-            edge_start[edge_a.to + split] = edges.size() - 1;
-            edges.emplace_back(edge_a.to + split, redge_start[edge_b.to + split]);
-            redge_start[edge_b.to + split] = edges.size() - 1;
-        }
+        return const_iterator {this->data, data.redge_start[node_id]};
     }
 
     struct Builder {
         using Self = Builder;
-        std::vector<Node> nodes;
-        std::vector<Edge> edges;
-        std::vector<NodeLoc> edge_start;
-        std::vector<EdgeLoc> redge_start;
+
+        GraphData data;
+        Settings applied = { .add_reverse_complement = false, .add_extends = false };
+
+        // std::vector<Node> nodes;
+        // std::vector<Edge> edges;
+        // std::vector<EdgeLoc> edge_start;
+        // std::vector<EdgeLoc> redge_start;
 
         std::unordered_map<std::string, NodeLoc> seg2id;
 
-        bool nodes_done = false;
+        enum { NODES, EDGES, YOLO } state = NODES;
 
-        Self &add_node(Str &&seg, std::string &&seg_id) {
-            if (nodes_done) throw "can not add_node after add_edge";
+        // regular builder, start from scratch
+        Builder() : state(NODES) {}
 
-            nodes.emplace_back(std::move(seg), std::move(seg_id));
+        Self &add_node(Str &&seg, std::string &&seg_id, bool adjust_edges = false) {
+            if (state == EDGES) throw "can not add_node after add_edge";
+
+            data.nodes.emplace_back(std::move(seg), std::move(seg_id));
+            if (adjust_edges) {
+                data.edge_start.emplace_back(INV_SIZE);
+                data.redge_start.emplace_back(INV_SIZE);
+            }
             return *this;
         }
 
         void prep_for_edges() {
-            if (nodes_done) return;
+            if (state != NODES) return;
 
             NodeLoc i = 0;
-            for (Node &node : nodes) {
+            for (Node &node : data.nodes) {
                 seg2id[node.seg_id] = i++;
             }
-            edge_start.resize(nodes.size(), INV_SIZE);
-            redge_start.resize(nodes.size(), INV_SIZE);
+            data.edge_start.resize(data.nodes.size(), INV_SIZE);
+            data.redge_start.resize(data.nodes.size(), INV_SIZE);
 
-            nodes_done = true;
+            state = EDGES;
         }
 
         Self &add_edge(const std::string &seg_a, const std::string &seg_b) {
             prep_for_edges();
 
-            NodeLoc a = seg2id[seg_a], b = seg2id[seg_b];
-            edges.emplace_back(b, edge_start[a]);
-            edge_start[a] = edges.size() - 1;
-            edges.emplace_back(a, redge_start[b]);
-            redge_start[b] = edges.size() - 1;
+            return add_edge(seg2id[seg_a], seg2id[seg_b]);
+        }
+
+        Self &add_edge(NodeLoc a, NodeLoc b) {
+            data.edges.emplace_back(b, data.edge_start[a]);
+            data.edge_start[a] = data.edges.size() - 1;
+            data.edges.emplace_back(a, data.redge_start[b]);
+            data.redge_start[b] = data.edges.size() - 1;
+
+            return *this;
+        }
+
+        Self &add_reverse_complement() {
+            prep_for_edges();
+            state = YOLO;
+            applied.add_reverse_complement = true;
+
+            data.nodes.reserve(data.nodes.size() * 2);
+            data.edges.reserve(data.edges.size() * 2);
+            data.edge_start.resize(data.edge_start.size() * 2, INV_SIZE);
+            data.redge_start.resize(data.redge_start.size() * 2, INV_SIZE);
+
+            auto split = data.nodes.size();
+            for (NodeLoc i = 0; i < split; ++i) {
+                auto &node = data.nodes[i];
+                auto id = "revcomp:" + node.seg_id;
+                if (seg2id.contains(id)) throw "original nodes contain revcomp: prefix";
+                add_node(node.seg.rev_comp(), std::move(id));
+            }
+            for (EdgeLoc i = 0, sz = data.edges.size(); i < sz; i += 2) {
+                auto &edge_a = data.edges[i];
+                auto &edge_b = data.edges[i+1];
+                add_edge(edge_a.to + split, edge_b.to + split);
+            }
+
+            return *this;
+        }
+
+        Self &add_extends() {
+            prep_for_edges();
+            state = YOLO;
+            applied.add_extends = true;
+
+            for (NodeLoc i = 0, sz = data.nodes.size(); i < sz; ++i) {
+                if (data.edge_start[i] == INV_SIZE) {
+                    auto id = "extend:" + data.nodes[i].seg_id;
+                    if (seg2id.contains(id)) throw "original nodes contain extend: prefix";
+                    add_node(Str("a"), std::move(id), true);
+                    add_edge(i, data.nodes.size() - 1);
+                }
+            }
 
             return *this;
         }
 
         RgfaGraph build() {
             prep_for_edges();
-            return RgfaGraph(std::move(*this));
+            return RgfaGraph(std::move(data), applied);
+        }
+
+        RgfaGraph build(Settings s) {
+            // make sure settings and applied settings are not out of sync
+            if (applied.add_reverse_complement && !s.add_reverse_complement)
+                throw "can NOT undo add_reverse_complement";
+            if (!applied.add_reverse_complement && s.add_reverse_complement)
+                add_reverse_complement();
+            if (applied.add_extends && !s.add_extends)
+                throw "can NOT undo add_extends";
+            if (!applied.add_extends && s.add_extends)
+                add_extends();
+
+            return build();
         }
     };
 
-    RgfaGraph(Builder &&b)
-        : nodes(std::move(b.nodes)),
-          edges(std::move(b.edges)),
-          edge_start(std::move(b.edge_start)),
-          redge_start(std::move(b.redge_start)) {}
-
-    static RgfaGraph from_file(const std::string &file) {
-
+    static RgfaGraph from_file(const std::string &file, Settings settings = {}) {
         std::ifstream io = std::ifstream(file);
 
         Builder builder;
@@ -215,20 +275,20 @@ struct RgfaGraph {
             }
         }
 
-        return RgfaGraph(std::move(builder));
+        return builder.build(settings);
     }
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {
-        for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
-            os << graph.nodes[i].seg_id << "," << i << " " << graph.nodes[i].seg << " ->";
+        for (NodeLoc i = 0; i < graph.num_nodes(); ++i) {
+            os << graph.node(i).seg_id << "," << i << " " << graph.node(i).seg << " ->";
             for (const auto &to_node : graph.forward_from(i)) {
                 os << " " << to_node.seg_id << "," << to_node.node_id;
             }
             os << std::endl;
         }
         std::cerr << "REVERSE" << std::endl;
-        for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
-            os << graph.nodes[i].seg_id << "," << i << " " << graph.nodes[i].seg << " <-";
+        for (NodeLoc i = 0; i < graph.num_nodes(); ++i) {
+            os << graph.node(i).seg_id << "," << i << " " << graph.node(i).seg << " <-";
             for (const auto &to_node : graph.backward_from(i)) {
                 os << " " << to_node.seg_id << "," << to_node.node_id;
             }

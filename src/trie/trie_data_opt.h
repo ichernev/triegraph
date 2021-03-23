@@ -337,11 +337,10 @@ struct TrieDataOpt {
         active_trie.init(key_iter_pair(trie2graph.keys()));
                 // std::views::transform([](KHolder kh) { return Kmer(kh); }));
     }
-private:
+
     OptMMap<KHolder, NumKmers, LetterLoc> trie2graph;
     OptMMap<LetterLoc, NumKmers, KHolder> graph2trie;
     TieredBitset<Kmer> active_trie;
-public:
 
     using t2g_values_view = iter_pair<
         typename decltype(trie2graph)::const_value_iterator,

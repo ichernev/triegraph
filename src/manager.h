@@ -62,28 +62,24 @@ struct Manager : Cfg {
         TrieGraphData>;
 
     struct Settings {
-        using Self = Settings;
-        bool add_reverse_complement_;
-        u64 trie_depth_;
-
-        Settings() : add_reverse_complement_(true), trie_depth_(Kmer::K) {}
-        bool add_reverse_complement() const { return add_reverse_complement_; }
-        Self &add_reverse_complement(bool val) { add_reverse_complement_ = val; return *this; }
-        u64 trie_depth() const { return trie_depth_; }
-        Self &trie_depth(u64 val) { trie_depth_ = val; return *this; }
+        bool add_reverse_complement = true;
+        u64 trie_depth = Kmer::K;
     };
 
     template<typename Builder=TrieGraphBuilder>
-    static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s) {
-        return triegraph_from_graph<Builder>(Graph::from_file(file), s);
+    static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s = {}) {
+        return triegraph_from_graph<Builder>(
+                Graph::from_file(file, {
+                    .add_reverse_complement = s.add_reverse_complement }),
+                s);
     }
 
     template<typename Builder=TrieGraphBuilder>
-    static TrieGraph triegraph_from_graph(Graph &&graph, Settings s) {
-        if (s.add_reverse_complement()) {
-            graph.add_reverse_complement();
+    static TrieGraph triegraph_from_graph(Graph &&graph, Settings s = {}) {
+        if (graph.settings.add_reverse_complement != s.add_reverse_complement) {
+            throw "graph was not build with same revcomp settings";
         }
-        if (s.trie_depth() != Kmer::K) {
+        if (s.trie_depth != Kmer::K) {
             throw "trie depth doesn't match Kmer::K";
         }
         auto tg_data = Builder(std::move(graph)).build();

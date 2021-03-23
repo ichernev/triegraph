@@ -26,7 +26,7 @@ M4::Graph build_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build();
+        .build({ .add_reverse_complement = false });
 
      /******************
       *      [1]       *
@@ -41,9 +41,9 @@ M4::Graph build_graph() {
 static void test_next_edit_edges_fwd() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.next_edit_edges(M4::Handle(2, 1));
     auto expected = std::vector<M4::EditEdge> {
@@ -66,9 +66,9 @@ static void test_next_edit_edges_fwd() {
 static void test_next_edit_edges_split() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.next_edit_edges(M4::Handle(0, 1));
     auto expected = std::vector<M4::EditEdge> {
@@ -97,9 +97,9 @@ static void test_next_edit_edges_split() {
 static void test_next_edit_edges_trie_inner() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.next_edit_edges(M4::Handle(Kmer::from_str("cg")));
 
@@ -129,9 +129,9 @@ static void test_next_edit_edges_trie_inner() {
 static void test_next_edit_edges_trie_edge() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.next_edit_edges(M4::Handle(Kmer::from_str("cga")));
 
@@ -156,9 +156,9 @@ static void test_next_edit_edges_trie_edge() {
 static void test_next_edit_edges_trie_to_graph() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.next_edit_edges(M4::Handle(Kmer::from_str("acgg")));
 
@@ -198,9 +198,9 @@ static std::vector<typename IT::value_type> _collect_it(IT it) {
 static void test_prev_handles_linear() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.prev_graph_handles(M4::Handle(0, 1));
     // auto hh = h.begin();
@@ -222,9 +222,9 @@ static void test_prev_handles_linear() {
 static void test_prev_handles_split() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.prev_graph_handles(M4::Handle(3, 0));
     auto expected = std::vector<M4::Handle> { { 2, 2 }, { 1, 1 } };
@@ -239,9 +239,9 @@ static void test_prev_handles_split() {
 static void test_prev_handles_graph_to_trie() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.prev_trie_handles(M4::Handle(3, 0));
     auto expected = std::vector<M4::Handle> {
@@ -262,9 +262,9 @@ static void test_prev_handles_graph_to_trie() {
 static void test_prev_handles_trie() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto h = tg.prev_trie_handles(M4::Kmer::from_str("acac"));
     auto expected = std::vector<M4::Handle> { M4::Kmer::from_str("aca") };
@@ -275,9 +275,9 @@ static void test_prev_handles_trie() {
 static void test_up_handle_trie() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     auto handle = tg.up_trie_handle(M4::Kmer::from_str("acac"));
     assert(handle.is_trie() && handle.kmer == M4::Kmer::from_str("aca"));
@@ -292,9 +292,9 @@ static void test_next_match_many() {
 
     auto tg = M4::triegraph_from_graph(
             std::move(graph),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     assert(tg.next_match_many(M4::Handle(0, 0), M4::Str("acgtacgtacgt")) == 12);
     assert(tg.next_match_many(M4::Handle(0, 11), M4::Str("ttt")) == 1);
@@ -306,9 +306,9 @@ static void test_next_match_many() {
 static void test_exact_short_match() {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
-            M4::Settings()
-                .add_reverse_complement(false)
-                .trie_depth(4));
+            M4::Settings {
+                .add_reverse_complement = false,
+                .trie_depth = 4 });
 
     assert(tg.exact_short_match(M4::Str("aca")) == M4::Handle(M4::Kmer::from_str("aca")));
     assert(tg.exact_short_match(M4::Str("acac")) == M4::Handle(M4::Kmer::from_str("acac")));

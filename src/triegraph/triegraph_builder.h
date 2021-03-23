@@ -107,7 +107,7 @@ struct TrieGraphBuilder {
         std::vector<NodeLoc> comp_id; // (raw_graph.rgfa_nodes.size(), INV_SIZE);
         NodeLoc num_comp = 0;
         ConnectedComp(const Graph &graph)
-            : graph(graph), comp_id(graph.nodes.size(), Graph::INV_SIZE), num_comp(0) {
+            : graph(graph), comp_id(graph.num_nodes(), Graph::INV_SIZE), num_comp(0) {
         }
 
         static ConnectedComp build(const Graph &graph) {
@@ -152,13 +152,13 @@ struct TrieGraphBuilder {
         std::unordered_set<NodeLoc> done_comps;
 
         starts.reserve(comps.num_comp);
-        for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
+        for (NodeLoc i = 0; i < graph.num_nodes(); ++i) {
             if (graph.backward_from(i).empty()) {
                 starts.push_back(i);
                 done_comps.insert(comps.comp_id[i]);
             }
         }
-        for (NodeLoc i = 0; i < graph.nodes.size(); ++i) {
+        for (NodeLoc i = 0; i < graph.num_nodes(); ++i) {
             if (!done_comps.contains(comps.comp_id[i])) {
                 done_comps.insert(comps.comp_id[i]);
                 starts.push_back(i);
@@ -248,37 +248,37 @@ struct TrieGraphBuilder {
             // }
 
             auto hc = letter_loc.compress(h);
-            if (hc == letter_loc.num_locations) {
-                // this position signifies kmers that match to the end of the
-                // graph
-                stats.kproc += kb.kmers[hc].size() - kb.done_idx[hc];
-                kb.done_idx[hc] = kb.kmers[hc].size();
-                continue;
-            }
+            // if (hc == letter_loc.num_locations) {
+            //     // this position signifies kmers that match to the end of the
+            //     // graph
+            //     stats.kproc += kb.kmers[hc].size() - kb.done_idx[hc];
+            //     kb.done_idx[hc] = kb.kmers[hc].size();
+            //     continue;
+            // }
 
             std::vector<NodePos> targets;
-            if (graph.nodes[h.node].seg.length == h.pos + 1) {
+            if (graph.node(h.node).seg.size() == h.pos + 1) {
                 for (const auto &to : graph.forward_from(h.node)) {
                     targets.push_back(NodePos(to.node_id, 0));
                 }
             } else {
-                assert(graph.nodes[h.node].seg.length > h.pos + 1);
+                assert(graph.node(h.node).seg.size() > h.pos + 1);
                 targets.push_back(NodePos(h.node, h.pos+1));
             }
 
-            if (targets.empty()) {
-                // This signifies matching the end.
-                // Needs support from LetterLocData::compress
-                targets.push_back(NodePos(letter_loc.num_locations, 0));
-            }
+            // if (targets.empty()) {
+            //     // This signifies matching the end.
+            //     // Needs support from LetterLocData::compress
+            //     targets.push_back(NodePos(letter_loc.num_locations, 0));
+            // }
             if (verbose_mode)
-            std::cerr << "ksz " << kb.kmers[hc].size() << "\n"
-                    << "ktd " << kb.done_idx[hc] << "\n"
-                    << "tgts " << targets.size() << std::endl;
+                std::cerr << "ksz " << kb.kmers[hc].size() << "\n"
+                        << "ktd " << kb.done_idx[hc] << "\n"
+                        << "tgts " << targets.size() << std::endl;
 
             auto &done_idx = kb.done_idx[hc];
             auto &kmers = kb.kmers[hc];
-            auto letter = graph.nodes[h.node].seg[h.pos];
+            auto letter = graph.node(h.node).seg[h.pos];
             for (; done_idx < kmers.size(); ++done_idx) {
                 auto kmer = kmers[done_idx];
                 ++ stats.kproc;
@@ -398,6 +398,10 @@ struct TrieGraphBuilder {
                 }
             }
         }
+
+        // destroy kb
+        { auto _ = std::move(kb); }
+
         std::cerr << "pairs ready" << std::endl;
         data.trie_data.init(std::move(pairs), data.letter_loc);
     }

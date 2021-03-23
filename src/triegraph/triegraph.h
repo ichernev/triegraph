@@ -79,7 +79,7 @@ struct TrieGraph {
         if (!h.is_valid() || !h.is_graph()) {
             return 0;
         }
-        auto nview = data.graph.nodes[h.node()].seg.get_view(h.pos());
+        auto nview = data.graph.node(h.node()).seg.get_view(h.pos());
         return nview.fast_match(sv);
     }
 

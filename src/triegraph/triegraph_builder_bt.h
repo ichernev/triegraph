@@ -36,7 +36,7 @@ struct TrieGraphBTBuilder {
         std::cerr << "BT builder" << std::endl;
         data.letter_loc = LetterLocData(data.graph);
         // this->data.trie_data.active_trie.insert(Kmer::empty());
-        auto &nodes = data.graph.nodes;
+        auto &nodes = data.graph.data.nodes;
         for (NodeLoc i = 0, nsz = nodes.size(); i < nsz; ++i) {
             auto &node = nodes[i];
             for (typename Str::Size nl = 0, sz = node.seg.size(); nl < sz; ++nl) {
@@ -79,16 +79,16 @@ struct TrieGraphBTBuilder {
         }
 
         // this->data.trie_data.active_trie.insert(this->kmer);
-        this->kmer.push_back(this->data.graph.nodes[np.node].seg[np.pos]);
-        if (np.pos + 1 == this->data.graph.nodes[np.node].seg.size()) {
+        this->kmer.push_back(this->data.graph.node(np.node).seg[np.pos]);
+        if (np.pos + 1 == this->data.graph.node(np.node).seg.size()) {
             for (const auto &fwd : this->data.graph.forward_from(np.node)) {
                 _back_track(NodePos(fwd.node_id, 0));
             }
             // end-of-graph handling
-            if (this->data.graph.edge_start[np.node] == Graph::INV_SIZE &&
-                    this->kmer.is_complete()) {
-                _back_track(NodePos(this->data.letter_loc.num_locations, 0));
-            }
+            // if (this->data.graph.forward_from(np.node).empty() &&
+            //         this->kmer.is_complete()) {
+            //     _back_track(NodePos(this->data.letter_loc.num_locations, 0));
+            // }
         } else {
             _back_track(NodePos(np.node, np.pos+1));
         }

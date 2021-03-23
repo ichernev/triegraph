@@ -44,9 +44,10 @@ struct LetterLocData {
 
     LetterLocData() {}
     LetterLocData(const Graph &graph) {
-        node_start.reserve(graph.nodes.size() + 1);
+        // + 1 is for the expand_idx temp bound
+        node_start.reserve(graph.num_nodes() + 1);
         num_locations = 0;
-        for (const auto &node: graph.nodes) {
+        for (const auto &node: graph.data.nodes) {
             node_start.push_back(num_locations);
             num_locations += node.seg.length;
         }
@@ -73,9 +74,6 @@ struct LetterLocData {
     }
 
     NodePos expand(LetterLoc loc) const {
-        if (loc == num_locations) {
-            return { num_locations, 0 };
-        }
         if constexpr (expand_idx) {
             NodeLoc lb = index.index[loc >> expand_idx_shift];
             NodeLoc ub = index.index[(loc >> expand_idx_shift) + 1];
@@ -93,8 +91,7 @@ struct LetterLocData {
     }
 
     LetterLoc compress(NodePos handle) const {
-        return handle.node == num_locations ? num_locations :
-            node_start[handle.node] + handle.pos;
+        return node_start[handle.node] + handle.pos;
     }
 };
 
