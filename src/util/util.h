@@ -93,7 +93,7 @@ struct iter_pair : std::ranges::view_base {
     using value_type = Codec::ext_type;
     using Self = iter_pair;
 
-    iter_pair() : first(), second() {}
+    iter_pair(IT1 it1 = {}, IT2 it2 = {}): first(it1), second(it2) {}
     template<std::ranges::range R>
     iter_pair(const R &other)
         : first(other.begin()), second(other.end()) {}
@@ -109,7 +109,6 @@ struct iter_pair : std::ranges::view_base {
 
     iter_codec<IT1, Codec> first;
     [[no_unique_address]] iter_codec<IT2, Codec> second;
-    iter_pair(IT1 begin, IT2 end) : first(begin), second(end) {}
 
     decltype(first) begin() const noexcept { return first; }
     decltype(second) end() const noexcept { return second; }

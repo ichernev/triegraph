@@ -26,8 +26,7 @@ struct TrieGraph {
     using TrieDepth = TrieData::Kmer::klen_type;
     using Handle = triegraph::Handle<Kmer, NodePos>;
     using NodeLen = Handle::NodeLen;
-    using EdgeIter = EditEdgeIter<Handle, TrieGraphData>;
-    using EdgeIterHelper = EditEdgeIterHelper<EdgeIter>;
+    using EditEdgeIter = triegraph::EditEdgeIter<Handle, TrieGraphData>;
     using PrevHandleIter = triegraph::PrevHandleIter<Handle, TrieGraphData>;
     using PrevHandleIterHelper = triegraph::PrevHandleIterHelper<Handle, TrieGraphData>;
     using Self = TrieGraph;
@@ -52,7 +51,12 @@ struct TrieGraph {
         return Kmer::K;
     }
 
-    EdgeIterHelper next_edit_edges(Handle h) const { return EdgeIter::make(h, data); }
+    using edit_edge_iterator = EditEdgeIter;
+    using edit_edge_iter_view = iter_pair<
+        edit_edge_iterator,
+        typename edit_edge_iterator::Sent>;
+
+    edit_edge_iter_view next_edit_edges(Handle h) const { return EditEdgeIter::make(h, data); }
     PrevHandleIterHelper prev_graph_handles(Handle h) const { return prev_graph_handles_it(h); }
     PrevHandleIterHelper prev_trie_handles(Handle h) const { return prev_trie_handles_it(h); }
     PrevHandleIter prev_graph_handles_it(Handle h) const {

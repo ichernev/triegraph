@@ -273,8 +273,6 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     using TrieGraphData = TrieGraphData_;
     using Graph = TrieGraphData::Graph;
     using TrieData = TrieGraphData::TrieData;
-    // using T2GMap = decltype(TrieData::trie2graph);
-    // using T2GMapIt = T2GMap::const_value_iterator;
     using Base = EdgeIterImplBase<Edge>;
 
     const TrieGraphData &trie_graph;
@@ -318,10 +316,14 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                 return true;
         }
         if (!nps.empty()) {
+            std::cerr << "state 1" << std::endl;
             auto letter_loc = *nps;
+            std::cerr << "state 1.1 " << letter_loc << std::endl;
             auto np = trie_graph.letter_loc.expand(letter_loc);
+            std::cerr << "np" << np << std::endl;
             const auto &node = trie_graph.graph.nodes[np.node];
             if (np.pos + 1 >= node.seg.size()) {
+                std::cerr << "making split " << np.pos + 1 << " " << node.seg.size() << std::endl;
                 new(&its.split) EdgeIterImplGraphSplit<Edge, Graph>(
                         np.pos == node.seg.size() ?
                             Letter(Letter::EPS) :
@@ -329,11 +331,14 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                         np,
                         trie_graph.graph.forward_from(np.node));
             } else {
+                std::cerr << "making fwd" << std::endl;
                 new(&its.fwd) EdgeIterImplGraphFwd<Edge>(
                         node.seg[np.pos],
                         np);
             }
+            std::cerr << "state 2" << std::endl;
             ++ nps;
+            std::cerr << "state 2.1" << std::endl;
             return true;
         }
         return false;
@@ -345,6 +350,8 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
 
 };
 
+struct EditEdgeIterSent {};
+
 template <typename Handle_, typename TrieGraphData_>
 struct EditEdgeIter {
     using Handle = Handle_;
@@ -352,9 +359,9 @@ struct EditEdgeIter {
     using Edge = EditEdge<Handle>;
     using Graph = TrieGraphData::Graph;
     using NodePos = typename Handle::NodePos;
-    // using Impl = EditEdgeImplHolder<Handle, TrieGraphData>;
 
     using Self = EditEdgeIter;
+    using Sent = EditEdgeIterSent;
 
     union {
         EdgeIterImplBase<Edge> base;
@@ -385,13 +392,6 @@ struct EditEdgeIter {
     void inc() { basep()->inc(); }
     u32 state() const { return basep()->state; }
     u32 end_state() const { return basep()->end_state(); }
-    Self end() const {
-        Self end;
-        end.set<&Self::base>();
-        end.base.state = end_state();
-        return end;
-    }
-
 
     // Iterator interface
 
@@ -404,6 +404,7 @@ struct EditEdgeIter {
     Self &operator++ () { inc(); return *this; }
     Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
     bool operator== (const Self &other) const { return state() == other.state(); }
+    bool operator== (const Sent &other) const { return state() == end_state(); }
 
     // helper factory methods
     template <typename... Args>
@@ -435,6 +436,7 @@ struct EditEdgeIter {
             if (h.depth_in_trie() + 1 < Kmer::K) {
                 Kmer nkmer = h.kmer;
                 u32 bitset = 0;
+                static_assert(Letter::num_options <= sizeof(bitset) * BITS_PER_BYTE);
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
                     nkmer.push_back(l);
                     if (tgd.trie_data.trie_inner_contains(nkmer)) {
@@ -471,47 +473,6 @@ struct EditEdgeIter {
             }
         }
     }
-};
-
-template <typename EditEdgeIter_>
-struct EditEdgeIterHelper {
-    // using Impl = Impl_;
-    using EditEdgeIter = EditEdgeIter_;
-    using Iter = EditEdgeIter;
-    // using Impl = EditEdgeIter::Impl;
-    using Self = EditEdgeIterHelper;
-
-    EditEdgeIterHelper() : it() {}
-    EditEdgeIterHelper(const Iter &it) : it(it) {}
-    EditEdgeIterHelper(Iter &&it) : it(std::move(it)) {}
-
-    EditEdgeIterHelper(const Self &) = default;
-    EditEdgeIterHelper(Self &&) = default;
-    Self &operator= (const Self &) = default;
-    Self &operator= (Self &&) = default;
-
-    Iter begin() const { return it; }
-    Iter end() const { return it.end(); }
-
-    Iter it;
-
-    // helper factory methods
-    // template <typename... Args>
-    // static Self make_graph_fwd(Args&&... args) {
-    //     return Self(Iter::make_graph_fwd(std::forward<Args>(args)...));
-    // }
-    // template <typename... Args>
-    // static Self make_graph_split(Args&&... args) {
-    //     return Self(Iter::make_graph_split(std::forward<Args>(args)...));
-    // }
-    // template <typename... Args>
-    // static Self make_trie_inner(Args&&... args) {
-    //     return Self(Iter::make_trie_inner(std::forward<Args>(args)...));
-    // }
-    // template <typename... Args>
-    // static Self make_trie_to_graph(Args&&... args) {
-    //     return Self(Iter::make_trie_to_graph(std::forward<Args>(args)...));
-    // }
 };
 
 } /* namespace triegraph */

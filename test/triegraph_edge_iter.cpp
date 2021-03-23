@@ -1,43 +1,29 @@
-#include "util/util.h"
-#include "alphabet/dna_letter.h"
+// #include "util/util.h"
+// #include "alphabet/dna_letter.h"
+#include "dna_config.h"
 #include "manager.h"
-#include "triegraph/triegraph_edge_iter.h"
 
 #include <assert.h>
 #include <iostream>
+#include <ranges>
 
 using namespace triegraph;
 
 namespace {
 
-struct Cfg {
-    using Letter = dna::DnaLetter;
-    using StrHolder = u32;
-    using NodeLoc = u32;
-    using NodeLen = u32;
-    using EdgeLoc = u32;
-    using LetterLoc = u32;
-    using KmerHolder = u32;
-    static constexpr int LetterLocIdxShift = -1;
-    static constexpr u64 KmerLen = 15;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << 31;
-};
+using TG = Manager<dna::DnaConfig<15>>;
 
-using MGR = Manager<Cfg>;
+using Kmer = TG::Kmer;
+using EditEdge = TG::EditEdge;
+using NodePos = TG::NodePos;
+using DnaLetters = TG::Letters;
+using EditEdgeIter = TG::TrieGraph::edit_edge_iterator;
+using EditEdgeIterView = TG::TrieGraph::edit_edge_iter_view;
 
-using Kmer = MGR::Kmer;
-using EditEdge = MGR::EditEdge;
-using NodePos = MGR::NodePos;
-using DnaLetters = dna::DnaLetters;
-
-template<std::forward_iterator IT>
-void func(IT it) {}
+void func(std::forward_iterator auto it) {}
 
 static void test_graph_fwd() {
-    // using EdgeIterImplGraphFwd_X = EdgeIterImplGraphFwd<Handle, DnaLetter>;
-    // auto it = EdgeIterGraphFwd_X { DnaLetters::C, NodePos { 4, 2 } };
-    // Helper h(ImplHolder::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 }));
-    MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 });
+    EditEdgeIterView h = EditEdgeIter::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 });
     std::vector<EditEdge> expected = {
         EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos { 4, 3 }, EditEdge::MATCH, DnaLetters::C },
@@ -52,22 +38,19 @@ static void test_graph_fwd() {
         EditEdge { NodePos { 4, 3 }, EditEdge::DEL,   DnaLetters::EPS },
     };
 
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
-    // std::vector<EditEdge> actual;
-    // std::copy(h.begin(), h.end(), std::back_inserter(actual));
-    // assert(expected == actual);
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_graph_split() {
-    auto g = MGR::Graph::Builder()
-        .add_node(MGR::Str("a"), "s1")
-        .add_node(MGR::Str("c"), "s2")
-        .add_node(MGR::Str("g"), "s3")
+    auto g = TG::Graph::Builder()
+        .add_node(TG::Str("a"), "s1")
+        .add_node(TG::Str("c"), "s2")
+        .add_node(TG::Str("g"), "s3")
         .add_edge("s1", "s3")
         .add_edge("s1", "s2")
         .build();
 
-    MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_graph_split(
+    EditEdgeIterView h = EditEdgeIter::make_graph_split(
             DnaLetters::A,
             NodePos { 0, 0 },
             g.forward_from(0));
@@ -89,11 +72,11 @@ static void test_graph_split() {
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::T },
     };
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 
     // this simulates end-of-graph
-    h = MGR::EditEdgeIter::make_graph_split(
+    h = EditEdgeIter::make_graph_split(
                 DnaLetters::A,
                 NodePos { 0, 0 },
                 g.forward_from(2));
@@ -103,12 +86,12 @@ static void test_graph_split() {
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::T },
     };
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
 static void test_trie_inner() {
-    MGR::EditEdgeIterHelper h = MGR::EditEdgeIter::make_trie_inner(
+    EditEdgeIterView h = EditEdgeIter::make_trie_inner(
             Kmer::from_str("acgt"),
             (1 << 1) | (1 << 2));
 
@@ -130,34 +113,20 @@ static void test_trie_inner() {
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::G },
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::T },
     };
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
 
-struct Cfg2 {
-    using Letter = dna::DnaLetter;
-    using StrHolder = u32;
-    using NodeLoc = u32;
-    using NodeLen = u32;
-    using EdgeLoc = u32;
-    using LetterLoc = u32;
-    using KmerHolder = u32;
-    static constexpr int LetterLocIdxShift = -1;
-    static constexpr u64 KmerLen = 2;
-    static constexpr KmerHolder on_mask = KmerHolder(1) << 31;
-};
-
 static void test_trie_to_graph() {
+    using TG2 = Manager<dna::DnaConfig<2>>;
 
-    using MGR2 = Manager<Cfg2>;
-
-    using Kmer = MGR2::Kmer;
-    using EditEdge = MGR2::EditEdge;
-    using NodePos = MGR2::NodePos;
+    using Kmer = TG2::Kmer;
+    using EditEdge = TG2::EditEdge;
+    using NodePos = TG2::NodePos;
     using DnaLetters = dna::DnaLetters;
-    using DnaStr = MGR2::Str;
+    using DnaStr = TG2::Str;
 
-    auto g = MGR2::Graph::Builder()
+    auto g = TG2::Graph::Builder()
         .add_node(DnaStr("ac"), "s1")
         .add_node(DnaStr("gg"), "s2")
         .add_node(DnaStr("acg"), "s3")
@@ -177,11 +146,12 @@ static void test_trie_to_graph() {
       *      456       *
       ******************/
 
-    auto tg = MGR2::TrieGraphBuilder(std::move(g)).build();
+    // build a trie, so we can test trie-to-graph iter
+    auto tg = TG2::TrieGraphBuilder(std::move(g)).build();
 
-    MGR2::EditEdgeIterHelper h = MGR2::EditEdgeIter::make_trie_to_graph(
-            Kmer::from_str("ac"), tg);
-    // Helper h(ImplHolder::make_trie_to_graph();
+    typename TG2::TrieGraph::edit_edge_iter_view h =
+        TG2::TrieGraph::edit_edge_iterator::make_trie_to_graph(
+                Kmer::from_str("ac"), tg);
 
     std::vector<EditEdge> expected = {
 
@@ -222,10 +192,9 @@ static void test_trie_to_graph() {
         EditEdge { NodePos(3, 2), EditEdge::INS,   DnaLetters::T },
     };
 
-    // std::copy(h.begin(), h.end(), std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::equal(h.begin(), h.end(), expected.begin()));
+    std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    assert(std::ranges::equal(h, expected));
 }
-
 
 } /* unnamed namespace */
 
@@ -233,7 +202,7 @@ int main() {
     test_graph_fwd();
     test_graph_split();
     test_trie_inner();
-    test_trie_to_graph();
+    // test_trie_to_graph();
 
     return 0;
 }

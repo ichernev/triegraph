@@ -54,8 +54,6 @@ struct Manager : Cfg {
 
     using Handle = triegraph::Handle<Kmer, NodePos>;
     using EditEdge = triegraph::EditEdge<Handle>;
-    using EditEdgeIter = triegraph::EditEdgeIter<Handle, TrieGraphData>;
-    using EditEdgeIterHelper = triegraph::EditEdgeIterHelper<EditEdgeIter>;
 
     using PrevHandleIter = triegraph::PrevHandleIter<Handle, TrieGraphData>;
     using PrevHandleIterHelper = triegraph::PrevHandleIterHelper<Handle, TrieGraphData>;
