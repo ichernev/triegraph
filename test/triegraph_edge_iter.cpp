@@ -161,7 +161,7 @@ static void test_trie_inner() {
 
 static void test_trie_to_graph() {
     using TG2 = Manager<dna::DnaConfig<0>>;
-    TG2::init({ .trie_depth = 2 });
+    // TG2::init({ .trie_depth = 2 });
 
     using Kmer = TG2::Kmer;
     using EditEdge = TG2::EditEdge;
@@ -190,11 +190,13 @@ static void test_trie_to_graph() {
       ******************/
 
     // build a trie, so we can test trie-to-graph iter
-    auto tg = TG2::TrieGraphBuilder(std::move(g)).build();
+    auto tg = TG2::triegraph_from_graph(
+            std::move(g),
+            { .add_reverse_complement = false, .trie_depth = 2 });
 
     typename TG2::TrieGraph::edit_edge_iter_view h =
         TG2::TrieGraph::edit_edge_iterator::make_trie_to_graph(
-                Kmer::from_str("ac"), tg);
+                Kmer::from_str("ac"), tg.data);
 
     std::vector<EditEdge> expected = {
 

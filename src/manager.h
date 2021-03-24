@@ -50,15 +50,15 @@ struct Manager : Cfg {
         Cfg::LetterLocIdxShift>;
     using TrieData = triegraph::TrieDataOpt<
         Kmer,
-        typename Cfg::LetterLoc>;
+        LetterLocData>;
     using TrieGraphData = triegraph::TrieGraphData<
         Graph,
         LetterLocData,
         TrieData>;
     using TrieGraphBuilder = triegraph::TrieGraphBuilder<
-        TrieGraphData>;
+        Graph, LetterLocData, Kmer>;
     using TrieGraphBTBuilder = triegraph::TrieGraphBTBuilder<
-        TrieGraphData>;
+        Graph, LetterLocData, Kmer>;
 
     using Handle = triegraph::Handle<Kmer, NodePos>;
     using EditEdge = triegraph::EditEdge<Handle>;
@@ -74,6 +74,7 @@ struct Manager : Cfg {
         u64 trie_depth = sizeof(typename Kmer::Holder) * BITS_PER_BYTE / Cfg::Letter::bits - 1;
     };
 
+    // TODO: put back bfs builder
     template<typename Builder=TrieGraphBuilder>
     static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s = {}) {
         init(s);
@@ -89,8 +90,11 @@ struct Manager : Cfg {
         if (graph.settings.add_reverse_complement != s.add_reverse_complement) {
             throw "graph was not build with same revcomp settings";
         }
-        auto tg_data = Builder(std::move(graph)).build();
-        return TrieGraph(std::move(tg_data));
+        auto lloc = LetterLocData(graph);
+        auto pairs = Builder(graph, lloc).get_pairs();
+        auto td = TrieData(std::move(pairs), lloc);
+        auto tgd = TrieGraphData(std::move(graph), std::move(lloc), std::move(td));
+        return TrieGraph(std::move(tgd));
     }
 
     struct FixedKKmer {}; struct DynamicKKmer {};

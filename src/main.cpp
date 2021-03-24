@@ -6,7 +6,7 @@
 using TG = triegraph::Manager<triegraph::dna::DnaConfig<13>>;
 
 int main() {
-    auto tg = TG::triegraph_from_rgfa_file<TG::TrieGraphBuilder>(
+    auto tg = TG::triegraph_from_rgfa_file<TG::TrieGraphBTBuilder>(
             "data/pasgal-MHC1.gfa", TG::Settings());
     auto [a, b, c] = tg.graph_size();
     auto [d, e, f] = tg.trie_size();

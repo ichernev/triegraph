@@ -6,39 +6,38 @@
 
 namespace triegraph {
 
-template <typename TrieGraphData_>
+template <typename Graph_, typename LetterLocData_, typename Kmer_>
 struct TrieGraphBTBuilder {
-    using TrieGraphData = TrieGraphData_;
-    using Graph = TrieGraphData::Graph;
-    using LetterLocData = TrieGraphData::LetterLocData;
-    using TrieData = TrieGraphData::TrieData;
+    using Graph = Graph_;
+    using LetterLocData = LetterLocData_;
+    using Kmer = Kmer_;
     using Str = Graph::Str;
     using NodeLoc = Graph::NodeLoc;
     using LetterLoc = LetterLocData::LetterLoc;
     using NodePos = LetterLocData::NodePos;
-    using Kmer = TrieData::Kmer;
-    using kmer_len_type = u32; // u16; // assume no more than 64k kmers end in a given letter location
 
-    TrieGraphData data;
+    const Graph &graph;
+    const LetterLocData &lloc;
+    std::vector<std::pair<Kmer, LetterLoc>> pairs;
     Kmer kmer;
-    std::vector<std::pair<Kmer, LetterLoc>> fast_pairs;
 
-    TrieGraphBTBuilder(Graph &&graph) : data(std::move(graph)), kmer(Kmer::empty()) {}
+    TrieGraphBTBuilder(const Graph &graph, const LetterLocData &lloc)
+        : graph(graph), lloc(lloc) {}
 
     TrieGraphBTBuilder(const TrieGraphBTBuilder &) = delete;
     TrieGraphBTBuilder &operator= (const TrieGraphBTBuilder &) = delete;
-    TrieGraphBTBuilder(TrieGraphBTBuilder &&) = default;
-    TrieGraphBTBuilder &operator= (TrieGraphBTBuilder &&) = default;
+    TrieGraphBTBuilder(TrieGraphBTBuilder &&) = delete;
+    TrieGraphBTBuilder &operator= (TrieGraphBTBuilder &&) = delete;
 
-    TrieGraphData &&build() && {
+    decltype(pairs) &&get_pairs() && {
         auto time_01 = std::chrono::steady_clock::now();
 
         std::cerr << "BT builder" << std::endl;
-        data.letter_loc = LetterLocData(data.graph);
+
+        kmer = Kmer::empty();
         // this->data.trie_data.active_trie.insert(Kmer::empty());
-        auto &nodes = data.graph.data.nodes;
-        for (NodeLoc i = 0, nsz = nodes.size(); i < nsz; ++i) {
-            auto &node = nodes[i];
+        for (NodeLoc i = 0, nsz = graph.num_nodes(); i < nsz; ++i) {
+            auto &node = graph.node(i);
             for (typename Str::Size nl = 0, sz = node.seg.size(); nl < sz; ++nl) {
                 // kmer = Kmer::empty();
                 assert(kmer.size() == 0);
@@ -53,19 +52,20 @@ struct TrieGraphBTBuilder {
         //     std::cerr << x.first << " -> " << x.second << std::endl;
         // }
 
-        this->data.trie_data.init(std::move(fast_pairs), this->data.letter_loc);
+        // this->data.trie_data.init(std::move(fast_pairs), this->data.letter_loc);
 
-        auto time_03 = std::chrono::steady_clock::now();
-        std::cerr << "HT full: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_02).count() << "ms" << std::endl;
-        std::cerr << "total: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_01).count() << "ms" << std::endl;
+        // auto time_03 = std::chrono::steady_clock::now();
+        // std::cerr << "HT full: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_02).count() << "ms" << std::endl;
+        // std::cerr << "total: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_01).count() << "ms" << std::endl;
 
-        return std::move(data);
+        return std::move(pairs);
+        // return std::move(data);
     }
 
     void _back_track(NodePos np) {
         if (this->kmer.is_complete()) {
-            auto ll = this->data.letter_loc.compress(np);
-            fast_pairs.emplace_back(this->kmer, ll);
+            auto ll = this->lloc.compress(np);
+            pairs.emplace_back(this->kmer, ll);
             // this->data.trie_data.trie2graph.add(this->kmer, ll);
             // this->data.trie_data.graph2trie.add(ll, this->kmer);
             // Kmer km = this->kmer;
@@ -79,9 +79,9 @@ struct TrieGraphBTBuilder {
         }
 
         // this->data.trie_data.active_trie.insert(this->kmer);
-        this->kmer.push_back(this->data.graph.node(np.node).seg[np.pos]);
-        if (np.pos + 1 == this->data.graph.node(np.node).seg.size()) {
-            for (const auto &fwd : this->data.graph.forward_from(np.node)) {
+        this->kmer.push_back(this->graph.node(np.node).seg[np.pos]);
+        if (np.pos + 1 == this->graph.node(np.node).seg.size()) {
+            for (const auto &fwd : this->graph.forward_from(np.node)) {
                 _back_track(NodePos(fwd.node_id, 0));
             }
             // end-of-graph handling

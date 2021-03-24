@@ -13,8 +13,11 @@ struct TrieGraphData {
     LetterLocData letter_loc;
     TrieData trie_data;
 
-    TrieGraphData() {}
-    TrieGraphData(Graph &&g) : graph(std::move(g)) {}
+    TrieGraphData(Graph &&g, LetterLocData &&lloc, TrieData &&trie_data)
+      : graph(std::move(g)),
+        letter_loc(std::move(lloc)),
+        trie_data(std::move(trie_data)) {
+    }
 
     TrieGraphData(const TrieGraphData &) = delete;
     TrieGraphData &operator= (const TrieGraphData &) = delete;

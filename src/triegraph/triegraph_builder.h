@@ -19,20 +19,20 @@
 
 namespace triegraph {
 
-template <typename TrieGraphData_>
+template <typename Graph_, typename LetterLocData_, typename Kmer_>
 struct TrieGraphBuilder {
-    using TrieGraphData = TrieGraphData_;
-    using Graph = TrieGraphData::Graph;
-    using LetterLocData = TrieGraphData::LetterLocData;
-    using TrieData = TrieGraphData::TrieData;
+    using Graph = Graph_;
+    using LetterLocData = LetterLocData_;
+    using Kmer = Kmer_;
     using Str = Graph::Str;
     using NodeLoc = Graph::NodeLoc;
     using LetterLoc = LetterLocData::LetterLoc;
     using NodePos = LetterLocData::NodePos;
-    using Kmer = TrieData::Kmer;
-    using kmer_len_type = u32; // u16; // assume no more than 64k kmers end in a given letter location
+    using kmer_len_type = u32; // how many kmers per location
 
-    TrieGraphData data;
+    const Graph &graph;
+    const LetterLocData &lloc;
+
     struct Stats {
         u32 qpush;
         u32 qpop;
@@ -70,34 +70,36 @@ struct TrieGraphBuilder {
         }
     } stats;
 
-    TrieGraphBuilder(Graph &&graph) : data(std::move(graph)) {}
+    TrieGraphBuilder(const Graph &graph, const LetterLocData &lloc)
+        : graph(graph), lloc(lloc) {
+    }
 
     TrieGraphBuilder(const TrieGraphBuilder &) = delete;
     TrieGraphBuilder &operator= (const TrieGraphBuilder &) = delete;
-    TrieGraphBuilder(TrieGraphBuilder &&) = default;
-    TrieGraphBuilder &operator= (TrieGraphBuilder &&) = default;
+    TrieGraphBuilder(TrieGraphBuilder &&) = delete;
+    TrieGraphBuilder &operator= (TrieGraphBuilder &&) = delete;
 
-    TrieGraphData &&build() && {
+    std::vector<std::pair<Kmer, LetterLoc>> get_pairs() {
         auto time_01 = std::chrono::steady_clock::now();
 
         std::cerr << "=== building trie === " << std::endl;
-        auto comps = ConnectedComp::build(data.graph);
+        auto comps = ConnectedComp::build(graph);
         auto starts = _compute_starts(std::move(comps));
-        data.letter_loc = LetterLocData(data.graph);
         auto kmer_data = _bfs_trie(std::move(starts));
         // _fill_trie_data(std::move(kmer_data));
         auto time_02 = std::chrono::steady_clock::now();
         std::cerr << "BFS done: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_02 - time_01).count() << "ms" << std::endl;
         // _print_stats(std::move(kmer_data));
-        _fill_trie_data_opt(std::move(kmer_data));
-        auto time_03 = std::chrono::steady_clock::now();
-        std::cerr << "trie filled: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_02).count() << "ms" << std::endl;
-        // _print_stats(std::move(kmer_data));
+        return _make_pairs(std::move(kmer_data));
+        // _fill_trie_data_opt(std::move(kmer_data));
+        // auto time_03 = std::chrono::steady_clock::now();
+        // std::cerr << "trie filled: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_03 - time_02).count() << "ms" << std::endl;
+        // // _print_stats(std::move(kmer_data));
 
-        return std::move(data);
+        // return std::move(data);
         // return Triegraph {
         //     std::move(graph),
-        //     std::move(letter_loc),
+        //     std::move(lloc),
         //     std::move(trie_data)
         // };
     }
@@ -147,7 +149,6 @@ struct TrieGraphBuilder {
 
     std::vector<NodeLoc> _compute_starts(ConnectedComp comps) const {
         std::cerr << "==== computing starts" << std::endl;
-        auto &graph = data.graph;
         std::vector<NodeLoc> starts;
         std::unordered_set<NodeLoc> done_comps;
 
@@ -215,9 +216,7 @@ struct TrieGraphBuilder {
 
     KmerBuildData _bfs_trie(const std::vector<NodeLoc> &starts) {
         std::cerr << "==== bfs_trie" << std::endl;
-        auto &graph = data.graph;
-        auto &letter_loc = data.letter_loc;
-        KmerBuildData kb(letter_loc.num_locations, stats);
+        KmerBuildData kb(lloc.num_locations, stats);
 
         std::queue<NodePos> q;
 
@@ -227,7 +226,7 @@ struct TrieGraphBuilder {
             ++ stats.kpush;
             ++ stats.tnodes;
             q.push(h);
-            kb.kmers[letter_loc.compress(h)].push_back(Kmer::empty());
+            kb.kmers[lloc.compress(h)].push_back(Kmer::empty());
         }
 
         bool verbose_mode = false;
@@ -242,13 +241,13 @@ struct TrieGraphBuilder {
             //     std::cerr << stats << std::endl;
             //     std::cerr << "current location "
             //         << h.node << " " << h.pos << std::endl;
-            //     auto z = letter_loc.expand(stats.maxid);
+            //     auto z = lloc.expand(stats.maxid);
             //     std::cerr << stats.maxid << " " << z.node << " " << z.pos << std::endl;
             //     std::cerr << graph.nodes[z.node].seg_id << std::endl;
             // }
 
-            auto hc = letter_loc.compress(h);
-            // if (hc == letter_loc.num_locations) {
+            auto hc = lloc.compress(h);
+            // if (hc == lloc.num_locations) {
             //     // this position signifies kmers that match to the end of the
             //     // graph
             //     stats.kproc += kb.kmers[hc].size() - kb.done_idx[hc];
@@ -284,7 +283,7 @@ struct TrieGraphBuilder {
                 ++ stats.kproc;
                 kmer.push(letter);
                 for (auto t: targets) {
-                    auto tc = letter_loc.compress(t);
+                    auto tc = lloc.compress(t);
                     // auto &t_kmers = kb.kmers[tc];
                     // if (verbose_mode)
                     // std::cerr << "   will check " << t_kmers.size() << " for match" << std::endl;
@@ -323,75 +322,75 @@ struct TrieGraphBuilder {
         int buckets[31] = {0,};
         long long total = 0;
         long long fast = 0;
-        for (LetterLoc i = 0; i <= data.letter_loc.num_locations; ++i) {
+        for (LetterLoc i = 0; i <= lloc.num_locations; ++i) {
             buckets[log2_ceil(kb.kmers[i].size())] += 1;
             total += kb.kmers[i].size();
             fast += kb.kmers[i].is_fast();
         }
-        std::cerr << "fast " << fast << " " << data.letter_loc.num_locations << std::endl;
+        std::cerr << "fast " << fast << " " << lloc.num_locations << std::endl;
         long long ctot = 0;
         for (int i = 0; i < 31; ++i) {
             ctot += buckets[i];
-            std::cerr << i << "\t" << buckets[i] << " " << (double)ctot / data.letter_loc.num_locations << std::endl;
+            std::cerr << i << "\t" << buckets[i] << " " << (double)ctot / lloc.num_locations << std::endl;
         }
         std::cerr << "total " << total << std::endl;
-        std::cerr << "num locations " << data.letter_loc.num_locations << std::endl;
+        std::cerr << "num locations " << lloc.num_locations << std::endl;
     }
 
-    void _fill_trie_data(KmerBuildData kb) {
-        std::cerr << "==== fill trie data" << std::endl;
-        u32 added1 = 0, added2 = 0;
-        auto &trie_data = data.trie_data;
-        for (LetterLoc i = 0; i <= data.letter_loc.num_locations; ++i) {
-            if (kb.kmers[i].size() > std::numeric_limits<typename decltype(kb.done_idx)::value_type>::max()) {
-                std::cerr << "got " << kb.kmers[i].size() << " kmers at " << i << std::endl;
-                throw "too-many-kmers";
-            }
-            for (kmer_len_type j = 0; j < kb.done_idx[i]; ++j) {
-                auto kmer = kb.kmers[i][j];
-                if (kmer.is_complete()) {
-                    // std::cerr << "full kmer " << kb.kmers[i][j] << " " << i << std::endl;
-                    ++added1;
-                    if (added1 % 100000 == 0) {
-                        std::cerr << "Added1 " << added1 << "\n"
-                            << i << "/" << data.letter_loc.num_locations
-                            << std::endl;
-                    }
-                    trie_data.trie2graph.add(kb.kmers[i][j], i);
-                }
-            }
-        }
+    // void _fill_trie_data(KmerBuildData kb) {
+    //     std::cerr << "==== fill trie data" << std::endl;
+    //     u32 added1 = 0, added2 = 0;
+    //     auto &trie_data = data.trie_data;
+    //     for (LetterLoc i = 0; i <= lloc.num_locations; ++i) {
+    //         if (kb.kmers[i].size() > std::numeric_limits<typename decltype(kb.done_idx)::value_type>::max()) {
+    //             std::cerr << "got " << kb.kmers[i].size() << " kmers at " << i << std::endl;
+    //             throw "too-many-kmers";
+    //         }
+    //         for (kmer_len_type j = 0; j < kb.done_idx[i]; ++j) {
+    //             auto kmer = kb.kmers[i][j];
+    //             if (kmer.is_complete()) {
+    //                 // std::cerr << "full kmer " << kb.kmers[i][j] << " " << i << std::endl;
+    //                 ++added1;
+    //                 if (added1 % 100000 == 0) {
+    //                     std::cerr << "Added1 " << added1 << "\n"
+    //                         << i << "/" << lloc.num_locations
+    //                         << std::endl;
+    //                 }
+    //                 trie_data.trie2graph.add(kb.kmers[i][j], i);
+    //             }
+    //         }
+    //     }
 
-        std::cerr << "destroying kb" << std::endl;
-        // destroy kb
-        { auto _ = std::move(kb); }
-        std::cerr << "destroyed kb" << std::endl;
+    //     std::cerr << "destroying kb" << std::endl;
+    //     // destroy kb
+    //     { auto _ = std::move(kb); }
+    //     std::cerr << "destroyed kb" << std::endl;
 
-        // put a guard for kmer pop loop
-        trie_data.active_trie.emplace(Kmer::empty());
-        for (const auto &item : trie_data.trie2graph) {
-            ++added2;
-            if (added2 % 100000 == 0) {
-                std::cerr << "Added2 " << added2 << std::endl;
-            }
-            trie_data.graph2trie.add(item.second, item.first);
-            auto kmer = item.first;
-            do {
-                kmer.pop();
-            } while (trie_data.active_trie.insert(kmer).second);
-        }
-    }
+    //     // put a guard for kmer pop loop
+    //     trie_data.active_trie.emplace(Kmer::empty());
+    //     for (const auto &item : trie_data.trie2graph) {
+    //         ++added2;
+    //         if (added2 % 100000 == 0) {
+    //             std::cerr << "Added2 " << added2 << std::endl;
+    //         }
+    //         trie_data.graph2trie.add(item.second, item.first);
+    //         auto kmer = item.first;
+    //         do {
+    //             kmer.pop();
+    //         } while (trie_data.active_trie.insert(kmer).second);
+    //     }
+    // }
 
-    void _fill_trie_data_opt(KmerBuildData kb) {
+    std::vector<std::pair<Kmer, LetterLoc>> _make_pairs(KmerBuildData kb) {
         std::cerr << "prepping pairs" << std::endl;
         std::vector<std::pair<Kmer, LetterLoc>> pairs;
         u64 total = 0;
-        assert(kb.kmers.size() == 1 + data.letter_loc.num_locations);
-        for (LetterLoc i = 0; i <= data.letter_loc.num_locations; ++i) {
+        assert(kb.kmers.size() == 1 + lloc.num_locations);
+        for (LetterLoc i = 0; i <= lloc.num_locations; ++i) {
             total += kb.kmers[i].size();
         }
         pairs.reserve(total);
-        for (LetterLoc i = 0; i <= data.letter_loc.num_locations; ++i) {
+        for (LetterLoc i = 0; i <= lloc.num_locations; ++i) {
             for (const auto &kmer : kb.kmers[i]) {
                 if (kmer.is_complete()) {
                     pairs.emplace_back(kmer, i);
@@ -402,8 +401,10 @@ struct TrieGraphBuilder {
         // destroy kb
         { auto _ = std::move(kb); }
 
-        std::cerr << "pairs ready" << std::endl;
-        data.trie_data.init(std::move(pairs), data.letter_loc);
+        return pairs;
+
+        // std::cerr << "pairs ready" << std::endl;
+        // data.trie_data.init(std::move(pairs), data.letter_loc);
     }
 };
 

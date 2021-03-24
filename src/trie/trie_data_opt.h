@@ -297,18 +297,18 @@ struct TieredBitset {
     }
 };
 
-template <typename Kmer_, typename LetterLoc_,
-         typename NumKmers_ = LetterLoc_>
+template <typename Kmer_, typename LetterLocData_,
+         typename NumKmers_ = LetterLocData_::LetterLoc>
 struct TrieDataOpt {
     using Kmer = Kmer_;
     using KHolder = Kmer::Holder;
-    using LetterLoc = LetterLoc_;
+    using LetterLocData = LetterLocData_;
+    using LetterLoc = LetterLocData::LetterLoc;
     using NumKmers = NumKmers_;
 
     using KmerCodec = CodecKmerLeaf<Kmer>;
 
-    template <typename LetterLocData>
-    void init(std::vector<std::pair<Kmer, LetterLoc>> pairs,
+    TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
         auto maxkmer = pow(Kmer::Letter::num_options, Kmer::K);
         using Fwd = PairFwd<Kmer, LetterLoc>;
@@ -337,6 +337,10 @@ struct TrieDataOpt {
         active_trie.init(key_iter_pair(trie2graph.keys()));
                 // std::views::transform([](KHolder kh) { return Kmer(kh); }));
     }
+    TrieDataOpt(const TrieDataOpt &) = delete;
+    TrieDataOpt &operator= (const TrieDataOpt &) = delete;
+    TrieDataOpt(TrieDataOpt &&) = default;
+    TrieDataOpt &operator= (TrieDataOpt &&) = default;
 
     OptMMap<KHolder, NumKmers, LetterLoc> trie2graph;
     OptMMap<LetterLoc, NumKmers, KHolder> graph2trie;
