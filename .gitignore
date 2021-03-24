@@ -2,4 +2,6 @@
 main
 test/*
 !test/*.cpp
+benchmark/*
+!benchmark/*.cpp
 *.d

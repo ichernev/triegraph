@@ -2,6 +2,7 @@ SRCS := $(wildcard src/*.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 TARGETS  := $(patsubst %.cpp,%,$(SRCS))
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
+BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
 DEPS := $(OBJS:%.o=%.d) $(TESTS:%=%.d)
 
 SHORT := -Wfatal-errors
@@ -13,9 +14,16 @@ all: $(TARGETS)
 .PHONY: tests
 tests: $(TESTS)
 
+.PHONY: benchmarks
+benchmarks: $(BENCHES)
+
 .PHONY: test
 test: $(TESTS)
 	for t in $(TESTS); do echo ======= $$t =======; ./$$t; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion/ { printf RED; } // { print $$0 COLEND; } '
+
+.PHONY: benchmark
+benchmark: $(BENCHES)
+	for b in $(BENCHES); do echo ======= $$b =======; ./$$b; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion/ { printf RED; } // { print $$0 COLEND; } '
 
 %: %.o
 	g++ $(CPPFLAGS) $< -o $@
