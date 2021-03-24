@@ -32,42 +32,39 @@ struct SparseStarts {
         using Self              = StartIter;
         using Sent              = StartIterSent;
 
-        const SparseStarts *parent;
-        NodeLoc n;
-        NodeLoc node_id;
-        EdgeLoc in_node;
+        const SparseStarts *parent; NodeLoc n;
+        NodePos np;
 
-        StartIter() : parent(nullptr), node_id(Graph::INV_SIZE) {}
+        StartIter() : parent(nullptr), np(Graph::INV_SIZE, 0) {}
         StartIter(const SparseStarts &parent, NodeLoc n)
             : parent(&parent),
               n(n),
-              node_id(0),
-              in_node(n-1 - this->parent->tags[0])
+              np(0, n-1 - this->parent->tags[0])
         {
             adjust();
         }
 
         void adjust() {
-            if (in_node >= parent->graph.node(node_id).seg.size())
-                ++ node_id;
-            while (node_id < parent->graph.num_nodes()) {
-                in_node = n-1 - parent->tags[node_id];
-                if (in_node < parent->graph.node(node_id).seg.size())
+            if (np.pos >= parent->graph.node(np.node).seg.size())
+                ++ np.node;
+            while (np.node < parent->graph.num_nodes()) {
+                np.pos = n-1 - parent->tags[np.node];
+                if (np.pos < parent->graph.node(np.node).seg.size())
                     break;
-                ++ node_id;
+                ++ np.node;
             }
-            if (node_id >= parent->graph.num_nodes()) {
-                node_id = Graph::INV_SIZE;
-                in_node = std::numeric_limits<EdgeLoc>::max();
+            if (np.node >= parent->graph.num_nodes()) {
+                np.node = Graph::INV_SIZE;
+                np.pos = 0;
                 return;
             }
         }
 
-        reference operator*() const { return NodePos(node_id, in_node); }
-        Self& operator++() { in_node += n; adjust(); return *this; }
+        reference operator*() const { return np; }
+        Self& operator++() { np.pos += n; adjust(); return *this; }
         Self operator++(int) { Self tmp = *this; ++(*this); return tmp; }
-        bool operator== (const Self& other) const { return node_id == other.node_id && in_node == other.in_node; }
-        bool operator== (const Sent& other) const { return node_id == Graph::INV_SIZE; }
+        bool operator== (const Self& other) const { return np == other.np; }
+        bool operator== (const Sent& other) const { return np.node == Graph::INV_SIZE; }
     };
 
     using const_iterator = StartIter;
