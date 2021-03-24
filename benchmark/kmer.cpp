@@ -22,7 +22,7 @@ static void test_insertions(u32 ins) {
 }
 
 template <typename Kmer>
-static void test_compress(u32 iter, u32 max_compressed) {
+static void test_decompress(u32 iter, u32 max_compressed) {
     int total = 0;
     srand(0);
     for (u32 i = 0; i < iter; ++i) {
@@ -33,7 +33,7 @@ static void test_compress(u32 iter, u32 max_compressed) {
 }
 
 template <typename Kmer>
-static void test_decompress(u32 iter, u32 max_compressed) {
+static void test_compress_decompress(u32 iter, u32 max_compressed) {
     int total = 0;
     srand(0);
     for (u32 i = 0; i < iter; ++i) {
@@ -67,19 +67,19 @@ int main() {
         auto t = Timer("dkmer-ins"); test_insertions<DKmer>(10 * 1000 * 1000);
     }
     {
-        auto t = Timer("dkmer-comp"); test_compress<DKmer>(100 * 1000 * 1000, DKmer::beg[DKmer::K+1]);
+        auto t = Timer("dkmer-decomp"); test_decompress<DKmer>(100 * 1000 * 1000, DKmer::NUM_COMPRESSED);
     }
     {
-        auto t = Timer("dkmer-decomp"); test_decompress<DKmer>(100 * 1000 * 1000, DKmer::beg[DKmer::K+1]);
+        auto t = Timer("dkmer-comp-decomp"); test_compress_decompress<DKmer>(100 * 1000 * 1000, DKmer:NUM_COMPRESSED);
     }
     {
         auto t = Timer("kmer-ins"); test_insertions<Kmer>(10 * 1000 * 1000);
     }
     {
-        auto t = Timer("kmer-comp"); test_compress<Kmer>(100 * 1000 * 1000, Kmer::NUM_COMPRESSED);
+        auto t = Timer("kmer-decomp"); test_decompress<Kmer>(100 * 1000 * 1000, Kmer::NUM_COMPRESSED);
     }
     {
-        auto t = Timer("kmer-decomp"); test_decompress<Kmer>(100 * 1000 * 1000, Kmer::NUM_COMPRESSED);
+        auto t = Timer("kmer-comp-decomp"); test_compress_decompress<Kmer>(100 * 1000 * 1000, Kmer::NUM_COMPRESSED);
     }
 
     return 0;
