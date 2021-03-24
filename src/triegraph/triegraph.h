@@ -35,8 +35,8 @@ struct TrieGraph {
 
     std::tuple<NodeLoc, NodeLoc, LetterLoc> graph_size() const {
         return std::make_tuple(
-                data.graph.nodes.size(),
-                data.graph.edges.size() / 2,
+                data.graph.num_nodes(),
+                data.graph.num_edges() / 2,
                 data.letter_loc.num_locations);
     }
 
