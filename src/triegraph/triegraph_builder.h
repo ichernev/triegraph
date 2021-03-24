@@ -1,13 +1,13 @@
 #ifndef __TRIEGRAPH_BUILDER_H__
 #define __TRIEGRAPH_BUILDER_H__
 
-#include "util/util.h"
+#include "graph/connected_components.h"
 #include "util/compressed_vector.h"
+#include "util/util.h"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <string>
@@ -83,8 +83,8 @@ struct TrieGraphBuilder {
         auto time_01 = std::chrono::steady_clock::now();
 
         std::cerr << "=== building trie === " << std::endl;
-        auto comps = ConnectedComp::build(graph);
-        auto starts = _compute_starts(std::move(comps));
+        auto starts = ConnectedComponents<Graph>(graph).compute_starting_points();
+        // auto starts = _compute_starts(std::move(comps));
         auto kmer_data = _bfs_trie(std::move(starts));
         // _fill_trie_data(std::move(kmer_data));
         auto time_02 = std::chrono::steady_clock::now();
@@ -102,70 +102,6 @@ struct TrieGraphBuilder {
         //     std::move(lloc),
         //     std::move(trie_data)
         // };
-    }
-
-    struct ConnectedComp {
-        const Graph &graph;
-        std::vector<NodeLoc> comp_id; // (raw_graph.rgfa_nodes.size(), INV_SIZE);
-        NodeLoc num_comp = 0;
-        ConnectedComp(const Graph &graph)
-            : graph(graph), comp_id(graph.num_nodes(), Graph::INV_SIZE), num_comp(0) {
-        }
-
-        static ConnectedComp build(const Graph &graph) {
-            std::cerr << "==== computing components" << std::endl;
-            ConnectedComp comps(graph);
-            for (NodeLoc i = 0; i < comps.comp_id.size(); ++i) {
-                if (comps.comp_id[i] == Graph::INV_SIZE)
-                    comps._bfs_2way(i, comps.num_comp++);
-            }
-            return comps;
-        }
-
-        void _bfs_2way(NodeLoc start, NodeLoc comp) {
-            std::queue<NodeLoc> q;
-
-            q.push(start);
-            comp_id[start] = comp;
-
-            while (!q.empty()) {
-                auto crnt = q.front(); q.pop();
-
-                for (const auto &to : graph.forward_from(crnt)) {
-                    if (comp_id[to.node_id] == Graph::INV_SIZE) {
-                        comp_id[to.node_id] = comp;
-                        q.push(to.node_id);
-                    }
-                }
-                for (const auto &from : graph.backward_from(crnt)) {
-                    if (comp_id[from.node_id] == Graph::INV_SIZE) {
-                        comp_id[from.node_id] = comp;
-                        q.push(from.node_id);
-                    }
-                }
-            }
-        }
-    };
-
-    std::vector<NodeLoc> _compute_starts(ConnectedComp comps) const {
-        std::cerr << "==== computing starts" << std::endl;
-        std::vector<NodeLoc> starts;
-        std::unordered_set<NodeLoc> done_comps;
-
-        starts.reserve(comps.num_comp);
-        for (NodeLoc i = 0; i < graph.num_nodes(); ++i) {
-            if (graph.backward_from(i).empty()) {
-                starts.push_back(i);
-                done_comps.insert(comps.comp_id[i]);
-            }
-        }
-        for (NodeLoc i = 0; i < graph.num_nodes(); ++i) {
-            if (!done_comps.contains(comps.comp_id[i])) {
-                done_comps.insert(comps.comp_id[i]);
-                starts.push_back(i);
-            }
-        }
-        return starts;
     }
 
     struct KmerBuildData {
