@@ -8,9 +8,10 @@ namespace {
 
 using namespace triegraph;
 
-using TG = Manager<dna::DnaConfig<15>>;
+using TG = Manager<dna::DnaConfig<0>>;
 
 static void test_linear() {
+    TG::init({ .trie_depth = 15 });
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("acg"), "s1")
         .build();
@@ -23,6 +24,7 @@ static void test_linear() {
 }
 
 static void test_split() {
+    TG::init({ .trie_depth = 15 });
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("c"), "s2")

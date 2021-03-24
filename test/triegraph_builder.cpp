@@ -7,20 +7,7 @@
 
 using namespace triegraph;
 
-// struct Cfg {
-//     using Letter = dna::DnaLetter;
-//     using StrHolder = u32;
-//     using NodeLoc = u32;
-//     using NodeLen = u32;
-//     using EdgeLoc = u32;
-//     using LetterLoc = u32;
-//     using KmerHolder = u64;
-//     static constexpr int LetterLocIdxShift = -1;
-//     static constexpr u64 KmerLen = 4;
-//     static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
-// };
-
-using TG = Manager<dna::DnaConfig<4>>;
+using TG = Manager<dna::DnaConfig<0>>;
 
 static std::vector<TG::LetterLoc> trie2graph(const TG::TrieGraphData &tg, TG::Kmer kmer) {
     auto pos_it = tg.trie_data.t2g_values_for(kmer);
@@ -30,11 +17,18 @@ static std::vector<TG::LetterLoc> trie2graph(const TG::TrieGraphData &tg, TG::Km
     return pos;
 }
 
+static TG::TrieGraphData build_tgd(TG::Graph &&g) {
+    return TG::triegraph_from_graph<TG::TrieGraphBuilder>(
+            std::move(g),
+            { .add_reverse_complement = false, .trie_depth = 4 }).data;
+}
+
 static void test_tiny_linear_graph() {
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("acgtacgtac"), "s1")
         .build({ .add_reverse_complement = false });
-    auto tg = TG::TrieGraphBuilder(std::move(g)).build();
+
+    auto tg = build_tgd(std::move(g));
     auto pos = trie2graph(tg, TG::Kmer::from_str("acgt"));
 
     assert(std::ranges::equal(
@@ -70,8 +64,7 @@ static void test_small_nonlinear_graph() {
      *     t        *
      *     3        *
      ***************/
-    auto tg = TG::TrieGraphBuilder(std::move(g)).build();
-
+    auto tg = build_tgd(std::move(g));
     assert(std::ranges::equal(
                 trie2graph(tg, TG::Kmer::from_str("acga")),
                 std::vector<TG::LetterLoc> { 5 }));
@@ -109,7 +102,7 @@ static void test_multiple_ends() {
      *       g - a   *
      *       4   6   *
      *****************/
-    auto tg = TG::TrieGraphBuilder(std::move(g)).build();
+    auto tg = build_tgd(std::move(g));
 
     // for (const auto &x : tg.trie_data.trie2graph) {
     //     std::cerr << x.first << "|" << TG::Kmer::from_compressed_leaf(x.first)
@@ -134,7 +127,6 @@ static void test_multiple_ends() {
                 trie2graph(tg, TG::Kmer::from_str("cgga")),
                 std::vector<TG::LetterLoc> { }));
 }
-
 
 int main() {
     test_tiny_linear_graph();

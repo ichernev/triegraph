@@ -9,7 +9,7 @@ using namespace triegraph;
 
 namespace {
 
-using M4 = Manager<dna::DnaConfig<4>>;
+using M4 = Manager<dna::DnaConfig<0>>;
 using Str = M4::Str;
 using EditEdge = M4::EditEdge;
 using NodePos = M4::NodePos;

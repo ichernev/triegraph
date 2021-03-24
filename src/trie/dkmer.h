@@ -45,6 +45,7 @@ struct DKmer {
     static inline Holder ON_MASK;
     static inline Holder KMER_MASK, EMPTY;
     static inline Holder L1_MASK, L2_MASK, L2_SHIFT, L3_MASK, L3_SHIFT;
+    static inline Holder NUM_COMPRESSED, NUM_LEAFS;
     static inline std::array<Holder, sizeof(u64) * BITS_PER_BYTE + 2> beg, lvl_size;
 
     static Holder _kmer_mask(klen_type anti_len) {
@@ -73,6 +74,8 @@ struct DKmer {
             Self::beg[l] = Self::beg[l-1] + Self::lvl_size[l-1];
             Self::lvl_size[l] = Self::lvl_size[l-1] * Letter::num_options;
         }
+        Self::NUM_COMPRESSED = beg[K+1];
+        Self::NUM_LEAFS = lvl_size[K];
     }
 
     Holder data;

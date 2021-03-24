@@ -1,6 +1,7 @@
 #include "util/util.h"
 #include "trie/trie_data_opt.h"
 #include "trie/kmer.h"
+#include "trie/dkmer.h"
 #include "alphabet/letter.h"
 #include "alphabet/dna_letter.h"
 
@@ -18,12 +19,22 @@ template<u64 nopts, u64 K,
     typename Letter_ = triegraph::Letter<u8, nopts>>
 struct Helper {
     using Letter = Letter_;
-    using Kmer = triegraph::Kmer<Letter, u32, K>;
+    // using Kmer = triegraph::Kmer<Letter, u32, K>;
+    using Kmer = triegraph::DKmer<Letter, u32>;
     using TB = triegraph::TieredBitset<Kmer>;
+
+    // struct Initializator {
+    //     Initializator() {
+    //         std::cerr << "initializing K " << K << std::endl;
+    //         Kmer::setK(K);
+    //     }
+    // };
+    // static inline Initializator init = {};
 };
 
 static void test_trie_presense() {
     using TB = Helper<4, 3, triegraph::dna::DnaLetter>::TB;
+    TB::Kmer::setK(3);
 
     auto kmers = std::vector<TB::Kmer> {
         TB::Kmer::from_str("aac"),

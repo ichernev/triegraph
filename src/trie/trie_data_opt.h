@@ -268,9 +268,9 @@ struct TieredBitset {
                 }
             }
         }
-        auto beg_it = Kmer::beg.rbegin();
+        auto beg_it = Kmer::beg.rend() - Kmer::K;
         // star
-        ++ beg_it;
+        // ++ beg_it;
         // std::cerr << "last level has " << (typename Kmer::TrieElems<Kmer::K-1>)::power << std::endl;
         for (u64 pos = present.size() - pow(Letter::num_options, Kmer::K-1) - 1;
                 pos < present.size(); --pos) {

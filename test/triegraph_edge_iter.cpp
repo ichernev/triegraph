@@ -11,7 +11,7 @@ using namespace triegraph;
 
 namespace {
 
-using TG = Manager<dna::DnaConfig<15>>;
+using TG = Manager<dna::DnaConfig<0>>;
 
 using Kmer = TG::Kmer;
 using EditEdge = TG::EditEdge;
@@ -23,6 +23,7 @@ using EditEdgeIterView = TG::TrieGraph::edit_edge_iter_view;
 void func(std::forward_iterator auto it) {}
 
 static void test_graph_fwd() {
+    TG::init({ .trie_depth = 15 });
     EditEdgeIterView h = EditEdgeIter::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 });
     std::vector<EditEdge> expected = {
         EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::A },
@@ -42,6 +43,7 @@ static void test_graph_fwd() {
 }
 
 static void test_graph_split() {
+    TG::init({ .trie_depth = 15 });
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("c"), "s2")
@@ -130,6 +132,7 @@ static void test_graph_split() {
 }
 
 static void test_trie_inner() {
+    TG::init({ .trie_depth = 15 });
     EditEdgeIterView h = EditEdgeIter::make_trie_inner(
             Kmer::from_str("acgt"),
             (1 << 1) | (1 << 2));
@@ -157,7 +160,8 @@ static void test_trie_inner() {
 }
 
 static void test_trie_to_graph() {
-    using TG2 = Manager<dna::DnaConfig<2>>;
+    using TG2 = Manager<dna::DnaConfig<0>>;
+    TG2::init({ .trie_depth = 2 });
 
     using Kmer = TG2::Kmer;
     using EditEdge = TG2::EditEdge;

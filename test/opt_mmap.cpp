@@ -4,11 +4,12 @@
 #include <vector>
 #include <utility>
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<2>>;
+using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
 
 using t2g_t = triegraph::OptMMap<TG::Kmer::Holder, triegraph::u32, TG::LetterLoc>;
 
 static void test_init_iter() {
+    TG::init({ .trie_depth = 2 });
     t2g_t t2g;
     auto pairs = std::vector<std::pair<TG::Kmer, TG::LetterLoc>> {
         { TG::Kmer::from_str("aa"), 0 },
@@ -48,6 +49,7 @@ static void test_init_iter() {
 }
 
 static void test_equal_range() {
+    TG::init({ .trie_depth = 2 });
     t2g_t t2g;
     auto er = [&](auto str) { return t2g.equal_range(TG::Kmer::from_str(str).compress_leaf()); };
     auto pairs = std::vector<std::pair<TG::Kmer, TG::LetterLoc>> {
@@ -63,7 +65,6 @@ static void test_equal_range() {
             pairs,
             a_max);
 
-    // auto rng_aa = t2g.equal_range(TG::Kmer::from_str("aa"));
     auto rng_aa = er("aa");
     auto rng_aa_expected = std::vector<decltype(rng_aa.first)::value_type> {
         { 0, 0 },
@@ -71,28 +72,30 @@ static void test_equal_range() {
     };
     assert(std::equal(rng_aa.first, rng_aa.second, rng_aa_expected.begin()));
 
-    // auto rng_ac = t2g.equal_range(TG::Kmer::from_str("ac"));
-    // auto rng_ac_expected = std::vector<std::pair<TG::Kmer::Holder, TG::LetterLoc>> {
-    //     { 1, 1 },
-    //     { 1, 2 },
-    // };
-    // assert(std::equal(rng_ac.first, rng_ac.second, rng_ac_expected.begin()));
+    auto rng_ac = er("ac");
+    auto rng_ac_expected = std::vector<std::pair<TG::Kmer::Holder, TG::LetterLoc>> {
+        { 1, 1 },
+        { 1, 2 },
+    };
+    assert(std::equal(rng_ac.first, rng_ac.second, rng_ac_expected.begin()));
 
-    // auto rng_ta = t2g.equal_range(TG::Kmer::from_str("ta"));
-    // auto rng_ta_expected = std::vector<std::pair<TG::Kmer::Holder, TG::LetterLoc>> {
-    //     { 12, 3 },
-    // };
-    // assert(std::equal(rng_ta.first, rng_ta.second, rng_ta_expected.begin()));
+    auto rng_ta = er("ta");
+    auto rng_ta_expected = std::vector<std::pair<TG::Kmer::Holder, TG::LetterLoc>> {
+        { 12, 3 },
+    };
+    assert(std::equal(rng_ta.first, rng_ta.second, rng_ta_expected.begin()));
 
-    // auto rng_tt = t2g.equal_range(TG::Kmer::from_str("tt"));
-    // auto rng_tt_expected = std::vector<std::pair<TG::Kmer::Holder, TG::LetterLoc>> {};
-    // assert(std::equal(rng_tt.first, rng_tt.second, rng_tt_expected.begin()));
+    auto rng_tt = er("tt");
+    auto rng_tt_expected = std::vector<std::pair<TG::Kmer::Holder, TG::LetterLoc>> {};
+    assert(std::equal(rng_tt.first, rng_tt.second, rng_tt_expected.begin()));
 }
 
-template<std::forward_iterator IT>
-void func(IT) {}
 
 static void test_iter_concept() {
+    TG::init({ .trie_depth = 2 });
+
+    auto func = [](std::forward_iterator auto it) {};
+
     t2g_t t2g;
     auto pairs = std::vector<std::pair<TG::Kmer, TG::LetterLoc>> {
         { TG::Kmer::from_str("aa"), 0 },

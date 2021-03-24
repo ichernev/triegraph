@@ -46,6 +46,15 @@ quot_rem<u32> div(T a, T b) {
     return { quot, a - b * quot };
 }
 
+template <bool, typename A, typename B>
+struct choose_type { using type = A; };
+
+template<typename A, typename B>
+struct choose_type<false, A, B> { using type = B; };
+
+template <bool b, typename A, typename B>
+using choose_type_t = choose_type<b, A, B>::type;
+
 template <typename Ext, typename Int = Ext>
 struct CodecIdentity {
     using ext_type = Ext;

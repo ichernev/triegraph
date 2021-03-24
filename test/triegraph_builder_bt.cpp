@@ -18,11 +18,17 @@ static std::vector<TG::LetterLoc> trie2graph(const TG::TrieGraphData &tg, TG::Km
     return pos;
 }
 
+static TG::TrieGraphData build_tgd(TG::Graph &&g) {
+    return TG::triegraph_from_graph<TG::TrieGraphBTBuilder>(
+            std::move(g),
+            { .add_reverse_complement = false, .trie_depth = 4 }).data;
+}
+
 static void test_tiny_linear_graph() {
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("acgtacgtac"), "s1")
         .build({ .add_reverse_complement = false });
-    auto tg = TG::TrieGraphBTBuilder(std::move(g)).build();
+    auto tg = build_tgd(std::move(g));
 
     // for (const auto &x : tg.trie_data.trie2graph) {
     //     std::cerr << x.first << "|" << TG::Kmer::from_compressed_leaf(x.first) << " : " << x.second << std::endl;
@@ -58,7 +64,7 @@ static void test_small_nonlinear_graph() {
      *     t        *
      *     3        *
      ***************/
-    auto tg = TG::TrieGraphBTBuilder(std::move(g)).build();
+    auto tg = build_tgd(std::move(g));
 
     assert(std::ranges::equal(
                 trie2graph(tg, TG::Kmer::from_str("acga")),
@@ -97,7 +103,7 @@ static void test_multiple_ends() {
      *       g - a   *
      *       4   6   *
      *****************/
-    auto tg = TG::TrieGraphBTBuilder(std::move(g)).build();
+    auto tg = build_tgd(std::move(g));
 
     // for (const auto &x : tg.trie_data.trie2graph) {
     //     std::cerr << x.first << "|" << TG::Kmer::from_compressed_leaf(x.first)
