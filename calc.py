@@ -59,15 +59,16 @@ def xbytes(bits):
 
 def main(args):
     n = parse_human(args[0])
-    ff = 2.0 if len(args) == 1 else float(args[1])
+    ff = 2.0 if len(args) < 2 else float(args[1])
+    # kx = -1 if len(args)  < 3 else int(args[2])
     print(f'n           {n}')
     print(f'ff          {ff:.1f}')
-    k = log4(n)
-    print(f'k = log4(n) {k}')
-    nkmers = 4 ** k
-    print(f'num kmers   {human(4 ** k)}')
     npairs = int(ff * n)
     print(f'num pairs   {human(npairs)}')
+    k = log4(npairs)
+    print(f'k = log4(npairs) {k}')
+    nkmers = 4 ** k
+    print(f'num kmers   {human(4 ** k)}')
 
     bits_per_kmer = k * 2 + 1
     bits_per_loc =  log2(n)
