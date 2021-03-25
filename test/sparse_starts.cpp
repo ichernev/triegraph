@@ -21,13 +21,14 @@ static void test_small_linear() {
     auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
     auto starts = ss.compute_starts_every(2, {0});
 
-    std::ranges::equal(starts,
-            std::vector<TG::NodePos> { {0, 0}, {0, 2}, {0, 4}, {0, 6} });
+    // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
+    assert(std::ranges::equal(starts,
+                std::vector<TG::NodePos> { {0, 0}, {0, 2}, {0, 4}, {0, 6} }));
 }
 
 static void test_small_split() {
     auto g = TG::Graph::Builder()
-        .add_node(TG::Str("aa"), "s1")
+        .add_node(TG::Str("aaa"), "s1")
         .add_node(TG::Str("a"), "s2")
         .add_node(TG::Str("aa"), "s3")
         .add_node(TG::Str("a"), "s4")
@@ -40,14 +41,52 @@ static void test_small_split() {
     auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
     auto starts = ss.compute_starts_every(2, {0});
 
-    std::ranges::equal(starts,
-            std::vector<TG::NodePos> { {0, 0}, {1, 0}, {2, 0}, {3, 0} });
+    // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
+    assert(std::ranges::equal(starts,
+                std::vector<TG::NodePos> { {0, 0}, {0, 2}, {2, 1}, {3, 0} }));
+}
+
+static void test_small_split2() {
+    auto g = TG::Graph::Builder()
+        .add_node(TG::Str("acgt"), "s1")
+        .add_node(TG::Str("acgta"), "s2")
+        .add_node(TG::Str("aa"), "s3")
+        .add_edge("s1", "s3")
+        .add_edge("s2", "s3")
+        .build();
+
+    auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
+    auto starts = ss.compute_starts_every(3, {0, 1});
+
+    // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
+    assert(std::ranges::equal(starts,
+            std::vector<TG::NodePos> { {0, 0}, {0, 3}, {1, 0}, {1, 3}, {2, 1} }));
+}
+
+static void test_small_loop() {
+    auto g = TG::Graph::Builder()
+        .add_node(TG::Str("acgt"), "s1")
+        .add_node(TG::Str("acgta"), "s2")
+        .add_node(TG::Str("aa"), "s3")
+        .add_edge("s1", "s3")
+        .add_edge("s2", "s3")
+        .add_edge("s3", "s3")
+        .build();
+
+    auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
+    auto starts = ss.compute_starts_every(3, {0, 1});
+
+    // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
+    assert(std::ranges::equal(starts,
+            std::vector<TG::NodePos> { {0, 0}, {0, 3}, {1, 0}, {1, 3}, {2, 0} }));
 }
 
 int main() {
     test_iter_concept();
     test_small_linear();
     test_small_split();
+    test_small_split2();
+    test_small_loop();
 
     return 0;
 }

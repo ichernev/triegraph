@@ -7,6 +7,7 @@
 #include <queue>
 #include <unordered_set>
 #include <vector>
+#include <algorithm>
 
 namespace triegraph {
 
@@ -45,13 +46,14 @@ struct SparseStarts {
         }
 
         void adjust() {
-            if (np.pos >= parent->graph.node(np.node).seg.size())
-                ++ np.node;
-            while (np.node < parent->graph.num_nodes()) {
+            // std::cerr << "adjusting " << np << std::endl;
+            if (np.pos < parent->graph.node(np.node).seg.size())
+                return;
+
+            while (++np.node < parent->graph.num_nodes()) {
                 np.pos = n-1 - parent->tags[np.node];
                 if (np.pos < parent->graph.node(np.node).seg.size())
                     break;
-                ++ np.node;
             }
             if (np.node >= parent->graph.num_nodes()) {
                 np.node = Graph::INV_SIZE;
@@ -86,10 +88,13 @@ struct SparseStarts {
 
         _bfs(n, starts);
 
+        // std::ranges::copy(tags, std::ostream_iterator<int>(std::cerr, " ")); std::cerr << std::endl;
+
         return StartIter(*this, n);
     }
 
     void _bfs(NodeLoc n, const std::vector<NodeLoc> &starts) {
+        // std::cerr << "start " << n << std::endl;
         std::queue<NodeLoc> q;
         std::unordered_set<NodeLoc> wait_list;
 
@@ -101,29 +106,32 @@ struct SparseStarts {
             in_degree[nl] = 0; // 0 means it's visited
         }
 
-        while (q.empty() && wait_list.empty()) {
+        while (!q.empty() || !wait_list.empty()) {
             NodeLoc crnt;
             if (!q.empty()) {
                 crnt = q.front(); q.pop();
+                // std::cerr << "popping q " << crnt << std::endl;
             } else {
                 assert(!wait_list.empty());
                 crnt = wait_list.extract(wait_list.begin()).value();
                 tags[crnt] = n-1;
                 in_degree[crnt] = 0;
+                // std::cerr << "popping wl " << crnt << std::endl;
             }
 
             typename decltype(tags)::value_type next_tag =
                 (tags[crnt] + graph.node(crnt).seg.size()) % n;
-            for (const auto &fw_node : graph.forward_from(crnt)) {
-                if (in_degree[fw_node.node_id] == 0)
+            for (const auto &fw : graph.forward_from(crnt)) {
+                if (in_degree[fw.node_id] == 0)
                     // already visited, possibly looping back
                     continue;
 
-                tags[fw_node.node_id] = std::max(tags[fw_node.node_id], next_tag);
-                if (--in_degree[fw_node.node_id] == 0) {
-                    q.push(fw_node.node_id);
+                tags[fw.node_id] = std::max(tags[fw.node_id], next_tag);
+                if (--in_degree[fw.node_id] == 0) {
+                    wait_list.erase(fw.node_id);
+                    q.push(fw.node_id);
                 } else {
-                    wait_list.insert(fw_node.node_id);
+                    wait_list.insert(fw.node_id);
                 }
             }
         }
