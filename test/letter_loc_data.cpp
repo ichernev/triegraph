@@ -86,10 +86,23 @@ static void test_lloc_with_idx() {
     }
 }
 
+static void test_lloc_iter() {
+    auto g = build_graph();
+    auto ll = TG::LetterLocData(g);
+    auto expected = get_expected();
+
+    std::ranges::copy(ll, std::ostream_iterator<TG::NodePos>(std::cerr, "\n"));
+    assert(std::ranges::equal(
+                expected | std::ranges::views::transform(
+                    &std::pair<TG::LetterLoc, TG::NodePos>::second
+                    /*[](const auto &p) { return p.second; }*/),
+                ll));
+}
 
 int main() {
     test_lloc_no_idx();
     test_lloc_with_idx();
+    test_lloc_iter();
 
     return 0;
 }

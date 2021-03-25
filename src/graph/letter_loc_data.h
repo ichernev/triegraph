@@ -93,6 +93,48 @@ struct LetterLocData {
     LetterLoc compress(NodePos handle) const {
         return node_start[handle.node] + handle.pos;
     }
+
+    struct NPIterSent {};
+    struct NPIter {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = NodePos;
+        using reference         = value_type;
+        using Self              = NPIter;
+        using Sent              = NPIterSent;
+
+        const LetterLocData *parent;
+        NodePos np;
+
+        NPIter() : parent(nullptr), np(0, 0) {}
+        NPIter(const LetterLocData &parent)
+            : parent(&parent),
+              np(0, 0) { }
+
+        void adjust() {
+            if (np.node + 1 < parent->node_start.size()) [[likely]] {
+                if (np.pos == parent->node_start[np.node+1] - parent->node_start[np.node]) {
+                    ++ np.node;
+                    np.pos = 0;
+                }
+            } else if (parent->node_start[np.node] + np.pos >= parent->num_locations) {
+                np.node = Graph::INV_SIZE;
+                np.pos = 0;
+            }
+        }
+
+        reference operator*() const { return np; }
+        Self& operator++() { ++ np.pos; adjust(); return *this; }
+        Self operator++(int) { Self tmp = *this; ++(*this); return tmp; }
+        bool operator== (const Self& other) const { return np == other.np; }
+        bool operator== (const Sent& other) const { return np.node == Graph::INV_SIZE; }
+    };
+
+    using const_iterator = NPIter;
+    using const_iterator_sent = NPIterSent;
+
+    const_iterator begin() const { return NPIter(*this); }
+    const_iterator_sent end() const { return NPIterSent {}; }
 };
 
 } /* namespace triegraph */

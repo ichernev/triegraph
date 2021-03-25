@@ -2,6 +2,7 @@
 #define __TRIEGRAPH_BUILDER_BT_H__
 
 #include <chrono>
+#include <ranges>
 #include <assert.h>
 
 namespace triegraph {
@@ -29,21 +30,26 @@ struct TrieGraphBTBuilder {
     TrieGraphBTBuilder(TrieGraphBTBuilder &&) = delete;
     TrieGraphBTBuilder &operator= (TrieGraphBTBuilder &&) = delete;
 
-    decltype(pairs) &&get_pairs() && {
+    template <std::ranges::input_range R>
+    decltype(pairs) &&get_pairs(const R &starts) && {
         auto time_01 = std::chrono::steady_clock::now();
 
         std::cerr << "BT builder" << std::endl;
 
         kmer = Kmer::empty();
-        // this->data.trie_data.active_trie.insert(Kmer::empty());
-        for (NodeLoc i = 0, nsz = graph.num_nodes(); i < nsz; ++i) {
-            auto &node = graph.node(i);
-            for (typename Str::Size nl = 0, sz = node.seg.size(); nl < sz; ++nl) {
-                // kmer = Kmer::empty();
-                assert(kmer.size() == 0);
-                _back_track(NodePos(i, nl));
-            }
+        for (const auto &start_np : starts) {
+            assert(kmer.size() == 0);
+            _back_track(start_np);
         }
+        // this->data.trie_data.active_trie.insert(Kmer::empty());
+        // for (NodeLoc i = 0, nsz = graph.num_nodes(); i < nsz; ++i) {
+        //     auto &node = graph.node(i);
+        //     for (typename Str::Size nl = 0, sz = node.seg.size(); nl < sz; ++nl) {
+        //         // kmer = Kmer::empty();
+        //         assert(kmer.size() == 0);
+        //         _back_track(NodePos(i, nl));
+        //     }
+        // }
         auto time_02 = std::chrono::steady_clock::now();
         std::cerr << "Backtrack done: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_02 - time_01).count() << "ms" << std::endl;
 

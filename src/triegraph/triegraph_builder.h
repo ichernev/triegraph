@@ -16,6 +16,7 @@
 #include <limits>
 #include <cassert>
 #include <chrono>
+#include <ranges>
 
 namespace triegraph {
 
@@ -79,7 +80,9 @@ struct TrieGraphBuilder {
     TrieGraphBuilder(TrieGraphBuilder &&) = delete;
     TrieGraphBuilder &operator= (TrieGraphBuilder &&) = delete;
 
-    std::vector<std::pair<Kmer, LetterLoc>> get_pairs() {
+    template <std::ranges::input_range R>
+    std::vector<std::pair<Kmer, LetterLoc>> get_pairs(const R & /* ignored */) {
+
         auto time_01 = std::chrono::steady_clock::now();
 
         std::cerr << "=== building trie === " << std::endl;

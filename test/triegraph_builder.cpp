@@ -18,9 +18,13 @@ static std::vector<TG::LetterLoc> trie2graph(const TG::TrieGraphData &tg, TG::Km
 }
 
 static TG::TrieGraphData build_tgd(TG::Graph &&g) {
-    return TG::triegraph_from_graph<TG::TrieGraphBuilder>(
+    return TG::triegraph_from_graph(
             std::move(g),
-            { .add_reverse_complement = false, .trie_depth = 4 }).data;
+            {
+                .add_reverse_complement = false,
+                .trie_depth = 4,
+                .algo = TG::Settings::BFS
+            }).data;
 }
 
 static void test_tiny_linear_graph() {

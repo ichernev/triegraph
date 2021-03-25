@@ -4,6 +4,8 @@
 #include "alphabet/str.h"
 #include "graph/letter_loc_data.h"
 #include "graph/rgfa_graph.h"
+#include "graph/sparse_starts.h"
+#include "graph/connected_components.h"
 #include "triegraph/handle.h"
 #include "triegraph/triegraph_builder_bt.h"
 #include "triegraph/triegraph_builder.h"
@@ -48,6 +50,11 @@ struct Manager : Cfg {
         Graph,
         typename Cfg::LetterLoc,
         Cfg::LetterLocIdxShift>;
+    using ConnectedComponents = triegraph::ConnectedComponents<
+        Graph>;
+    using SparseStarts = triegraph::SparseStarts<
+        Graph,
+        NodePos>;
     using TrieData = triegraph::TrieDataOpt<
         Kmer,
         LetterLocData>;
@@ -55,9 +62,12 @@ struct Manager : Cfg {
         Graph,
         LetterLocData,
         TrieData>;
-    using TrieGraphBuilder = triegraph::TrieGraphBuilder<
+    using TrieGraphBuilderBFS = triegraph::TrieGraphBuilder<
         Graph, LetterLocData, Kmer>;
-    using TrieGraphBTBuilder = triegraph::TrieGraphBTBuilder<
+    using TrieGraphBuilderBT = triegraph::TrieGraphBTBuilder<
+        Graph, LetterLocData, Kmer>;
+    // TODO: Change this
+    using TrieGraphBuilderPBFS = triegraph::TrieGraphBTBuilder<
         Graph, LetterLocData, Kmer>;
 
     using Handle = triegraph::Handle<Kmer, NodePos>;
@@ -72,29 +82,90 @@ struct Manager : Cfg {
     struct Settings {
         bool add_reverse_complement = true;
         u64 trie_depth = sizeof(typename Kmer::Holder) * BITS_PER_BYTE / Cfg::Letter::bits - 1;
+        int skip_every = 1; // 1 means don't skip
+        enum { BFS, BACK_TRACK, POINT_BFS } algo = BFS;
+        int cut_early_threshold = 0; // for POINT_BFS only
+
+        void validate() const {
+            if (algo == BFS && skip_every != 1) {
+                std::cerr << "skip_every is not supported with BFS" << std::endl;
+                throw -1;
+            }
+            if (cut_early_threshold != 0 && algo != POINT_BFS) {
+                std::cerr << "cut_early_threshold is only supported for POINT_BFS" << std::endl;
+                throw -1;
+            }
+        }
+        struct NoSkip {};
+        struct SkipEvery { int n; };
     };
 
-    // TODO: put back bfs builder
-    template<typename Builder=TrieGraphBuilder>
     static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s = {}) {
         init(s);
-        return triegraph_from_graph<Builder>(
+        return triegraph_from_graph(
                 Graph::from_file(file, {
                     .add_reverse_complement = s.add_reverse_complement }),
                 s);
     }
 
-    template<typename Builder=TrieGraphBuilder>
     static TrieGraph triegraph_from_graph(Graph &&graph, Settings s = {}) {
         init(s);
         if (graph.settings.add_reverse_complement != s.add_reverse_complement) {
             throw "graph was not build with same revcomp settings";
         }
+
+        s.validate();
+
+        using NoSkip = Settings::NoSkip;
+        using SkipEvery = Settings::SkipEvery;
+        if (s.skip_every == 1) {
+            switch (s.algo) {
+                case Settings::BFS:
+                    return triegraph_from_graph_impl<TrieGraphBuilderBFS>(
+                            std::move(graph), NoSkip {});
+                case Settings::BACK_TRACK:
+                    return triegraph_from_graph_impl<TrieGraphBuilderBT>(
+                            std::move(graph), NoSkip {});
+                case Settings::POINT_BFS:
+                    return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
+                            std::move(graph), NoSkip {});
+            }
+        } else {
+            switch (s.algo) {
+                case Settings::BFS:
+                    // this case will throw exception in Settings::validate()
+                    throw 0;
+                case Settings::BACK_TRACK:
+                    return triegraph_from_graph_impl<TrieGraphBuilderBT>(
+                            std::move(graph), SkipEvery { s.skip_every });
+                case Settings::POINT_BFS:
+                    return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
+                            std::move(graph), SkipEvery { s.skip_every });
+            }
+        }
+    }
+
+    template<typename Builder>
+    static TrieGraph triegraph_from_graph_impl(Graph &&graph, Settings::NoSkip) {
         auto lloc = LetterLocData(graph);
-        auto pairs = Builder(graph, lloc).get_pairs();
+        auto pairs = Builder(graph, lloc).get_pairs(lloc);
         auto td = TrieData(std::move(pairs), lloc);
-        auto tgd = TrieGraphData(std::move(graph), std::move(lloc), std::move(td));
-        return TrieGraph(std::move(tgd));
+        return TrieGraph(TrieGraphData(
+                    std::move(graph), std::move(lloc), std::move(td)));
+    }
+
+    template <typename Builder>
+    static TrieGraph triegraph_from_graph_impl(Graph &&graph, Settings::SkipEvery skip_every) {
+        auto lloc = LetterLocData(graph);
+        auto sp = ConnectedComponents(graph).compute_starting_points();
+        auto ss = SparseStarts(graph);
+        auto lsp = ss.compute_starts_every(skip_every.n, sp);
+        { auto _ = std::move(sp); }
+        auto pairs = Builder(graph, lloc).get_pairs(lsp);
+        { auto _ = std::move(ss); }
+        auto td = TrieData(std::move(pairs), lloc);
+        return TrieGraph(TrieGraphData(
+                    std::move(graph), std::move(lloc), std::move(td)));
     }
 
     struct FixedKKmer {}; struct DynamicKKmer {};
