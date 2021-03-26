@@ -81,7 +81,7 @@ struct TrieGraphBuilder {
     TrieGraphBuilder &operator= (TrieGraphBuilder &&) = delete;
 
     template <std::ranges::input_range R>
-    std::vector<std::pair<Kmer, LetterLoc>> get_pairs(const R & /* ignored */) {
+    std::vector<std::pair<Kmer, LetterLoc>> get_pairs(const R & /* ignored */, u32 /* ignored */) {
 
         auto time_01 = std::chrono::steady_clock::now();
 

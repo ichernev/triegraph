@@ -9,6 +9,7 @@
 #include "triegraph/handle.h"
 #include "triegraph/triegraph_builder_bt.h"
 #include "triegraph/triegraph_builder.h"
+#include "triegraph/triegraph_builder_pbfs.h"
 #include "triegraph/triegraph_data.h"
 #include "triegraph/triegraph_edge_iter.h"
 #include "triegraph/triegraph.h"
@@ -66,8 +67,7 @@ struct Manager : Cfg {
         Graph, LetterLocData, Kmer>;
     using TrieGraphBuilderBT = triegraph::TrieGraphBTBuilder<
         Graph, LetterLocData, Kmer>;
-    // TODO: Change this
-    using TrieGraphBuilderPBFS = triegraph::TrieGraphBTBuilder<
+    using TrieGraphBuilderPBFS = triegraph::TrieGraphBuilderPBFS<
         Graph, LetterLocData, Kmer>;
 
     using Handle = triegraph::Handle<Kmer, NodePos>;
@@ -82,8 +82,8 @@ struct Manager : Cfg {
     struct Settings {
         bool add_reverse_complement = true;
         u64 trie_depth = sizeof(typename Kmer::Holder) * BITS_PER_BYTE / Cfg::Letter::bits - 1;
-        int skip_every = 1; // 1 means don't skip
         enum { BFS, BACK_TRACK, POINT_BFS } algo = BFS;
+        int skip_every = 1; // 1 means don't skip
         int cut_early_threshold = 0; // for POINT_BFS only
 
         void validate() const {
@@ -108,6 +108,8 @@ struct Manager : Cfg {
                 s);
     }
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wreturn-type"
     static TrieGraph triegraph_from_graph(Graph &&graph, Settings s = {}) {
         init(s);
         if (graph.settings.add_reverse_complement != s.add_reverse_complement) {
@@ -122,13 +124,13 @@ struct Manager : Cfg {
             switch (s.algo) {
                 case Settings::BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderBFS>(
-                            std::move(graph), NoSkip {});
+                            std::move(graph), s, NoSkip {});
                 case Settings::BACK_TRACK:
                     return triegraph_from_graph_impl<TrieGraphBuilderBT>(
-                            std::move(graph), NoSkip {});
+                            std::move(graph), s, NoSkip {});
                 case Settings::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
-                            std::move(graph), NoSkip {});
+                            std::move(graph), s, NoSkip {});
             }
         } else {
             switch (s.algo) {
@@ -137,31 +139,33 @@ struct Manager : Cfg {
                     throw 0;
                 case Settings::BACK_TRACK:
                     return triegraph_from_graph_impl<TrieGraphBuilderBT>(
-                            std::move(graph), SkipEvery { s.skip_every });
+                            std::move(graph), s, SkipEvery { s.skip_every });
                 case Settings::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
-                            std::move(graph), SkipEvery { s.skip_every });
+                            std::move(graph), s, SkipEvery { s.skip_every });
             }
         }
     }
+    #pragma GCC diagnostic pop
 
     template<typename Builder>
-    static TrieGraph triegraph_from_graph_impl(Graph &&graph, Settings::NoSkip) {
+    static TrieGraph triegraph_from_graph_impl(Graph &&graph, Settings s, Settings::NoSkip) {
         auto lloc = LetterLocData(graph);
-        auto pairs = Builder(graph, lloc).get_pairs(lloc);
+        auto pairs = Builder(graph, lloc).get_pairs(lloc, s.cut_early_threshold);
         auto td = TrieData(std::move(pairs), lloc);
         return TrieGraph(TrieGraphData(
                     std::move(graph), std::move(lloc), std::move(td)));
     }
 
     template <typename Builder>
-    static TrieGraph triegraph_from_graph_impl(Graph &&graph, Settings::SkipEvery skip_every) {
+    static TrieGraph triegraph_from_graph_impl(Graph &&graph,
+            Settings s, Settings::SkipEvery skip_every) {
         auto lloc = LetterLocData(graph);
         auto sp = ConnectedComponents(graph).compute_starting_points();
         auto ss = SparseStarts(graph);
         auto lsp = ss.compute_starts_every(skip_every.n, sp);
         { auto _ = std::move(sp); }
-        auto pairs = Builder(graph, lloc).get_pairs(lsp);
+        auto pairs = Builder(graph, lloc).get_pairs(lsp, s.cut_early_threshold);
         { auto _ = std::move(ss); }
         auto td = TrieData(std::move(pairs), lloc);
         return TrieGraph(TrieGraphData(

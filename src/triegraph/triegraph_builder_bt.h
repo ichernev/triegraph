@@ -31,7 +31,7 @@ struct TrieGraphBTBuilder {
     TrieGraphBTBuilder &operator= (TrieGraphBTBuilder &&) = delete;
 
     template <std::ranges::input_range R>
-    decltype(pairs) &&get_pairs(const R &starts) && {
+    decltype(pairs) &&get_pairs(const R &starts, u32 /* unused */) && {
         auto time_01 = std::chrono::steady_clock::now();
 
         std::cerr << "BT builder" << std::endl;
