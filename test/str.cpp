@@ -102,6 +102,29 @@ static void test_move() {
     assert(s.length == 4);
 }
 
+static void test_revcomp() {
+    std::string s;
+    constexpr u32 size = 512;
+    srand(0);
+    for (u32 i = 0; i < size; ++i) {
+        s.push_back(DnaLetter::Codec::to_ext(rand() % DnaLetter::num_options));
+    }
+    DnaStr ds(s);
+    DnaStr rc = ds.rev_comp();
+
+    assert(ds.size() == rc.size());
+    assert(ds.capacity == rc.capacity);
+    assert(rc.size() == size);
+    for (u32 i = 0; i < size; ++i) {
+        assert(rc[i] == ds[size-1-i].rev_comp());
+        assert(rc[size-1-i].rev_comp() == ds[i]);
+    }
+    u32 i = 0;
+    for (Letter l : rc) {
+        assert(l == ds[size - ++i].rev_comp());
+    }
+}
+
 int main() {
     std::cerr << "Running str tests" << std::endl;
 
@@ -113,6 +136,7 @@ int main() {
     test_str_iterator();
     test_view_iterator();
     test_move();
+    test_revcomp();
 
     return 0;
 }

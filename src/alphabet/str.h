@@ -8,6 +8,8 @@
 #include <iterator>
 #include <sstream>
 
+#include <assert.h>
+
 namespace triegraph {
 
 template <
@@ -43,9 +45,9 @@ struct Str {
             sizeof(Holder) * BITS_PER_BYTE / Letter::bits;
 
         ConstStrIter() {}
-        ConstStrIter(const Holder *data_, short cid_) : data(data_), cid(cid_) {
-            Size off = cid / letters_per_holder;
-            ISize iid = cid % letters_per_holder;
+        ConstStrIter(const Holder *data_, Size cid_) : data(data_) {
+            Size off = cid_ / letters_per_holder;
+            ISize iid = cid_ % letters_per_holder;
 
             data += off;
             cid = iid;
@@ -63,7 +65,9 @@ struct Str {
         }
         Self operator++(int) { Self tmp = *this; ++(*this); return tmp; }
 
-        friend bool operator== (const Self& a, const Self& b) = default;
+        friend bool operator== (const Self& a, const Self& b) {
+            return a.data == b.data && a.cid == b.cid;
+        }
     private:
         const Holder *data;
         ISize cid;
@@ -78,11 +82,8 @@ struct Str {
 
         Size i = 0;
         for (Letter l : *this) {
-            // std::cerr << rc.length - (i + 1) << l << " " << l.rev_comp() << std::endl;
             rc.set(rc.length - ++i, l.rev_comp());
         }
-
-        // std::cerr << *this << " " << rc << std::endl;
 
         return rc;
     }
@@ -104,12 +105,6 @@ struct Str {
             throw "out-of-bounds";
         }
 
-        // Holder _store(Size idx) const {
-        //     if (idx + offset % letters_per_holder != 0) {
-        //         throw "incorrect-store-access";
-        //     }
-        //     return base->data[(idx+offset) / letters_per_holder];
-        // }
         Size size() const { return length; }
 
         Size fast_match(const View &other) const {
@@ -118,40 +113,12 @@ struct Str {
             return i;
         }
 
-        // Size fast_match_2(const View &other) const {
-        //     if ((offset - other.offset) % letters_per_store != 0) {
-        //         return fast_match(other);
-        //     }
-        //     // do the first part slow
-        //     int slow_search = (letters_per_store - offset % letters_per_store) % letters_per_store;
-        //     Size mlen = std::min(length, other.length), i;
-        //     for (i = 0; i < slow_search && i < mlen && (*this)[i] == other[i]; ++i);
-        //     if (i < slow_search && i < mlen) {
-        //         return i;
-        //     }
-        //     // store by store
-        //     for (i = slow_search; i < mlen && (*this)._store(i) == other._store(i); i += letters_per_store);
-        //     // last part slow
-        //     for (; i < mlen && (*this)[i] == other[i]; ++i);
-        //     return i;
-        // }
-
-
         friend std::ostream &operator<<(std::ostream &os, const View &sv) {
             std::transform(sv.begin(), sv.end(),
                     std::ostream_iterator<typename Letter::Human>(os),
                     Letter::Codec::to_ext);
             return os;
         }
-
-        // friend std::ostream &operator<<(std::ostream &os, const View &sv) {
-        //     typename Letter::Unmapper unmapper;
-
-        //     for (Size i = 0; i < sv.length; ++i) {
-        //         os << unmapper(sv[i]);
-        //     }
-        //     return os;
-        // }
 
         const_iterator begin() const { return const_iterator(base->data, offset); }
         const_iterator end() const { return const_iterator(base->data, offset + length); }
@@ -210,12 +177,6 @@ struct Str {
         return this->length;
     }
 
-    // void set(Size idx, Letter l) {
-    //     auto dr = div(idx, letter_per_store);
-    //     this->data[dr.quot] &= ~(Letter::mask << (Letter::bits * dr.rem))
-    //     this->data[dr.quot] |= l.data << (Letter::bits * dr.rem);
-    // }
-
     operator View() const { return get_view(); }
 
     View get_view(Size offset, Size length) const { return View(this, offset, length); }
@@ -230,8 +191,6 @@ struct Str {
     }
 
     void set(Size idx, Letter val) {
-        // std::cerr << idx << " " << val << std::endl;
-
         Size cell = idx / letters_per_store;
         int cell_bit = (idx % letters_per_store) * Letter::bits;
         this->data[cell] &= ~(Letter::mask << cell_bit);
