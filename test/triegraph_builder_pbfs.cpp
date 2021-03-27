@@ -157,12 +157,69 @@ static void test_se2_tiny_linear_graph() {
                 std::vector<TG::LetterLoc> { 6, 10 }));
 }
 
+struct Cfg : public dna::DnaConfig<0> {
+    static constexpr bool triedata_allow_inner = true;
+};
+
+static void test_cut_early() {
+    using TGX = Manager<Cfg>;
+    auto kmer_s = &TGX::Kmer::from_str;
+    auto g = TGX::Graph::Builder()
+        .add_node(TGX::Str("a"), "s00")
+        .add_node(TGX::Str("g"), "s01")
+        .add_node(TGX::Str("c"), "s10")
+        .add_node(TGX::Str("t"), "s11")
+        .add_node(TGX::Str("a"), "s20")
+        .add_node(TGX::Str("g"), "s21")
+        .add_node(TGX::Str("c"), "s30")
+        .add_node(TGX::Str("t"), "s31")
+        .add_node(TGX::Str("a"), "s40")
+        .add_node(TGX::Str("g"), "s41")
+        .add_edge("s00", "s10")
+        .add_edge("s00", "s11")
+        .add_edge("s01", "s10")
+        .add_edge("s01", "s11")
+        .add_edge("s10", "s20")
+        .add_edge("s10", "s21")
+        .add_edge("s11", "s20")
+        .add_edge("s11", "s21")
+        .add_edge("s20", "s30")
+        .add_edge("s20", "s31")
+        .add_edge("s21", "s30")
+        .add_edge("s21", "s31")
+        .add_edge("s30", "s40")
+        .add_edge("s30", "s41")
+        .add_edge("s31", "s40")
+        .add_edge("s31", "s41")
+        .build({ .add_reverse_complement = false });
+
+    auto tg = TGX::triegraph_from_graph(
+            std::move(g),
+            {
+                .add_reverse_complement = false,
+                .trie_depth = 4,
+                .algo = TGX::Settings::POINT_BFS,
+                .skip_every = 100,
+                .cut_early_threshold = 8,
+            }).data.trie_data;
+
+    // std::cerr << "in T2G" << std::endl;
+    // for (const auto &p : tg.trie2graph) {
+    //     std::cerr << p << " " << TGX::Kmer::from_compressed(p.first) << std::endl;
+    // }
+
+    assert(!tg.trie_contains(kmer_s("acac")));
+    assert( tg.trie_contains(kmer_s("aca")));
+    assert( tg.trie_contains(kmer_s("ata")));
+}
+
 int main() {
     test_all_tiny_linear_graph();
     test_all_small_nonlinear_graph();
     test_all_multiple_ends();
 
     test_se2_tiny_linear_graph();
+    test_cut_early();
 
     return 0;
 }
