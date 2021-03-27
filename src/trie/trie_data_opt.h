@@ -326,24 +326,24 @@ struct TrieDataOpt {
             const LetterLocData &letter_loc) {
         u64 maxkmer = Kmer::NUM_LEAFS;
         if constexpr (allow_inner) {
-            std::cerr << "using comp" << std::endl;
+            // std::cerr << "using comp" << std::endl;
             maxkmer = Kmer::NUM_COMPRESSED;
         } else {
-            std::cerr << "using leaf" << std::endl;
+            // std::cerr << "using leaf" << std::endl;
             maxkmer = Kmer::NUM_LEAFS;
         }
         using Fwd = PairFwd<Kmer, LetterLoc>;
         using Rev = PairRev<Kmer, LetterLoc>;
 
-        for (auto p : pairs) {
-            std::cerr << p << std::endl;
-        }
+        // for (auto p : pairs) {
+        //     std::cerr << p << std::endl;
+        // }
         // std::copy(pairs.begin(), pairs.end(), std::output_iterator<std::pair<Kmer, LetterLoc>>(
         //             std::cerr, "\n"));
-        std::cerr << "init 1 " << maxkmer << std::endl;
+        // std::cerr << "init 1 " << maxkmer << std::endl;
         trie2graph.template init<Fwd, CookKmer<Kmer, allow_inner>, std::identity>(
                 pairs, maxkmer /* , letter_loc.num_locations */);
-        std::cerr << "init 2" << std::endl;
+        // std::cerr << "init 2" << std::endl;
         graph2trie.template init<Rev, std::identity, CookKmer<Kmer, allow_inner>>(
                 pairs, letter_loc.num_locations /* , maxkmer */);
         // std::cerr << "init done" << std::endl;
