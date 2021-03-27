@@ -16,12 +16,13 @@ using triegraph::u32;
 using triegraph::u64;
 
 template<u64 nopts, u64 K,
-    typename Letter_ = triegraph::Letter<u8, nopts>>
+    typename Letter_ = triegraph::Letter<u8, nopts>,
+    bool allow_inner = false>
 struct Helper {
     using Letter = Letter_;
     // using Kmer = triegraph::Kmer<Letter, u32, K>;
     using Kmer = triegraph::DKmer<Letter, u32>;
-    using TB = triegraph::TieredBitset<Kmer>;
+    using TB = triegraph::TieredBitset<Kmer, allow_inner>;
 
     // struct Initializator {
     //     Initializator() {
@@ -32,7 +33,8 @@ struct Helper {
     // static inline Initializator init = {};
 };
 
-static void test_trie_presense() {
+// ni - no-inner (only leaves)
+static void test_ni_trie_presense() {
     using TB = Helper<4, 3, triegraph::dna::DnaLetter>::TB;
     TB::Kmer::setK(3);
 
@@ -63,8 +65,47 @@ static void test_trie_presense() {
     assert(!tb.contains(TB::Kmer::from_str("tt")));
 }
 
+static void test_wi_trie_presense() {
+    using TB = Helper<4, 3, triegraph::dna::DnaLetter, true>::TB;
+    TB::Kmer::setK(3);
+
+    auto kmers = std::vector<TB::Kmer> {
+        TB::Kmer::from_str("aac"),
+        TB::Kmer::from_str("aat"),
+        TB::Kmer::from_str("ata"),
+        TB::Kmer::from_str("g"),
+        TB::Kmer::from_str("cgt"),
+        TB::Kmer::from_str("tat"),
+        TB::Kmer::from_str("ta"),
+    };
+
+    auto tb = TB();
+    tb.init(kmers);
+
+    assert( tb.contains(TB::Kmer::from_str("")));
+    assert( tb.contains(TB::Kmer::from_str("a")));
+    assert( tb.contains(TB::Kmer::from_str("aa")));
+    assert(!tb.contains(TB::Kmer::from_str("ac")));
+    assert(!tb.contains(TB::Kmer::from_str("ag")));
+    assert( tb.contains(TB::Kmer::from_str("at")));
+    assert( tb.contains(TB::Kmer::from_str("c")));
+    assert(!tb.contains(TB::Kmer::from_str("ca")));
+    assert(!tb.contains(TB::Kmer::from_str("cc")));
+    assert( tb.contains(TB::Kmer::from_str("cg")));
+    assert(!tb.contains(TB::Kmer::from_str("ct")));
+    assert( tb.contains(TB::Kmer::from_str("g")));
+    assert(!tb.contains(TB::Kmer::from_str("ga")));
+    assert(!tb.contains(TB::Kmer::from_str("gc")));
+    assert(!tb.contains(TB::Kmer::from_str("gg")));
+    assert(!tb.contains(TB::Kmer::from_str("gt")));
+    assert( tb.contains(TB::Kmer::from_str("t")));
+    assert( tb.contains(TB::Kmer::from_str("ta")));
+    assert(!tb.contains(TB::Kmer::from_str("tt")));
+}
+
 int main() {
-    test_trie_presense();
+    test_ni_trie_presense();
+    test_wi_trie_presense();
 
     return 0;
 }

@@ -316,7 +316,13 @@ decr_l2:
     bool operator== (const Self &other) const { return data == other.data; }
     bool operator== (u64 other) const { return is_complete() && (data & KMER_MASK) == other; }
     bool operator!= (u64 other) const { return !(*this == other); }
-    bool operator< (const Self &other) const { return data < other.data; }
+    bool operator< (const Self &other) const {
+        if (size() < other.size())
+            return true;
+        if (size() == other.size() && (data & _kmer_mask(K-size())) < (other.data & _kmer_mask(K-size())))
+            return true;
+        return false;
+    }
 
     // friend struct std::hash<Self> {
     //     static constexpr hash<Holder> hasher();

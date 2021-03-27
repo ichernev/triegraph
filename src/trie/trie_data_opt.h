@@ -44,10 +44,16 @@ struct PairRev {
     static A getB(const std::pair<A, B> &a) { return a.first; }
 };
 
-template <typename Kmer>
+template <typename Kmer, bool allow_inner = false>
 struct CookKmer {
     typename Kmer::Holder operator() (const Kmer &k) const {
         return k.compress_leaf();
+    }
+};
+template <typename Kmer>
+struct CookKmer<Kmer, true> {
+    typename Kmer::Holder operator() (const Kmer &k) const {
+        return k.compress();
     }
 };
 
@@ -64,13 +70,21 @@ struct CookKmer {
 //     ext_type to_ext(const int_type &in) const { return in; }
 // };
 
-template <typename Kmer, typename KmerComp = Kmer::Holder>
-struct CodecKmerLeaf {
+template <typename Kmer, typename KmerComp = Kmer::Holder, bool allow_inner = false>
+struct CodecKmer {
     using ext_type = Kmer;
     using int_type = KmerComp;
 
     static int_type to_int(const ext_type &kmer) { return kmer.compress_leaf(); }
     static ext_type to_ext(const int_type &krepr) { return Kmer::from_compressed_leaf(krepr); }
+};
+template <typename Kmer, typename KmerComp>
+struct CodecKmer<Kmer, KmerComp, true> {
+    using ext_type = Kmer;
+    using int_type = KmerComp;
+
+    static int_type to_int(const ext_type &kmer) { return kmer.compress(); }
+    static ext_type to_ext(const int_type &krepr) { return Kmer::from_compressed(krepr); }
 };
 
 template <typename A, typename B, typename C>
@@ -92,13 +106,13 @@ struct OptMMap {
         for (u64 a = 0; a < a_max; ++a) {
             // std::cerr << "now at a " << a << std::endl;
             // std::cerr << Accessor::getA(*cp) << " "
-            //     << A(Accessor::getA(*cp)) << std::endl;
+            //     <<  cookA(Accessor::getA(*cp)) << std::endl;
             start.push_back(elems.size());
             if (cp == ep || cookA(Accessor::getA(*cp)) != a) {
                 continue;
             }
             // end[elems.size()] = true;
-            while (cp != ep && Accessor::getA(*cp) == a) {
+            while (cp != ep && cookA(Accessor::getA(*cp)) == a) {
                 elems.push_back(cookB(Accessor::getB(*cp)));
                 ++cp;
             }
@@ -258,7 +272,6 @@ struct TieredBitset {
                 kmer.pop();
                 present[kmer.compress()] = 1;
             } else {
-                assert(false);
                 auto lvl = kmer.size();
                 if (lvl < Kmer::K) {
                     present[kmer.compress()] = 1;
@@ -298,7 +311,8 @@ struct TieredBitset {
 };
 
 template <typename Kmer_, typename LetterLocData_,
-         typename NumKmers_ = LetterLocData_::LetterLoc>
+         typename NumKmers_ = LetterLocData_::LetterLoc,
+         bool allow_inner = false>
 struct TrieDataOpt {
     using Kmer = Kmer_;
     using KHolder = Kmer::Holder;
@@ -306,23 +320,31 @@ struct TrieDataOpt {
     using LetterLoc = LetterLocData::LetterLoc;
     using NumKmers = NumKmers_;
 
-    using KmerCodec = CodecKmerLeaf<Kmer>;
+    using KmerCodec = CodecKmer<Kmer, typename Kmer::Holder, allow_inner>;
 
     TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
-        auto maxkmer = pow(Kmer::Letter::num_options, Kmer::K);
+        u64 maxkmer = Kmer::NUM_LEAFS;
+        if constexpr (allow_inner) {
+            std::cerr << "using comp" << std::endl;
+            maxkmer = Kmer::NUM_COMPRESSED;
+        } else {
+            std::cerr << "using leaf" << std::endl;
+            maxkmer = Kmer::NUM_LEAFS;
+        }
         using Fwd = PairFwd<Kmer, LetterLoc>;
         using Rev = PairRev<Kmer, LetterLoc>;
-        // for (auto p : pairs) {
-        //     std::cerr << p << std::endl;
-        // }
+
+        for (auto p : pairs) {
+            std::cerr << p << std::endl;
+        }
         // std::copy(pairs.begin(), pairs.end(), std::output_iterator<std::pair<Kmer, LetterLoc>>(
         //             std::cerr, "\n"));
-        // std::cerr << "init 1" << std::endl;
-        trie2graph.template init<Fwd, CookKmer<Kmer>, std::identity>(
+        std::cerr << "init 1 " << maxkmer << std::endl;
+        trie2graph.template init<Fwd, CookKmer<Kmer, allow_inner>, std::identity>(
                 pairs, maxkmer /* , letter_loc.num_locations */);
-        // std::cerr << "init 2" << std::endl;
-        graph2trie.template init<Rev, std::identity, CookKmer<Kmer>>(
+        std::cerr << "init 2" << std::endl;
+        graph2trie.template init<Rev, std::identity, CookKmer<Kmer, allow_inner>>(
                 pairs, letter_loc.num_locations /* , maxkmer */);
         // std::cerr << "init done" << std::endl;
         // TODO: If supporting inner-nodes this should be reworked.
@@ -344,7 +366,7 @@ struct TrieDataOpt {
 
     OptMMap<KHolder, NumKmers, LetterLoc> trie2graph;
     OptMMap<LetterLoc, NumKmers, KHolder> graph2trie;
-    TieredBitset<Kmer> active_trie;
+    TieredBitset<Kmer, allow_inner> active_trie;
 
     using t2g_values_view = iter_pair<
         typename decltype(trie2graph)::const_value_iterator,
