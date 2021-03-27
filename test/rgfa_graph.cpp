@@ -68,6 +68,30 @@ static void test_small() {
     assert(std::ranges::distance(edge_helper) == 0);
 }
 
+static void test_pasgal_mhc1() {
+    auto graph = RgfaGraph<DnaStr, u32>::from_file("data/pasgal-MHC1.gfa", {
+            .add_reverse_complement = true,
+            .add_extends = true,
+    });
+    using Graph = RgfaGraph<DnaStr, u32>;
+    using NodeLoc = Graph::NodeLoc;
+    using EdgeLoc = Graph::EdgeLoc;
+    constexpr EdgeLoc INV_SIZE = Graph::INV_SIZE;
+
+    assert(graph.data.nodes.size() == graph.data.edge_start.size());
+    assert(graph.data.nodes.size() == graph.data.redge_start.size());
+    for (NodeLoc i = 0; i < graph.data.nodes.size(); ++i) {
+        assert(graph.data.edge_start[i] == INV_SIZE ||
+                graph.data.edge_start[i] < graph.data.edges.size());
+        assert(graph.data.redge_start[i] == INV_SIZE ||
+                graph.data.redge_start[i] < graph.data.edges.size());
+    }
+    for (EdgeLoc i = 0; i < graph.data.edges.size(); ++i) {
+        assert(graph.data.edges[i].to < graph.data.nodes.size());
+        assert(graph.data.edges[i].next == INV_SIZE ||
+                graph.data.edges[i].next < graph.data.edges.size());
+    }
+}
 
 // using TG = triegraph::Manager<triegraph::dna::DnaConfig<14>>;
 
@@ -156,7 +180,7 @@ int main() {
     test_small();
     test_revcomp();
     test_extends();
-    // test_pasgal_mhc1();
+    test_pasgal_mhc1();
     // test_hg22_linear();
 
     return 0;
