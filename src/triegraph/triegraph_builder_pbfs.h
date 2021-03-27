@@ -38,8 +38,8 @@ struct TrieGraphBuilderPBFS {
     std::vector<std::pair<Kmer, NodePos>> a, b;
     void _bfs(NodePos start, u32 cut_early_threshold) {
         // std::cerr << "running bfs" << std::endl;
-        a.reserve(cut_early_threshold);
-        b.reserve(cut_early_threshold);
+        // a.reserve(cut_early_threshold);
+        // b.reserve(cut_early_threshold);
         a.resize(0);
 
         std::vector<std::pair<Kmer, NodePos>> *crnt_q = &a, *next_q = &b;
@@ -47,7 +47,8 @@ struct TrieGraphBuilderPBFS {
         crnt_q->emplace_back(Kmer::empty(), start);
         typename Kmer::klen_type crnt_lvl;
         for (crnt_lvl = 0;
-                crnt_lvl < Kmer::K && crnt_q->size() < cut_early_threshold;
+                crnt_lvl < Kmer::K &&
+                    (cut_early_threshold == 0 || crnt_q->size() < cut_early_threshold);
                 ++crnt_lvl) {
             next_q->resize(0);
             for (const auto &[kmer, np] : *crnt_q) {
@@ -64,9 +65,11 @@ struct TrieGraphBuilderPBFS {
             std::swap(crnt_q, next_q);
         }
 
-        pairs.reserve(pairs.size() + crnt_q->size());
-        auto conv_np = [&](const auto &p) { return std::make_pair(p.first, lloc.compress(p.second)); };
-        std::ranges::copy(*crnt_q | std::ranges::views::transform(conv_np), std::back_inserter(pairs));
+        // pairs.reserve(pairs.size() + crnt_q->size());
+        auto conv_np = [&](const auto &p) { return std::make_pair(
+                p.first, lloc.compress(p.second)); };
+        std::ranges::copy(*crnt_q | std::ranges::views::transform(conv_np),
+                std::back_inserter(pairs));
     }
 };
 
