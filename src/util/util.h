@@ -30,6 +30,15 @@ constexpr int log2_ceil(u64 value) {
     return res;
 }
 
+constexpr int log4_ceil(u64 value) {
+    int res = 0;
+    while (value > 1) {
+        res += 1;
+        value /= 4;
+    }
+    return res;
+}
+
 constexpr u64 div_up(u64 a, u64 b) {
     return (a + b - 1) / b;
 }

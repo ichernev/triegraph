@@ -4,4 +4,6 @@ test/*
 !test/*.cpp
 benchmark/*
 !benchmark/*.cpp
+slow/*
+!slow/*.cpp
 *.d

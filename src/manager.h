@@ -56,9 +56,17 @@ struct Manager : Cfg {
     using SparseStarts = triegraph::SparseStarts<
         Graph,
         NodePos>;
-    using TrieData = triegraph::TrieDataOpt<
-        Kmer,
-        LetterLocData>;
+    static_assert(!Cfg::triedata_allow_inner || Cfg::triedata_advanced);
+    using TrieData = choose_type_t<
+        Cfg::triedata_advanced,
+        triegraph::TrieDataOpt<
+            Kmer,
+            LetterLocData,
+            typename LetterLocData::LetterLoc,
+            Cfg::triedata_allow_inner>,
+        triegraph::TrieData<
+            Kmer,
+            typename LetterLocData::LetterLoc>>;
     using TrieGraphData = triegraph::TrieGraphData<
         Graph,
         LetterLocData,
@@ -96,6 +104,25 @@ struct Manager : Cfg {
                 throw -1;
             }
         }
+
+        const char *algo_name() const {
+            switch (algo) {
+                case BFS: return "BFS";
+                case BACK_TRACK: return "BACK_TRACK";
+                case POINT_BFS: return "POINT_BFS";
+            }
+        }
+
+        friend std::ostream &operator<< (std::ostream &os, const Settings &s) {
+            os << "add_reverse_complement=" << s.add_reverse_complement << '\n'
+                << "trie_depth=" << s.trie_depth << '\n'
+                << "algo=" << s.algo_name() << '\n'
+                << "skip_every=" << s.skip_every << '\n'
+                << "cut_early_threshold=" << s.cut_early_threshold << '\n'
+                << std::flush;
+            return os;
+        }
+
         struct NoSkip {};
         struct SkipEvery { int n; };
     };
@@ -147,6 +174,28 @@ struct Manager : Cfg {
         }
     }
     #pragma GCC diagnostic pop
+
+    using vec_pairs = std::vector<std::pair<Kmer, typename LetterLocData::LetterLoc>>;
+
+    template<typename Builder>
+    static vec_pairs pairs_from_graph(const Graph &graph, Settings s, Settings::NoSkip) {
+        std::cerr << "settings:\n" << s;
+        auto lloc = LetterLocData(graph);
+        std::cerr << "total locations " << lloc.num_locations << std::endl;
+        return Builder(graph, lloc).get_pairs(lloc, s.cut_early_threshold);
+    }
+
+    template <typename Builder>
+    static vec_pairs pairs_from_graph(const Graph &graph,
+            Settings s, Settings::SkipEvery skip_every) {
+        std::cerr << "settings:\n" << s;
+        auto lloc = LetterLocData(graph);
+        auto sp = ConnectedComponents(graph).compute_starting_points();
+        auto ss = SparseStarts(graph);
+        auto lsp = ss.compute_starts_every(skip_every.n, sp);
+        { auto _ = std::move(sp); }
+        return Builder(graph, lloc).get_pairs(lsp, s.cut_early_threshold);
+    }
 
     template<typename Builder>
     static TrieGraph triegraph_from_graph_impl(Graph &&graph, Settings s, Settings::NoSkip) {
