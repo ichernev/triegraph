@@ -31,7 +31,7 @@ struct compressed_vector {
     }
 
     compressed_vector(compressed_vector &&other) {
-        if (other.len <= real_cap) {
+        if (other.is_fast()) {
             memcpy(raw, other.raw, sizeof(T) * real_cap);
             len = other.len;
         } else {
@@ -40,15 +40,15 @@ struct compressed_vector {
     }
 
     compressed_vector &operator= (compressed_vector &&other) {
-        if (len <= real_cap) {
-            if (other.len <= real_cap) {
+        if (is_fast()) {
+            if (other.is_fast()) {
                 memcpy(raw, other.raw, sizeof(T) * real_cap);
                 len = other.len;
             } else {
                 new (&vec) std::vector<T>(std::move(other.vec));
             }
         } else {
-            if (other.len <= real_cap) {
+            if (other.is_fast()) {
                 (&vec)->~vector();
                 memcpy(raw, other.raw, sizeof(T) * real_cap);
                 len = other.len;
