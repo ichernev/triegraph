@@ -31,6 +31,8 @@ Components
   - Point BFS: builds the set of kmer-to-graph starting from arbitrary
     locations using a BFS, that can also auto-limit itself to reduce
     combinatorial explosion
+  - location chooser: for Back Track and Point BFS, choose starting locations
+    so that every path of length N has at least one starting location on it.
 - Handle: a location in the triegraph:
   - graph (node + position inside the node)
   - OR
@@ -97,6 +99,28 @@ Properties:
 - slowest
 - supports selective start locations
 - supports shorter kmers
+
+(Extra) choosing starting locations
+-----------------------------------
+
+Both the Back Track and the Point BFS support running the algorithm from
+a select number of locations (instead of all locations at once). In practise it
+is useful to choose starting locations such that for any given path in the
+graph of length N, there is at least one starting location.
+
+To find locations that satisfy this criteria we'll tag all graph locations with
+a number from 0 to N-1. If we have two adjacent locations A and B, tag[A]
+< tag[B] if tag[A] < N-1. It's easy to proof that each path of length N will
+contain at least one location A, such that tag[A] == N-1.
+
+To do the tagging, we compute the inbound degree of each node, give a tag value
+of 0 to all nodes and each starting node is given a tag of N-1 (starting nodes
+are chosen the same way as in Rolling BFS) and added to the queue. For each
+node A popped from the queue we make sure that all neighbour nodes have a tag
+at least tag[A] + 1 (unless tag[A] == N-1), and if this is the last inbound
+connection we add the neighbour to the queue. If the queue is empty, then we
+pick a random node that has been touched, but still has inbound degree > 0,
+assign tag = N-1, and traverse it.
 
 Holding the TrieData
 ====================
