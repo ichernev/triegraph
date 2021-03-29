@@ -132,7 +132,7 @@ fast access by kmer and graph location.
 Hash Table implementation
 -------------------------
 
-The simplest solution is to use a hash table (unordered\_multimap in C++) to
+The simplest solution is to use a hash table (`unordered_multimap` in C++) to
 keep a mapping from kmer to graph locations and a mapping from graph locations
 to kmers.
 
@@ -150,8 +150,8 @@ indices in an array of values. To handle cases where some keys have in fact
 multiple values assigned (unavoidable in practise), the values are stored in an
 array (values[]), and there is an additional array (start[]), indexed by key,
 which points to the index in the value array where the values for that key
-start. So the values for key k are [values[start[k]], ..., values[start[k+1]
-- 1]] (it might be empty list if start[k] == start[k+1]).
+start. So the values for key k are `[values[start[k]], ...,
+values[start[k+1]-1]]` (it might be empty list if start[k] == start[k+1]).
 
 So each of the two hash tables is represented by two arrays. One of length
 max-key, and the other of length num-pairs.
