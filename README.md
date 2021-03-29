@@ -63,6 +63,9 @@ Properties:
 - supports selective start locations
 - does not support shorter kmers
 
+TODO Optimizations:
+- traverse the full length of every node instead of letter by letter
+
 (Rolling) BFS
 -------------
 
@@ -85,6 +88,9 @@ Properties:
 - does not support selective start locations
 - does not support shorter kmers
 
+TODO Optimizations:
+- top sort nodes and traverse in top sort order
+
 Point BFS
 ---------
 
@@ -99,6 +105,10 @@ Properties:
 - slowest
 - supports selective start locations
 - supports shorter kmers
+
+TODO Optimizations:
+- handle simplest cases (full length of kmer fits in current node) without bfs
+  (70% of all cases are simple)
 
 (Extra) choosing starting locations
 -----------------------------------
@@ -155,3 +165,11 @@ values[start[k+1]-1]]` (it might be empty list if start[k] == start[k+1]).
 
 So each of the two hash tables is represented by two arrays. One of length
 max-key, and the other of length num-pairs.
+
+TODO Optimizations:
+- implement custom sorted-vector, that does not store full-size elements for
+  each index, but instead stores full value for 1/N of the elements (beacons),
+  and cummulative difference from the beacon for the rest
+- implement bit-compact vector, that stores N-bit integers so no space is
+  wasted (so 34bit integer will take 34bits, i.e a million integers will take
+  4.25G instead of 8G if stored as 64bits).
