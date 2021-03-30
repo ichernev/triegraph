@@ -110,6 +110,7 @@ struct Manager : Cfg {
                 case BFS: return "BFS";
                 case BACK_TRACK: return "BACK_TRACK";
                 case POINT_BFS: return "POINT_BFS";
+                default: return "";
             }
         }
 
@@ -135,8 +136,6 @@ struct Manager : Cfg {
                 s);
     }
 
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wreturn-type"
     static TrieGraph triegraph_from_graph(Graph &&graph, Settings s = {}) {
         init(s);
         if (graph.settings.add_reverse_complement != s.add_reverse_complement) {
@@ -158,22 +157,22 @@ struct Manager : Cfg {
                 case Settings::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
                             std::move(graph), s, NoSkip {});
+                default:
+                    throw 0;
             }
         } else {
             switch (s.algo) {
-                case Settings::BFS:
-                    // this case will throw exception in Settings::validate()
-                    throw 0;
                 case Settings::BACK_TRACK:
                     return triegraph_from_graph_impl<TrieGraphBuilderBT>(
                             std::move(graph), s, SkipEvery { s.skip_every });
                 case Settings::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
                             std::move(graph), s, SkipEvery { s.skip_every });
+                default:
+                    throw 0;
             }
         }
     }
-    #pragma GCC diagnostic pop
 
     using vec_pairs = std::vector<std::pair<Kmer, typename LetterLocData::LetterLoc>>;
 
