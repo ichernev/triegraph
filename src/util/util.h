@@ -21,8 +21,8 @@ constexpr u64 pow(u64 base, u64 power) {
     return res;
 }
 
-constexpr int log2_ceil(u64 value) {
-    int res = 0;
+constexpr u32 log2_ceil(u64 value) {
+    u32 res = 0;
     while (value > 1) {
         res += 1;
         value /= 2;

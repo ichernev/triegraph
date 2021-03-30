@@ -46,8 +46,8 @@ static void test_ni_trie_presense() {
         TB::Kmer::from_str("tat"),
     };
 
-    auto tb = TB();
-    tb.init(kmers);
+    auto tb = TB(kmers);
+    // tb.init(kmers);
 
     assert( tb.contains(TB::Kmer::from_str("")));
     assert( tb.contains(TB::Kmer::from_str("a")));
@@ -79,8 +79,8 @@ static void test_wi_trie_presense() {
         TB::Kmer::from_str("ta"),
     };
 
-    auto tb = TB();
-    tb.init(kmers);
+    auto tb = TB(kmers);
+    // tb.init(kmers);
 
     assert( tb.contains(TB::Kmer::from_str("")));
     assert( tb.contains(TB::Kmer::from_str("a")));

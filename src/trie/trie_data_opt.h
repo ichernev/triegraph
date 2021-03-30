@@ -2,6 +2,8 @@
 #define __TRIE_DATA_OPT_H__
 
 #include "util/util.h"
+#include "util/pow_histogram.h"
+#include "util/dense_multimap.h"
 
 #include <type_traits>
 #include <utility>
@@ -16,46 +18,53 @@
 
 namespace triegraph {
 
-template <typename A_, typename B_>
-struct PairFwd {
-    using A = A_;
-    using B = B_;
-    using pair = std::pair<A, B>;
-    struct comparator {
-        bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
-            return a.first == b.first ? a.second < b.second : a.first < b.first;
-        }
-    };
-    static A getA(const std::pair<A, B> &a) { return a.first; }
-    static B getB(const std::pair<A, B> &a) { return a.second; }
-};
-
-template <typename A_, typename B_>
-struct PairRev {
-    using A = A_;
-    using B = B_;
-    using pair = std::pair<A, B>;
-    struct comparator {
-        bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
-            return a.second == b.second ? a.first < b.first : a.second < b.second;
-        }
-    };
-    static B getA(const std::pair<A, B> &a) { return a.second; }
-    static A getB(const std::pair<A, B> &a) { return a.first; }
-};
-
-template <typename Kmer, bool allow_inner = false>
-struct CookKmer {
-    typename Kmer::Holder operator() (const Kmer &k) const {
-        return k.compress_leaf();
+template <typename A, typename B>
+struct PairSwitchComp {
+    bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
+        return a.second == b.second ? a.first < b.first : a.second < b.second;
     }
 };
-template <typename Kmer>
-struct CookKmer<Kmer, true> {
-    typename Kmer::Holder operator() (const Kmer &k) const {
-        return k.compress();
-    }
-};
+
+// template <typename A_, typename B_>
+// struct PairFwd {
+//     using A = A_;
+//     using B = B_;
+//     using pair = std::pair<A, B>;
+//     struct comparator {
+//         bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
+//             return a.first == b.first ? a.second < b.second : a.first < b.first;
+//         }
+//     };
+//     static A getA(const std::pair<A, B> &a) { return a.first; }
+//     static B getB(const std::pair<A, B> &a) { return a.second; }
+// };
+
+// template <typename A_, typename B_>
+// struct PairRev {
+//     using A = A_;
+//     using B = B_;
+//     using pair = std::pair<A, B>;
+//     struct comparator {
+//         bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
+//             return a.second == b.second ? a.first < b.first : a.second < b.second;
+//         }
+//     };
+//     static B getA(const std::pair<A, B> &a) { return a.second; }
+//     static A getB(const std::pair<A, B> &a) { return a.first; }
+// };
+
+// template <typename Kmer, bool allow_inner = false>
+// struct CookKmer {
+//     typename Kmer::Holder operator() (const Kmer &k) const {
+//         return k.compress_leaf();
+//     }
+// };
+// template <typename Kmer>
+// struct CookKmer<Kmer, true> {
+//     typename Kmer::Holder operator() (const Kmer &k) const {
+//         return k.compress();
+//     }
+// };
 
 // Codec::ext_type
 // Codec::int_type
@@ -87,163 +96,6 @@ struct CodecKmer<Kmer, KmerComp, true> {
     static ext_type to_ext(const int_type &krepr) { return Kmer::from_compressed(krepr); }
 };
 
-template <typename A, typename B, typename C>
-struct OptMMap {
-    template<typename Accessor, typename CookA = std::identity, typename CookB = std::identity>
-    void init(std::vector<typename Accessor::pair> &pairs, u64 a_max) {
-        CookA cookA;
-        CookB cookB;
-        using comp = Accessor::comparator;
-        // std::cerr << "sorting" << std::endl;
-        std::sort(pairs.begin(), pairs.end(), comp());
-
-        // std::cerr << "reserving" << std::endl;
-        start.reserve(a_max);
-        elems.reserve(pairs.size());
-        // end.resize(pairs.size(), false);
-        // std::cerr << "pushing..." << std::endl;
-        auto cp = pairs.begin(), ep = pairs.end();
-        for (u64 a = 0; a < a_max; ++a) {
-            // std::cerr << "now at a " << a << std::endl;
-            // std::cerr << Accessor::getA(*cp) << " "
-            //     <<  cookA(Accessor::getA(*cp)) << std::endl;
-            start.push_back(elems.size());
-            if (cp == ep || cookA(Accessor::getA(*cp)) != a) {
-                continue;
-            }
-            // end[elems.size()] = true;
-            while (cp != ep && cookA(Accessor::getA(*cp)) == a) {
-                elems.push_back(cookB(Accessor::getB(*cp)));
-                ++cp;
-            }
-        }
-    }
-
-    size_t size() const { return elems.size(); }
-    // size_t key_size() const { return elems.size(); }
-
-    struct PairIter {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = std::pair<A, C>;
-        using reference_type = value_type;
-
-        using Self = PairIter;
-        using Parent = OptMMap;
-
-        PairIter() : p(nullptr), a(), b() {}
-        PairIter(const Parent &p) : p(&p), a(p.start.size()), b(p.elems.size()) {}
-        PairIter(const Parent &p, A a)
-            : p(&p), a(a), b(a < p.start.size() ? p.start[a] : p.elems.size())
-        {
-            adjust();
-        }
-        reference_type operator* () const {
-            // std::cerr << "IN **" << a << " " << b << " " << p->elems[b] << std::endl;
-            return {a, p->elems[b]};
-        }
-        Self &operator++ () {
-            // std::cerr << "a = " << a << " " << p->bound(a) << std::endl;
-            if (++b == p->bound(a))
-                adjust();
-            return *this;
-        }
-        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
-        bool operator== (const Self &other) const { return b == other.b; }
-        difference_type operator- (const Self &other) const { return b - other.b; }
-
-    private:
-        void adjust() {
-            while (a < p->start.size() && p->bound(a) <= b)
-                ++a;
-        }
-
-        const Parent *p;
-        // TODO: for k==16, the holder might be u32, but it won't have space
-        // for the sentinel, so use u64, at least for A
-        A a;
-        B b;
-    };
-
-    struct KeyIter {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = A;
-        using reference_type = value_type;
-        using Self = KeyIter;
-        using Parent = OptMMap;
-
-        KeyIter() : p(nullptr), a() {}
-        KeyIter(const Parent &p) : p(&p), a(p.start.size()) {}
-        KeyIter(const Parent &p, A a) : p(&p), a(a) { adjust(); }
-
-        reference_type operator* () const { return a; }
-        Self &operator++ () { ++a; adjust(); return *this; }
-        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
-        bool operator== (const Self &other) const { return a == other.a; }
-
-        void adjust() {
-            // skip "empty" keys
-            while (a < p->start.size() && p->start[a] == p->bound(a))
-                ++a;
-        }
-
-        const Parent *p;
-        // TODO: for k==16, the holder might be u32, but it won't have space
-        // for the sentinel, so use u64, at least for A
-        A a;
-    };
-
-    struct ValIter {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = C;
-        using reference_type = value_type;
-        using Self = ValIter;
-
-        ValIter() : it() {}
-        ValIter(std::vector<value_type>::const_iterator it) : it(it) {}
-
-        reference_type operator* () const { return *it; }
-        Self &operator++ () { ++it; return *this; }
-        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
-        difference_type operator- (const Self &other) { return it - other.it; }
-        bool operator== (const Self &other) const { return it == other.it; }
-
-        std::vector<value_type>::const_iterator it;
-    };
-
-    using const_iterator = PairIter;
-    using const_key_iterator = KeyIter;
-    using const_value_iterator = ValIter;
-
-    const_iterator begin() const { return const_iterator(*this, 0); }
-    const_iterator end() const { return const_iterator(*this); }
-    iter_pair<const_key_iterator, const_key_iterator> keys() const {
-        return { const_key_iterator(*this, 0), const_key_iterator(*this) };
-    }
-    iter_pair<const_value_iterator, const_value_iterator> values_for(const A &a) const {
-        return { elems.begin() + start[a], elems.begin() + bound(a) };
-    }
-
-    std::pair<const_iterator, const_iterator> equal_range(const A &a) const {
-        // for k=16 a+1 might overflow
-        return std::make_pair(const_iterator(*this, a), const_iterator(*this, a+1));
-    }
-
-    bool contains(const A &a) const { return start[a] < bound(a); }
-
-private:
-    B bound(A a) const {
-        if (a + 1 >= start.size())
-            return elems.size();
-        return start[a+1];
-    }
-
-    std::vector<B> start; // indexed by A
-    std::vector<C> elems; // indexed by B
-};
-
 template <typename Kmer_, bool allow_inner = false>
 struct TieredBitset {
     using Kmer = Kmer_;
@@ -253,18 +105,10 @@ struct TieredBitset {
     static constexpr u64 num_options = Kmer::Letter::num_options;
     std::vector<bool> present;
 
-    TieredBitset() : present(Kmer::NUM_COMPRESSED - Kmer::NUM_LEAFS) {}
-
-    // template <std::ranges::range C>
-    // void init(C c) { init(c.begin(), c.end()); }
-
-    // template<typename IT_B, typename IT_E>
-    //     requires std::is_same_v<typename std::iterator_traits<IT_B>::value_type, Kmer> &&
-    //             std::sentinel_for<IT_E, IT_B>
-    // void init(IT_B begin, IT_E end) {
-    template <std::ranges::range C>
-        // requires /* std::ranges::view<C> && */ std::is_same_v<C::value_type, Kmer>
-    void init(const C &c) {
+    TieredBitset() {}
+    TieredBitset(std::ranges::range auto const& c)
+        : present(Kmer::NUM_COMPRESSED - Kmer::NUM_LEAFS)
+    {
         for (auto kmer : c) {
             // auto kh = KHolder(kmer);
             if constexpr (!allow_inner) {
@@ -305,9 +149,15 @@ struct TieredBitset {
         }
     }
 
+    TieredBitset(const TieredBitset &) = delete;
+    TieredBitset(TieredBitset &&) = default;
+    TieredBitset &operator= (const TieredBitset &) = default;
+    TieredBitset &operator= (TieredBitset &&) = default;
+
     bool contains(Kmer kmer) const {
         return present[kmer.compress()];
     }
+
 };
 
 template <typename Kmer_, typename LetterLocData_,
@@ -324,48 +174,115 @@ struct TrieDataOpt {
 
     TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
-        u64 maxkmer = Kmer::NUM_LEAFS;
-        if constexpr (allow_inner) {
-            // std::cerr << "using comp" << std::endl;
-            maxkmer = Kmer::NUM_COMPRESSED;
-        } else {
-            // std::cerr << "using leaf" << std::endl;
-            maxkmer = Kmer::NUM_LEAFS;
-        }
-        using Fwd = PairFwd<Kmer, LetterLoc>;
-        using Rev = PairRev<Kmer, LetterLoc>;
+        // u64 maxkmer = total_kmers();
+        // using Fwd = PairFwd<Kmer, LetterLoc>;
+        // using Rev = PairRev<Kmer, LetterLoc>;
 
-        // for (auto p : pairs) {
-        //     std::cerr << p << std::endl;
-        // }
-        // std::copy(pairs.begin(), pairs.end(), std::output_iterator<std::pair<Kmer, LetterLoc>>(
-        //             std::cerr, "\n"));
-        // std::cerr << "init 1 " << maxkmer << std::endl;
-        trie2graph.template init<Fwd, CookKmer<Kmer, allow_inner>, std::identity>(
-                pairs, maxkmer /* , letter_loc.num_locations */);
-        // std::cerr << "init 2" << std::endl;
-        graph2trie.template init<Rev, std::identity, CookKmer<Kmer, allow_inner>>(
-                pairs, letter_loc.num_locations /* , maxkmer */);
-        // std::cerr << "init done" << std::endl;
-        // TODO: If supporting inner-nodes this should be reworked.
-        // std::cerr << "Keys are: " << std::endl;
-        // for (auto x : trie2graph.keys()) {
-        //     std::cerr << KmerCodec::to_ext(x) << std::endl;
-        // }
+        // sort by pair::first, then ::second
+        std::ranges::sort(pairs);
+        trie2graph = {
+                pairs | std::ranges::views::transform(
+                    [](const auto &p) {
+                        return std::make_pair(
+                                KmerCodec::to_int(p.first),
+                                p.second);
+                    }
+                )};
+
+        std::ranges::sort(pairs, PairSwitchComp<Kmer, LetterLoc> {});
+        graph2trie = {
+                pairs | std::ranges::views::transform(
+                    [](const auto &p) {
+                        return std::make_pair(
+                                p.second,
+                                KmerCodec::to_int(p.first));
+                    }
+                )};
+        // trie2graph.template init<Fwd, CookKmer<Kmer, allow_inner>, std::identity>(
+        //         pairs, maxkmer /* , letter_loc.num_locations */);
+        // graph2trie.template init<Rev, std::identity, CookKmer<Kmer, allow_inner>>(
+        //         pairs, letter_loc.num_locations /* , maxkmer */);
         using key_iter_pair = iter_pair<
             typename decltype(trie2graph)::const_key_iterator,
             typename decltype(trie2graph)::const_key_iterator,
             KmerCodec>;
-        active_trie.init(key_iter_pair(trie2graph.keys()));
-                // std::views::transform([](KHolder kh) { return Kmer(kh); }));
+        active_trie = { key_iter_pair(trie2graph.keys()) };
     }
+
+    void sanity_check(std::vector<std::pair<Kmer, LetterLoc>> pairs,
+            const LetterLocData &letter_loc) {
+        // using Fwd = PairFwd<Kmer, LetterLoc>;
+        // using Rev = PairRev<Kmer, LetterLoc>;
+        u64 maxkmer = total_kmers();
+        // test trie2graph
+        std::ranges::sort(pairs);
+        assert(std::ranges::equal(
+                    pairs | std::ranges::views::transform(
+                        [](const auto &p) {
+                        return std::make_pair(
+                                KmerCodec::to_int(p.first),
+                                p.second);
+                        }),
+                    trie2graph));
+
+        auto pbeg = pairs.begin(), pend = pairs.end();
+        for (u64 i = 0; i < maxkmer; ++i) {
+            if (pbeg != pend && pbeg->first == KmerCodec::to_ext(i)) {
+                assert(trie2graph.contains(i));
+                auto vv = trie2graph.values_for(i);
+                assert(!vv.empty());
+                while (!vv.empty()) {
+                    assert(*vv == pbeg->second);
+                    ++vv;
+                    ++pbeg;
+                }
+            } else {
+                // test empty range
+                assert(!trie2graph.contains(i));
+                assert(trie2graph.values_for(i).empty());
+                auto er = trie2graph.equal_range(i);
+                assert(er.first == er.second);
+            }
+        }
+
+        std::ranges::sort(pairs, PairSwitchComp<Kmer, LetterLoc> {});
+        assert(std::ranges::equal(
+                    pairs | std::ranges::views::transform(
+                        [](const auto &p) {
+                        return std::make_pair(
+                                p.second,
+                                KmerCodec::to_int(p.first));
+                        }
+                        ),
+                    graph2trie));
+        pbeg = pairs.begin(), pend = pairs.end();
+        for (u64 i = 0; i < letter_loc.num_locations; ++i) {
+            if (pbeg != pend && pbeg->second == i) {
+                assert(graph2trie.contains(i));
+                auto vv = graph2trie.values_for(i);
+                assert(!vv.empty());
+                while (!vv.empty()) {
+                    assert(*vv == KmerCodec::to_int(pbeg->first));
+                    ++vv;
+                    ++pbeg;
+                }
+            } else {
+                // test empty range
+                assert(!graph2trie.contains(i));
+                assert(graph2trie.values_for(i).empty());
+                auto er = graph2trie.equal_range(i);
+                assert(er.first == er.second);
+            }
+        }
+    }
+
     TrieDataOpt(const TrieDataOpt &) = delete;
     TrieDataOpt &operator= (const TrieDataOpt &) = delete;
     TrieDataOpt(TrieDataOpt &&) = default;
     TrieDataOpt &operator= (TrieDataOpt &&) = default;
 
-    OptMMap<KHolder, NumKmers, LetterLoc> trie2graph;
-    OptMMap<LetterLoc, NumKmers, KHolder> graph2trie;
+    DenseMultimap<KHolder, NumKmers, LetterLoc> trie2graph;
+    DenseMultimap<LetterLoc, NumKmers, KHolder> graph2trie;
     TieredBitset<Kmer, allow_inner> active_trie;
 
     using t2g_values_view = iter_pair<
@@ -399,6 +316,25 @@ struct TrieDataOpt {
         } else {
             return trie_inner_contains(kmer);
         }
+    }
+
+    static constexpr u64 total_kmers() {
+        if constexpr (allow_inner) {
+            return Kmer::NUM_COMPRESSED;
+        } else {
+            return Kmer::NUM_LEAFS;
+        }
+    }
+
+    PowHistogram t2g_histogram() const {
+        return PowHistogram(trie2graph.keys() | std::ranges::views::transform([&](const auto &k) {
+                    return std::ranges::distance(trie2graph.values_for(k));
+                }));
+    }
+    PowHistogram g2t_histogram() const {
+        return PowHistogram(graph2trie.keys() | std::ranges::views::transform([&](const auto &k) {
+                    return std::ranges::distance(graph2trie.values_for(k));
+                }));
     }
 };
 
