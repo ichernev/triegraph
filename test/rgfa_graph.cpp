@@ -129,7 +129,8 @@ std::vector<u32> node_collector(ITH ith) {
 }
 
 static void test_revcomp() {
-    auto graph = RgfaGraph<DnaStr, u32>::Builder()
+    auto graph = RgfaGraph<DnaStr, u32>::Builder({
+            .add_reverse_complement = true, .add_extends = false })
         .add_node(DnaStr("ac"), "s1")
         .add_node(DnaStr("gg"), "s2")
         .add_node(DnaStr("acg"), "s3")
@@ -138,7 +139,6 @@ static void test_revcomp() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .add_reverse_complement()
         .build();
     // std::cerr << graph;
 
@@ -154,13 +154,13 @@ static void test_revcomp() {
 }
 
 static void test_extends() {
-    auto graph = RgfaGraph<DnaStr, u32>::Builder()
+    auto graph = RgfaGraph<DnaStr, u32>::Builder({
+            .add_reverse_complement = false, .add_extends = true })
         .add_node(DnaStr("ac"), "s1")
         .add_node(DnaStr("gg"), "s2")
         .add_node(DnaStr("acg"), "s3")
         .add_edge("s1", "s2")
         .add_edge("s1", "s3")
-        .add_extends()
         .build();
 
     // std::cerr << graph << std::endl;

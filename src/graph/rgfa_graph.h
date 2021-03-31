@@ -125,7 +125,7 @@ struct RgfaGraph {
         using Self = Builder;
 
         GraphData data;
-        Settings applied = { .add_reverse_complement = false, .add_extends = false };
+        Settings settings;
 
         // std::vector<Node> nodes;
         // std::vector<Edge> edges;
@@ -135,9 +135,20 @@ struct RgfaGraph {
         std::unordered_map<std::string, NodeLoc> seg2id;
 
         enum { NODES, EDGES, YOLO } state = NODES;
+        enum dir { FWD = 0, REVCOMP = 1 };
+
+        dir dir2enum(char d) const {
+            return d == '+' ? FWD : REVCOMP;
+        }
+        dir rev(dir d) const {
+            return d == FWD ? REVCOMP : FWD;
+        }
+        std::string segid(const std::string &seg_id, dir d) const {
+            return d == FWD ? seg_id : "revcomp:" + seg_id;
+        }
 
         // regular builder, start from scratch
-        Builder() : state(NODES) {}
+        Builder(Settings settings = {}) : settings(settings), state(NODES) {}
 
         Self &add_node(Str &&seg, std::string &&seg_id, bool adjust_edges = false) {
             if (state == EDGES) throw "can not add_node after add_edge";
@@ -147,6 +158,16 @@ struct RgfaGraph {
                 data.edge_start.emplace_back(INV_SIZE);
                 data.redge_start.emplace_back(INV_SIZE);
             }
+            if (settings.add_reverse_complement) {
+                const auto &node = data.nodes.back();
+                auto seg_id = segid(node.seg_id, REVCOMP);
+                // if (seg2id.contains(seg_id)) throw "original nodes contain revcomp: prefix";
+                data.nodes.emplace_back(node.seg.rev_comp(), std::move(seg_id));
+                if (adjust_edges) {
+                    data.edge_start.emplace_back(INV_SIZE);
+                    data.redge_start.emplace_back(INV_SIZE);
+                }
+            }
             return *this;
         }
 
@@ -155,6 +176,7 @@ struct RgfaGraph {
 
             NodeLoc i = 0;
             for (Node &node : data.nodes) {
+                // TODO: Add check for existing seg_id
                 seg2id[node.seg_id] = i++;
             }
             data.edge_start.resize(data.nodes.size(), INV_SIZE);
@@ -166,7 +188,79 @@ struct RgfaGraph {
         Self &add_edge(const std::string &seg_a, const std::string &seg_b) {
             prep_for_edges();
 
-            return add_edge(seg2id[seg_a], seg2id[seg_b]);
+            return add_edge(seg_a, '+', seg_b, '+');
+        }
+
+        Self &add_edge(const std::string &seg_a, char dir_a,
+                const std::string &seg_b, char dir_b) {
+
+            return add_edge(seg_a, dir2enum(dir_a), seg_b, dir2enum(dir_b));
+        }
+
+        // Self &add_reverse_complement() {
+        //     prep_for_edges();
+        //     state = YOLO;
+        //     applied.add_reverse_complement = true;
+
+        //     data.nodes.reserve(data.nodes.size() * 2);
+        //     data.edges.reserve(data.edges.size() * 2);
+        //     data.edge_start.resize(data.edge_start.size() * 2, INV_SIZE);
+        //     data.redge_start.resize(data.redge_start.size() * 2, INV_SIZE);
+
+        //     auto split = data.nodes.size();
+        //     for (NodeLoc i = 0; i < split; ++i) {
+        //         auto &node = data.nodes[i];
+        //         auto id = "revcomp:" + node.seg_id;
+        //         if (seg2id.contains(id)) throw "original nodes contain revcomp: prefix";
+        //         add_node(node.seg.rev_comp(), std::move(id));
+        //     }
+        //     for (EdgeLoc i = 0, sz = data.edges.size(); i < sz; i += 2) {
+        //         auto &edge_a = data.edges[i];
+        //         auto &edge_b = data.edges[i+1];
+        //         add_edge(edge_a.to + split, edge_b.to + split);
+        //     }
+
+        //     return *this;
+        // }
+
+        RgfaGraph build() {
+            prep_for_edges();
+            if (settings.add_extends)
+                add_extends();
+
+            return RgfaGraph(std::move(data), settings);
+        }
+
+        // RgfaGraph build(Settings s) {
+        //     // make sure settings and applied settings are not out of sync
+        //     if (applied.add_reverse_complement && !s.add_reverse_complement)
+        //         throw "can NOT undo add_reverse_complement";
+        //     if (!applied.add_reverse_complement && s.add_reverse_complement)
+        //         add_reverse_complement();
+        //     if (applied.add_extends && !s.add_extends)
+        //         throw "can NOT undo add_extends";
+        //     if (!applied.add_extends && s.add_extends)
+        //         add_extends();
+
+        //     return build();
+        // }
+    private:
+        Self &add_edge(const std::string &seg_a, dir dir_a,
+                const std::string &seg_b, dir dir_b) {
+            if (settings.add_reverse_complement) {
+                add_edge(seg2id[segid(seg_a, dir_a)],
+                        seg2id[segid(seg_b, dir_b)]);
+                add_edge(seg2id[segid(seg_b, rev(dir_b))],
+                        seg2id[segid(seg_a, rev(dir_a))]);
+            } else {
+                if (dir_a == FWD && dir_b == FWD)
+                    add_edge(seg2id[seg_a], seg2id[seg_b]);
+                else if (dir_a == REVCOMP && dir_b == REVCOMP)
+                    add_edge(seg2id[seg_b], seg2id[seg_a]);
+                else
+                    throw "mismatch directions and no revcomp in settings";
+            }
+            return *this;
         }
 
         Self &add_edge(NodeLoc a, NodeLoc b) {
@@ -178,36 +272,10 @@ struct RgfaGraph {
             return *this;
         }
 
-        Self &add_reverse_complement() {
-            prep_for_edges();
-            state = YOLO;
-            applied.add_reverse_complement = true;
-
-            data.nodes.reserve(data.nodes.size() * 2);
-            data.edges.reserve(data.edges.size() * 2);
-            data.edge_start.resize(data.edge_start.size() * 2, INV_SIZE);
-            data.redge_start.resize(data.redge_start.size() * 2, INV_SIZE);
-
-            auto split = data.nodes.size();
-            for (NodeLoc i = 0; i < split; ++i) {
-                auto &node = data.nodes[i];
-                auto id = "revcomp:" + node.seg_id;
-                if (seg2id.contains(id)) throw "original nodes contain revcomp: prefix";
-                add_node(node.seg.rev_comp(), std::move(id));
-            }
-            for (EdgeLoc i = 0, sz = data.edges.size(); i < sz; i += 2) {
-                auto &edge_a = data.edges[i];
-                auto &edge_b = data.edges[i+1];
-                add_edge(edge_a.to + split, edge_b.to + split);
-            }
-
-            return *this;
-        }
-
         Self &add_extends() {
             prep_for_edges();
             state = YOLO;
-            applied.add_extends = true;
+            settings.add_extends = true;
 
             for (NodeLoc i = 0, sz = data.nodes.size(); i < sz; ++i) {
                 if (data.edge_start[i] == INV_SIZE) {
@@ -220,31 +288,12 @@ struct RgfaGraph {
 
             return *this;
         }
-
-        RgfaGraph build() {
-            prep_for_edges();
-            return RgfaGraph(std::move(data), applied);
-        }
-
-        RgfaGraph build(Settings s) {
-            // make sure settings and applied settings are not out of sync
-            if (applied.add_reverse_complement && !s.add_reverse_complement)
-                throw "can NOT undo add_reverse_complement";
-            if (!applied.add_reverse_complement && s.add_reverse_complement)
-                add_reverse_complement();
-            if (applied.add_extends && !s.add_extends)
-                throw "can NOT undo add_extends";
-            if (!applied.add_extends && s.add_extends)
-                add_extends();
-
-            return build();
-        }
     };
 
     static RgfaGraph from_file(const std::string &file, Settings settings = {}) {
         std::ifstream io = std::ifstream(file);
 
-        Builder builder;
+        Builder builder(settings);
 
         std::string line;
         while (std::getline(io, line)) {
@@ -265,17 +314,20 @@ struct RgfaGraph {
                     std::string seg_a, seg_b, cigar;
                     char dir_a, dir_b;
                     iss >> seg_a >> dir_a >> seg_b >> dir_b >> cigar;
-                    if (dir_a != '+' || dir_b != '+' || cigar != "0M") {
-                        throw "does not support fancy links";
+                    if (cigar != "0M") {
+                        throw "does not support non-zero overlap";
                     }
-                    builder.add_edge(seg_a, seg_b);
+                    // if (!settings.add_reverse_complement && dir_a != dir_b)
+                    //     throw "directions differ, but no reverse complement in settings";
+
+                    builder.add_edge(seg_a, dir_a, seg_b, dir_b);
 
                     break;
                 }
             }
         }
 
-        return builder.build(settings);
+        return builder.build();
     }
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {

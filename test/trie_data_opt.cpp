@@ -14,9 +14,8 @@ static void test_ni() {
     using TG = triegraph::Manager<Cfg<false>>;
     TG::init({ .add_reverse_complement = false, .trie_depth = 4 });
 
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgt"), "s1")
-        .add_extends()
         .build();
     auto lloc = TG::LetterLocData(g);
 
@@ -39,9 +38,8 @@ static void test_wi() {
     TG::init({ .add_reverse_complement = false, .trie_depth = 4 });
 
     auto kmer_s = [](auto str) { return TG::Kmer::from_str(str); };
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgt"), "s1")
-        .add_extends()
         .build();
     auto lloc = TG::LetterLocData(g);
 

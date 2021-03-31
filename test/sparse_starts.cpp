@@ -14,20 +14,20 @@ static void test_iter_concept() {
 }
 
 static void test_small_linear() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false, .add_extends = false })
         .add_node(TG::Str("acgtacgt"), "s1")
         .build();
 
     auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
     auto starts = ss.compute_starts_every(2, {0});
 
-    // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
+    std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
     assert(std::ranges::equal(starts,
                 std::vector<TG::NodePos> { {0, 0}, {0, 2}, {0, 4}, {0, 6} }));
 }
 
 static void test_small_split() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false, .add_extends = false })
         .add_node(TG::Str("aaa"), "s1")
         .add_node(TG::Str("a"), "s2")
         .add_node(TG::Str("aa"), "s3")
@@ -47,7 +47,7 @@ static void test_small_split() {
 }
 
 static void test_small_split2() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false, .add_extends = false })
         .add_node(TG::Str("acgt"), "s1")
         .add_node(TG::Str("acgta"), "s2")
         .add_node(TG::Str("aa"), "s3")
@@ -64,7 +64,7 @@ static void test_small_split2() {
 }
 
 static void test_small_loop() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false, .add_extends = false })
         .add_node(TG::Str("acgt"), "s1")
         .add_node(TG::Str("acgta"), "s2")
         .add_node(TG::Str("aa"), "s3")

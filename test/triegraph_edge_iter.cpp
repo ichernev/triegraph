@@ -44,13 +44,13 @@ static void test_graph_fwd() {
 
 static void test_graph_split() {
     TG::init({ .trie_depth = 15 });
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("c"), "s2")
         .add_node(TG::Str("g"), "s3")
         .add_edge("s1", "s3")
         .add_edge("s1", "s2")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     EditEdgeIterView h = EditEdgeIter::make_graph_split(
             DnaLetters::A,
@@ -169,7 +169,7 @@ static void test_trie_to_graph() {
     using DnaLetters = dna::DnaLetters;
     using DnaStr = TG2::Str;
 
-    auto g = TG2::Graph::Builder()
+    auto g = TG2::Graph::Builder({ .add_reverse_complement = false })
         .add_node(DnaStr("ac"), "s1")
         .add_node(DnaStr("gg"), "s2")
         .add_node(DnaStr("acg"), "s3")
@@ -178,7 +178,7 @@ static void test_trie_to_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build({ .add_reverse_complement = false });
+        .build();
 
      /******************
       *      [1]       *

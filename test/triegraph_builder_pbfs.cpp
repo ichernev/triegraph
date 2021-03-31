@@ -31,9 +31,9 @@ static TG::TrieGraphData build_tgd(TG::Graph &&g,
 }
 
 static void test_all_tiny_linear_graph() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgtac"), "s1")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     auto tg = build_tgd(std::move(g));
     auto pos = trie2graph(tg, TG::Kmer::from_str("acgt"));
@@ -52,7 +52,7 @@ static void test_all_tiny_linear_graph() {
 }
 
 static void test_all_small_nonlinear_graph() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("cg"), "s2")
         .add_node(TG::Str("t"), "s3")
@@ -61,7 +61,7 @@ static void test_all_small_nonlinear_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     /****************
      *     12       *
@@ -93,13 +93,13 @@ static void test_all_small_nonlinear_graph() {
 }
 
 static void test_all_multiple_ends() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acg"), "s1")
         .add_node(TG::Str("c"), "s2")
         .add_node(TG::Str("g"), "s3")
         .add_edge("s1", "s2")
         .add_edge("s1", "s3")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     /*****************
      *       3   5   *
@@ -136,9 +136,9 @@ static void test_all_multiple_ends() {
 }
 
 static void test_se2_tiny_linear_graph() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgtac"), "s1")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     auto tg = build_tgd(std::move(g), 2);
     auto pos = trie2graph(tg, TG::Kmer::from_str("acgt"));
@@ -164,7 +164,7 @@ struct Cfg : public dna::DnaConfig<0> {
 static void test_cut_early() {
     using TGX = Manager<Cfg>;
     auto kmer_s = &TGX::Kmer::from_str;
-    auto g = TGX::Graph::Builder()
+    auto g = TGX::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TGX::Str("a"), "s00")
         .add_node(TGX::Str("g"), "s01")
         .add_node(TGX::Str("c"), "s10")
@@ -191,7 +191,7 @@ static void test_cut_early() {
         .add_edge("s30", "s41")
         .add_edge("s31", "s40")
         .add_edge("s31", "s41")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     auto tg = TGX::triegraph_from_graph(
             std::move(g),

@@ -17,7 +17,7 @@ using TG = triegraph::Manager<LLNoIdx>;
 
 static TG::Graph build_graph() {
     TG::init();
-    return TG::Graph::Builder()
+    return TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgt"), "s1")
         .add_node(TG::Str("a"), "s2")
         .add_node(TG::Str("cgt"), "s3")
@@ -26,7 +26,7 @@ static TG::Graph build_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build({ .add_reverse_complement = false });
+        .build();
 
      /*******************
       *       [1]       *

@@ -29,9 +29,9 @@ static TG::TrieGraphData build_tgd(TG::Graph &&g) {
 }
 
 static void test_tiny_linear_graph() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgtac"), "s1")
-        .build({ .add_reverse_complement = false });
+        .build();
     auto tg = build_tgd(std::move(g));
 
     // for (const auto &x : tg.trie_data.trie2graph) {
@@ -49,7 +49,7 @@ static void test_tiny_linear_graph() {
 }
 
 static void test_small_nonlinear_graph() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("cg"), "s2")
         .add_node(TG::Str("t"), "s3")
@@ -58,7 +58,7 @@ static void test_small_nonlinear_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     /****************
      *     12       *
@@ -91,13 +91,13 @@ static void test_small_nonlinear_graph() {
 }
 
 static void test_multiple_ends() {
-    auto g = TG::Graph::Builder()
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acg"), "s1")
         .add_node(TG::Str("c"), "s2")
         .add_node(TG::Str("g"), "s3")
         .add_edge("s1", "s2")
         .add_edge("s1", "s3")
-        .build({ .add_reverse_complement = false });
+        .build();
 
     /*****************
      *       3   5   *

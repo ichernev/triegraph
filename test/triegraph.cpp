@@ -17,7 +17,7 @@ using DnaLetters = M4::Letters;
 using Kmer = M4::Kmer;
 
 M4::Graph build_graph() {
-    return M4::Graph::Builder()
+    return M4::Graph::Builder({ .add_reverse_complement = false })
         .add_node(Str("ac"), "s1")
         .add_node(Str("gg"), "s2")
         .add_node(Str("acg"), "s3")
@@ -26,7 +26,7 @@ M4::Graph build_graph() {
         .add_edge("s1", "s3")
         .add_edge("s2", "s4")
         .add_edge("s3", "s4")
-        .build({ .add_reverse_complement = false });
+        .build();
 
      /******************
       *      [1]       *
