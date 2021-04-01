@@ -284,7 +284,7 @@ static void test_up_handle_trie() {
 }
 
 static void test_next_match_many() {
-    auto graph = M4::Graph::Builder()
+    auto graph = M4::Graph::Builder({ .add_reverse_complement = false })
         .add_node(M4::Str("acgtacgtacgt"), "s1")
         .add_node(M4::Str("ttt"), "s2")
         .add_edge("s1", "s2")

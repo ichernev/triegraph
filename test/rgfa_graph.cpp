@@ -142,15 +142,15 @@ static void test_revcomp() {
         .build();
     // std::cerr << graph;
 
-    assert(graph.node(4).seg.to_str() == "gt");
-    assert(graph.node(5).seg.to_str() == "cc");
-    assert(graph.node(6).seg.to_str() == "cgt");
+    assert(graph.node(1).seg.to_str() == "gt");
+    assert(graph.node(3).seg.to_str() == "cc");
+    assert(graph.node(5).seg.to_str() == "cgt");
     assert(graph.node(7).seg.to_str() == "gt");
 
-    assert((node_collector(graph.forward_from(7)) == std::vector<u32>{5, 6}));
-    assert((node_collector(graph.forward_from(6)) == std::vector<u32>{4}));
-    assert((node_collector(graph.forward_from(5)) == std::vector<u32>{4}));
-    assert((node_collector(graph.forward_from(4)) == std::vector<u32>{}));
+    assert((node_collector(graph.forward_from(7)) == std::vector<u32>{3, 5}));
+    assert((node_collector(graph.forward_from(5)) == std::vector<u32>{1}));
+    assert((node_collector(graph.forward_from(3)) == std::vector<u32>{1}));
+    assert((node_collector(graph.forward_from(1)) == std::vector<u32>{}));
 }
 
 static void test_extends() {
