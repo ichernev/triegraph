@@ -40,6 +40,18 @@ struct TrieGraphBuilderPBFS {
 
     std::vector<std::pair<Kmer, NodePos>> a, b;
     void _bfs(NodePos start, u32 cut_early_threshold) {
+
+        if (auto &node = graph.node(start.node);
+                start.pos + Kmer::K + 1 < node.seg.size()) {
+            Kmer kmer;
+            std::ranges::copy(
+                    node.seg.get_view(start.pos, Kmer::K),
+                    std::back_inserter(kmer));
+            pairs.emplace_back(kmer, lloc.compress(
+                        NodePos(start.node, start.pos+Kmer::K)));
+            return;
+        }
+
         // std::cerr << "running bfs" << std::endl;
         // a.reserve(cut_early_threshold);
         // b.reserve(cut_early_threshold);

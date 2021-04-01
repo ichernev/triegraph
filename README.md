@@ -107,9 +107,9 @@ Properties:
 - supports selective start locations
 - supports shorter kmers
 
-TODO Optimizations:
-- handle simplest cases (full length of kmer fits in current node) without bfs
-  (70% of all cases are simple)
+Done Optimizations:
+- special case: kmer fits in starting node
+  - 4.5x speedup
 
 (Extra) choosing starting locations
 -----------------------------------
