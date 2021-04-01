@@ -30,7 +30,7 @@ constexpr u32 log2_ceil(u64 value) {
     return res;
 }
 
-constexpr int log4_ceil(u64 value) {
+constexpr u32 log4_ceil(u64 value) {
     int res = 0;
     while (value > 1) {
         res += 1;
