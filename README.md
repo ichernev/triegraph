@@ -63,8 +63,9 @@ Properties:
 - supports selective start locations
 - does not support shorter kmers
 
-TODO Optimizations:
+Done Optimizations:
 - traverse the full length of every node instead of letter by letter
+  - observed speedup 2x (on hg22)
 
 (Rolling) BFS
 -------------
