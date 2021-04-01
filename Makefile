@@ -19,11 +19,11 @@ benchmarks: $(BENCHES)
 
 .PHONY: test
 test: $(TESTS)
-	for t in $(TESTS); do echo ======= $$t =======; ./$$t; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion/ { printf RED; } // { print $$0 COLEND; } '
+	for t in $(TESTS); do echo ======= $$t =======; ./$$t; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
 
 .PHONY: benchmark
 benchmark: $(BENCHES)
-	for b in $(BENCHES); do echo ======= $$b =======; ./$$b; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion/ { printf RED; } // { print $$0 COLEND; } '
+	for b in $(BENCHES); do echo ======= $$b =======; ./$$b; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
 
 %: %.o
 	g++ $(CPPFLAGS) $< -o $@
