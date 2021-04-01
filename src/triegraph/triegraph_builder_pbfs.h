@@ -34,23 +34,74 @@ struct TrieGraphBuilderPBFS {
         for (const auto &start: starts) {
             _bfs(start, cut_early_threshold);
         }
-
+        Logger::get().log(
+                "short", stats.short_kmer,
+                "next", stats.short_next,
+                "fast_split", stats.fast_split,
+                "normal", stats.normal);
         return std::move(pairs);
     }
+
+    struct Stats {
+        u32 short_kmer;
+        u32 short_next;
+        u32 fast_split;
+        u32 normal;
+        Stats() : short_kmer(0), short_next(0), fast_split(0), normal(0) {}
+    } stats;
 
     std::vector<std::pair<Kmer, NodePos>> a, b;
     void _bfs(NodePos start, u32 cut_early_threshold) {
 
-        if (auto &node = graph.node(start.node);
-                start.pos + Kmer::K + 1 < node.seg.size()) {
-            Kmer kmer;
-            std::ranges::copy(
-                    node.seg.get_view(start.pos, Kmer::K),
-                    std::back_inserter(kmer));
-            pairs.emplace_back(kmer, lloc.compress(
-                        NodePos(start.node, start.pos+Kmer::K)));
-            return;
+        {
+            auto &node = graph.node(start.node);
+            if (start.pos + Kmer::K + 1 < node.seg.size()) {
+                Kmer kmer;
+                std::ranges::copy(
+                        node.seg.get_view(start.pos, Kmer::K),
+                        std::back_inserter(kmer));
+                pairs.emplace_back(kmer, lloc.compress(
+                            NodePos(start.node, start.pos+Kmer::K)));
+                ++ stats.short_kmer;
+                return;
+            }
+            auto left = node.seg.size() - start.pos;
+            if (auto nxt = graph.forward_one(start.node);
+                    nxt && Kmer::K - left < graph.node(*nxt).seg.size()) {
+                Kmer kmer;
+                std::ranges::copy(
+                        node.seg.get_view(start.pos, left),
+                        std::back_inserter(kmer));
+                std::ranges::copy(
+                        graph.node(*nxt).seg.get_view(0, Kmer::K - left),
+                        std::back_inserter(kmer));
+                pairs.emplace_back(kmer, lloc.compress(
+                            NodePos(*nxt, Kmer::K - left)));
+                ++ stats.short_next;
+                return;
+            }
+            bool fast_split = true;
+            for (const auto &fwd : graph.forward_from(start.node))
+                if (Kmer::K - left >= fwd.seg.size())
+                    fast_split = false;
+            if (fast_split) {
+                Kmer kmer;
+                std::ranges::copy(
+                        node.seg.get_view(start.pos, left),
+                        std::back_inserter(kmer));
+                for (const auto &fwd : graph.forward_from(start.node)) {
+                    Kmer tmp = kmer;
+                    std::ranges::copy(
+                            fwd.seg.get_view(0, Kmer::K - left),
+                            std::back_inserter(tmp));
+                    pairs.emplace_back(tmp, lloc.compress(
+                                NodePos(fwd.node_id, Kmer::K - left)));
+                }
+                ++ stats.fast_split;
+                return;
+            }
         }
+        ++ stats.normal;
 
         // std::cerr << "running bfs" << std::endl;
         // a.reserve(cut_early_threshold);

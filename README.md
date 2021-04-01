@@ -110,6 +110,8 @@ Properties:
 Done Optimizations:
 - special case: kmer fits in starting node
   - 4.5x speedup
+- special case: kmer fits in starting node + single successor
+- special case: kmer fits in starting node + all successors
 
 (Extra) choosing starting locations
 -----------------------------------
