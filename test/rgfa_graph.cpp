@@ -66,6 +66,21 @@ static void test_small() {
 
     edge_helper = graph.forward_from(3);
     assert(std::ranges::distance(edge_helper) == 0);
+
+    {
+        auto nxt = graph.forward_one(2);
+        assert(nxt.has_value());
+        assert(*nxt == 3);
+    }
+    {
+        auto nxt = graph.forward_one(0);
+        assert(!nxt);
+    }
+    {
+        auto nxt = graph.forward_one(6);
+        assert(!!nxt);
+        assert(*nxt == 5);
+    }
 }
 
 static void test_pasgal_mhc1() {

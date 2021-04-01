@@ -11,6 +11,7 @@
 #include <iterator>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 namespace triegraph {
 
@@ -116,6 +117,14 @@ struct RgfaGraph {
 
     const_iter_view forward_from(NodeLoc node_id) const {
         return const_iterator {this->data, data.edge_start[node_id]};
+    }
+
+    std::optional<NodeLoc> forward_one(NodeLoc node_id) const {
+        auto edge_id = data.edge_start[node_id];
+        if (edge_id != INV_SIZE && data.edges[edge_id].next == INV_SIZE) {
+            return { data.edges[edge_id].to };
+        }
+        return {};
     }
 
     const_iter_view backward_from(NodeLoc node_id) const {
