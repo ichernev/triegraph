@@ -4,6 +4,7 @@
 #include "util/util.h"
 #include "util/pow_histogram.h"
 #include "util/dense_multimap.h"
+#include "util/logger.h"
 
 #include <type_traits>
 #include <utility>
@@ -109,6 +110,9 @@ struct TieredBitset {
     TieredBitset(std::ranges::range auto const& c)
         : present(Kmer::NUM_COMPRESSED - Kmer::NUM_LEAFS)
     {
+        auto &log = Logger::get();
+
+        log.begin("bitset leafs");
         for (auto kmer : c) {
             // auto kh = KHolder(kmer);
             if constexpr (!allow_inner) {
@@ -125,10 +129,13 @@ struct TieredBitset {
                 }
             }
         }
+        log.end();
         auto beg_it = Kmer::beg.rend() - Kmer::K;
+
         // star
         // ++ beg_it;
         // std::cerr << "last level has " << (typename Kmer::TrieElems<Kmer::K-1>)::power << std::endl;
+        log.begin("pre-leaves");
         for (u64 pos = present.size() - pow(Letter::num_options, Kmer::K-1) - 1;
                 pos < present.size(); --pos) {
             // std::cerr << "looking at " << Kmer::from_compressed(pos) << std::endl;
@@ -147,6 +154,7 @@ struct TieredBitset {
                 }
             }
         }
+        log.end();
     }
 
     TieredBitset(const TieredBitset &) = delete;
@@ -174,12 +182,13 @@ struct TrieDataOpt {
 
     TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
-        // u64 maxkmer = total_kmers();
-        // using Fwd = PairFwd<Kmer, LetterLoc>;
-        // using Rev = PairRev<Kmer, LetterLoc>;
+        auto &log = Logger::get();
 
-        // sort by pair::first, then ::second
+        auto scope = log.begin_scoped("trie data");
+
+        log.begin("sort pairs t2g");
         std::ranges::sort(pairs);
+        log.end(); log.begin("build t2g");
         trie2graph = {
                 pairs | std::ranges::views::transform(
                     [](const auto &p) {
@@ -189,7 +198,9 @@ struct TrieDataOpt {
                     }
                 )};
 
+        log.end(); log.begin("sort pairs g2t");
         std::ranges::sort(pairs, PairSwitchComp<Kmer, LetterLoc> {});
+        log.end(); log.begin("build g2t");
         graph2trie = {
                 pairs | std::ranges::views::transform(
                     [](const auto &p) {
@@ -198,10 +209,9 @@ struct TrieDataOpt {
                                 KmerCodec::to_int(p.first));
                     }
                 )};
-        // trie2graph.template init<Fwd, CookKmer<Kmer, allow_inner>, std::identity>(
-        //         pairs, maxkmer /* , letter_loc.num_locations */);
-        // graph2trie.template init<Rev, std::identity, CookKmer<Kmer, allow_inner>>(
-        //         pairs, letter_loc.num_locations /* , maxkmer */);
+
+        log.end();
+        log.begin("build inner");
         using key_iter_pair = iter_pair<
             typename decltype(trie2graph)::const_key_iterator,
             typename decltype(trie2graph)::const_key_iterator,

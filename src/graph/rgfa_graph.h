@@ -2,6 +2,7 @@
 #define __RGFA_GRAPH_H__
 
 #include "util/util.h"
+#include "util/logger.h"
 
 #include <iostream>
 #include <fstream>
@@ -193,6 +194,7 @@ struct RgfaGraph {
 
         Self &add_edge(const std::string &seg_a, char dir_a,
                 const std::string &seg_b, char dir_b) {
+            prep_for_edges();
 
             return add_edge(seg_a, dir2enum(dir_a), seg_b, dir2enum(dir_b));
         }
@@ -264,10 +266,10 @@ struct RgfaGraph {
         }
 
         Self &add_edge(NodeLoc a, NodeLoc b) {
-            data.edges.emplace_back(b, data.edge_start[a]);
-            data.edge_start[a] = data.edges.size() - 1;
-            data.edges.emplace_back(a, data.redge_start[b]);
-            data.redge_start[b] = data.edges.size() - 1;
+            data.edges.emplace_back(b, data.edge_start.at(a));
+            data.edge_start.at(a) = data.edges.size() - 1;
+            data.edges.emplace_back(a, data.redge_start.at(b));
+            data.redge_start.at(b) = data.edges.size() - 1;
 
             return *this;
         }
@@ -291,11 +293,15 @@ struct RgfaGraph {
     };
 
     static RgfaGraph from_file(const std::string &file, Settings settings = {}) {
+        auto &log = Logger::get();
+        auto ts = log.begin_scoped("reading graph");
         std::ifstream io = std::ifstream(file);
 
         Builder builder(settings);
 
         std::string line;
+        log.begin("reading nodes");
+        bool reading_nodes = true;
         while (std::getline(io, line)) {
             char head;
             std::istringstream iss(line);
@@ -311,6 +317,10 @@ struct RgfaGraph {
                     break;
                 }
                 case 'L': {
+                    if (reading_nodes) {
+                        log.end(); log.begin("reading edges");
+                        reading_nodes = false;
+                    }
                     std::string seg_a, seg_b, cigar;
                     char dir_a, dir_b;
                     iss >> seg_a >> dir_a >> seg_b >> dir_b >> cigar;
@@ -327,7 +337,9 @@ struct RgfaGraph {
             }
         }
 
-        return builder.build();
+        log.end(); log.begin("building");
+        auto res = builder.build();
+        return res;
     }
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {

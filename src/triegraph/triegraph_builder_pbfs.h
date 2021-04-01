@@ -1,6 +1,8 @@
 #ifndef __TRIEGRAPH_BUILDER_PBFS_H__
 #define __TRIEGRAPH_BUILDER_PBFS_H__
 
+#include "util/logger.h"
+
 #include <vector>
 #include <ranges>
 
@@ -28,6 +30,7 @@ struct TrieGraphBuilderPBFS {
 
     template <std::ranges::input_range R>
     decltype(pairs) &&get_pairs(const R &starts, u32 cut_early_threshold) && {
+        auto scope = Logger::get().begin_scoped("pbfs builder");
         for (const auto &start: starts) {
             _bfs(start, cut_early_threshold);
         }
