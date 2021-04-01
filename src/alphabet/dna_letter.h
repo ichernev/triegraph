@@ -22,6 +22,7 @@ struct DnaLetterCodec {
             case 'E':
                 return 4;
             default:
+                std::cerr << "got letter " << letter << std::endl;
                 throw "invalid letter";
         }
     }
