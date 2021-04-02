@@ -178,16 +178,16 @@ struct Manager : Cfg {
 
     template<typename Builder>
     static vec_pairs pairs_from_graph(const Graph &graph, Settings s, Settings::NoSkip) {
-        std::cerr << "settings:\n" << s;
+        // std::cerr << "settings:\n" << s;
         auto lloc = LetterLocData(graph);
-        std::cerr << "total locations " << lloc.num_locations << std::endl;
+        // std::cerr << "total locations " << lloc.num_locations << std::endl;
         return Builder(graph, lloc).get_pairs(lloc, s.cut_early_threshold);
     }
 
     template <typename Builder>
     static vec_pairs pairs_from_graph(const Graph &graph,
             Settings s, Settings::SkipEvery skip_every) {
-        std::cerr << "settings:\n" << s;
+        // std::cerr << "settings:\n" << s;
         auto lloc = LetterLocData(graph);
         auto sp = ConnectedComponents(graph).compute_starting_points();
         auto ss = SparseStarts(graph);
@@ -236,10 +236,9 @@ struct Manager : Cfg {
     static void init(Settings s, DynamicKKmer) {
         using Holder = Kmer::Holder;
         auto on_mask = Holder(1) << (sizeof(Holder) * BITS_PER_BYTE - 1);
-        std::cerr << "setting"
-            << " trie_depth=" << s.trie_depth
-            << " on_mask=" << std::hex << on_mask << std::dec
-            << '\n';
+        Logger::get().log("setting",
+                "trie_depth =", s.trie_depth,
+                "on_mask =", std::hex, on_mask, std::dec);
         Kmer::setK(s.trie_depth, on_mask);
     }
 };
