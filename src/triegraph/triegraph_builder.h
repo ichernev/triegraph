@@ -40,6 +40,7 @@ struct TrieGraphBuilder {
     struct Stats {
         u32 qpush;
         u32 qpop;
+        u32 double_pop;
         u32 kpush;
         u32 kproc;
         u32 ksame;
@@ -52,7 +53,7 @@ struct TrieGraphBuilder {
         u32 nsets;
 
         Stats()
-            : qpush(), qpop(), kpush(), kproc(), ksame(),
+            : qpush(), qpop(), double_pop(), kpush(), kproc(), ksame(),
             tnodes(), maxk(), maxc(), maxid(), qsearch(), ssearch(),
             nsets() {
         }
@@ -61,6 +62,7 @@ struct TrieGraphBuilder {
             return os << "----- STATS -----\n"
                 << "qpush " << s.qpush << "\n"
                 << "qpop " << s.qpop << "\n"
+                << "double_pop " << s.double_pop << "\n"
                 << "kpush " << s.kpush << "\n"
                 << "kproc " << s.kproc << "\n"
                 << "ksame " << s.ksame << "\n"
@@ -95,6 +97,8 @@ struct TrieGraphBuilder {
         log.begin("bfs");
         auto kmer_data = _bfs_trie(std::move(starts));
         log.end();
+
+        // std::cerr << stats << std::endl;
 
         log.begin("converting to pairs");
         return _make_pairs(std::move(kmer_data));
@@ -165,6 +169,10 @@ struct TrieGraphBuilder {
         while (!q.empty()) {
             auto h = q.front(); q.pop();
             ++ stats.qpop;
+
+            if (kb.done_idx[h.node] > 0) {
+                ++ stats.double_pop;
+            }
 
             auto hc = lloc.compress(h);
 
