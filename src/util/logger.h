@@ -12,16 +12,18 @@
 
 namespace triegraph {
 
-template <char sep=' ', typename... Args>
-void print(std::ostream &os, Args&&... args) {
-    auto x = {0, ((void) (os << sep << std::forward<Args>(args)), 0)... };
-    (void) x;
-    os << std::endl;
-}
+// template <char sep=' ', typename... Args>
+// void print(std::ostream &os, Args&&... args) {
+//     auto x = {0, ((void) (os << sep << std::forward<Args>(args)), 0)... };
+//     (void) x;
+//     os << std::endl;
+// }
 
 struct Logger {
 
+    enum separator { NONE, SPACE, NEWLINE };
     static inline Logger *instance = nullptr;
+    static inline bool enabled = true;
 
     static Logger& get() {
         if (instance == nullptr) {
@@ -33,6 +35,8 @@ struct Logger {
     static void free() {
         delete instance;
     }
+    static void enable() { enabled = true; }
+    static void disable() { enabled = false; }
 
     using clock = std::chrono::steady_clock;
     using instant = clock::time_point;
@@ -65,28 +69,28 @@ struct Logger {
     template <typename... Args>
     void log(Args&&... args) {
         if (!timers.back().expanded) {
-            os << std::endl;
+            print_ln(os);
             timers.back().expanded = true;
         }
         _ts();
         for (size_t i = 1; i < timers.size(); ++i) {
-            os << '|';
+            print<NONE>(os, '|');
         }
-        os << ":- "; _time_diff(timers.back().begin);
-        print(os, std::forward<Args>(args)...);
+        print<NONE>(os, ":- "); _time_diff(timers.back().begin);
+        print_ln(os, std::forward<Args>(args)...);
     }
 
     void begin(const std::string &tag) {
         if (!timers.empty() && !timers.back().expanded) {
-            os << std::endl;
+            print_ln(os);
             timers.back().expanded = true;
         }
         _ts();
         for (size_t i = 0; i < timers.size(); ++i) {
-            os << '|';
+            print<NONE>(os, '|');
         }
         timers.emplace_back(clock::now(), tag, false);
-        os << ",- " << tag;
+        print<NONE>(os, ",- ", tag);
     }
 
     struct ScopedTimer {
@@ -107,20 +111,40 @@ struct Logger {
     void end() {
         auto elem = timers.back(); timers.pop_back();
         if (!elem.expanded) {
-            os << " [";
+            print(os, '[');
             _time_diff(elem.begin);
-            os << "]" << std::endl;
+            print_ln<NONE>(os, ']');
         } else {
             _ts();
             for (size_t i = 0; i < timers.size(); ++i) {
-                os << '|';
+                print<NONE>(os, '|');
             }
-            os << "`- " << elem.tag << " finished ["; _time_diff(elem.begin);
-            os << "]" << std::endl;
+            print<NONE>(os, "`- ", elem.tag, " finished [");
+            _time_diff(elem.begin);
+            print_ln<NONE>(os, "]");
         }
     }
 
 private:
+
+    template <int sep=SPACE, typename... Args>
+    void print(std::ostream &os, Args&&... args) {
+        if (enabled) {
+            auto x = {0, ((void) (os
+                        << (sep == NONE ? "" : sep == SPACE ? " " : "\n")
+                        << std::forward<Args>(args)), 0)... };
+            (void) x;
+        }
+    }
+
+    template <int sep=SPACE, typename... Args>
+    void print_ln(std::ostream &os, Args&&... args) {
+        // auto x = {0, ((void) (os << sep << std::forward<Args>(args)), 0)... };
+        // (void) x;
+        print<sep>(os, std::forward<Args>(args)...);
+        if (enabled) os << std::endl;
+    }
+
     void _time_diff(instant a) {
         _time_diff(a, clock::now());
     }
@@ -129,15 +153,15 @@ private:
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 b - a).count();
         if (ms < 1000) {
-            os << ms << "ms";
+            print<NONE>(os, ms, "ms");
         } else {
             auto s = ms / 1000;
             if (s < 10) {
-                os << s << "." << ms / 100 << (ms / 10 % 10) << "s";
+                print<NONE>(os, s, '.', ms / 100, ms / 10 % 10, "s");
             } else if (s < 100) {
-                os << s << "." << ms / 100 << "s";
+                print<NONE>(os, s, '.', ms / 100, "s");
             } else {
-                os << s << "s";
+                print<NONE>(os, s, "s");
             }
         }
     }
@@ -147,16 +171,16 @@ private:
         auto in_time_t = std::chrono::system_clock::to_time_t(now);
         std::tm tmx;
         localtime_r(&in_time_t, &tmx);
-        os << std::put_time(&tmx, "%Y-%m-%d %X");
+        print<NONE>(os, std::put_time(&tmx, "%Y-%m-%d %X"));
 
 
         if (timers.size() == 0) {
-            os << ".000";
+            print<NONE>(os, ".000");
         } else {
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                     clock::now() - timers[0].begin).count();
             ms %= 1000;
-            os << "." << ms / 100 << (ms / 10) % 10 << ms % 10;
+            print<NONE>(os, '.', ms / 100, (ms / 10) % 10, ms % 10);
         }
     }
 
