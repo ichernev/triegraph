@@ -1,8 +1,9 @@
 #include "trie/dkmer.h"
 #include "alphabet/dna_letter.h"
 
-#include <assert.h>
-#include <iostream>
+#include "helper.h"
+// #include <assert.h>
+// #include <iostream>
 #include <iterator>
 #include <string>
 #include <unordered_map>
@@ -16,7 +17,9 @@ using dna::DnaLetters;
 
 using DnaKmer = DKmer<DnaLetter, u32>;
 
-static void test_push() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("push", [] {
     DnaKmer::setK(15);
     DnaKmer kmer = DnaKmer::empty();
 
@@ -31,9 +34,9 @@ static void test_push() {
 
     assert(kmer.is_complete());
     assert(kmer.get_len() == DnaKmer::K);
-}
+});
 
-static void test_pop() {
+test::define_test("pop", [] {
     DnaKmer::setK(15);
     auto kmer = DnaKmer::empty();
     for (DnaKmer::klen_type i = 0; i < DnaKmer::K; ++i) {
@@ -47,9 +50,9 @@ static void test_pop() {
     }
 
     assert(kmer.get_len() == 0);
-}
+});
 
-static void test_iter() {
+test::define_test("iter", [] {
     DnaKmer::setK(15);
     std::vector<DnaLetter> seq;
     for (DnaKmer::klen_type i = 0; i < DnaKmer::K; ++i) {
@@ -79,16 +82,16 @@ static void test_iter() {
         // std::cerr << kmer << std::endl;
         assert(std::equal(kmer.begin(), kmer.end(), seq.begin()));
     }
-}
+});
 
-static void test_concep() {
+test::define_test("concept", [] {
     DnaKmer::setK(15);
     auto kmer = DnaKmer::empty();
     auto func = [](std::random_access_iterator auto x) {};
     func(kmer.begin());
-}
+});
 
-static void test_on_mask() {
+test::define_test("on_mask", [] {
     // basically same as test_iter test, but also check for on_mask
     u64 on_mask = u64(1) << 63;
     using DnaKmer_u = DKmer<DnaLetter, u64>;
@@ -122,9 +125,9 @@ static void test_on_mask() {
         assert(std::equal(kmer.begin(), kmer.end(), seq.begin()));
         assert(kmer.data & on_mask);
     }
-}
+});
 
-static void test_map_friendly() {
+test::define_test("map_friendly", [] {
     u64 on_mask = u64(1) << 63;
     using DnaKmer_u = DKmer<DnaLetter, u64>;
     DnaKmer_u::setK(31, on_mask);
@@ -140,32 +143,32 @@ static void test_map_friendly() {
     std::unordered_set<DnaKmer_u> c2;
     a2.emplace(DnaKmer_u::empty(), 0);
     c2.emplace(DnaKmer_u::empty());
-}
+});
 
-static void test_to_from_str() {
+test::define_test("to_from_str", [] {
     using Kmer4 = DKmer<DnaLetter, u64>;
     Kmer4::setK(4);
 
     assert(DnaKmer::from_str("acgt").to_str() == "acgt");
     assert(Kmer4::from_str("acgta").to_str() == "cgta");
-}
+});
 
-static void test_cmp() {
+test::define_test("cmp", [] {
     DnaKmer::setK(15);
     assert(DnaKmer::from_str("acgt") < DnaKmer::from_str("actt"));
     assert(DnaKmer::from_str("acgt") == DnaKmer::from_str("acgt"));
-}
+});
 
-static void test_indexing() {
+test::define_test("indexing", [] {
     DnaKmer::setK(15);
     auto k = DnaKmer::from_str("acgt");
     assert(k[0] == 0);
     assert(k[1] == 1);
     assert(k[2] == 2);
     assert(k[3] == 3);
-}
+});
 
-static void test_static_arrays() {
+test::define_test("static_arrays", [] {
     {
         using Letter = triegraph::Letter<u8, 4>;
         using Kmer = triegraph::DKmer<Letter, u32>;
@@ -185,9 +188,9 @@ static void test_static_arrays() {
         assert(std::ranges::equal(std::vector<u32> {0, 1, 3, 7}, std::span(Kmer::beg.begin(), 4)));
         assert(std::ranges::equal(std::vector<u32> {1, 2, 4}, std::span(Kmer::lvl_size.begin(), 3)));
     }
-}
+});
 
-static void test_compressed_2x2() {
+test::define_test("compressed_2x2", [] {
     using Letter = triegraph::Letter<u8, 2>;
     using Kmer = triegraph::DKmer<Letter, u32>;
     Kmer::setK(2, u32(1) << 31);
@@ -212,9 +215,9 @@ static void test_compressed_2x2() {
     for (typename Kmer::Holder i = 0; i < Kmer::lvl_size[Kmer::K]; ++i) {
         assert(Kmer::from_compressed_leaf(i).compress_leaf() == i);
     }
-}
+});
 
-static void test_compressed_4x2() {
+test::define_test("compressed_4x2", [] {
     using Letter = triegraph::Letter<u8, 4>;
     using Kmer = triegraph::DKmer<Letter, u32>;
     Kmer::setK(2, u32(1) << 31);
@@ -240,25 +243,6 @@ static void test_compressed_4x2() {
     for (typename Kmer::Holder i = 0; i < Kmer::lvl_size[Kmer::K]; ++i) {
         assert(Kmer::from_compressed_leaf(i).compress_leaf() == i);
     }
-}
+});
 
-int main() {
-    try {
-        test_push();
-        test_pop();
-        test_iter();
-        test_concep();
-        test_on_mask();
-        test_map_friendly();
-        test_to_from_str();
-        test_cmp();
-        test_static_arrays();
-        test_indexing();
-        test_compressed_2x2();
-        test_compressed_4x2();
-    } catch (const char *s) {
-        std::cerr << "EXCEPTION: " << s << std::endl;
-    }
-    return 0;
-}
-
+});

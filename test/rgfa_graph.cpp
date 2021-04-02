@@ -5,9 +5,10 @@
 #include "dna_config.h"
 #include "manager.h"
 
-#include <iostream>
 #include <ranges>
-#include <assert.h>
+// #include <iostream>
+// #include <assert.h>
+#include "helper.h"
 
 using namespace triegraph;
 
@@ -15,15 +16,17 @@ using DnaStr = Str<dna::DnaLetter, u32>;
 
 static void func(std::ranges::input_range auto &&) {}
 
-static void test_iter_concept() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("iter_concept", [] {
     using Graph = RgfaGraph<DnaStr, u32>;
     auto graph = Graph::Builder()
         .add_node(DnaStr("a"), "s1")
         .build();
     func(graph.forward_from(0));
-}
+});
 
-static void test_settings() {
+test::define_test("settings", [] {
     auto s = RgfaGraph<DnaStr, u32>::Settings{};
     assert(s.add_reverse_complement);
     assert(s.add_extends);
@@ -40,9 +43,9 @@ static void test_settings() {
     };
     assert(!s.add_reverse_complement);
     assert(!s.add_extends);
-}
+});
 
-static void test_small() {
+test::define_test("small", [] {
     auto graph = RgfaGraph<DnaStr, u32>::from_file("data/simpler.gfa", {
             .add_reverse_complement = false,
             .add_extends = false,
@@ -81,9 +84,9 @@ static void test_small() {
         assert(!!nxt);
         assert(*nxt == 5);
     }
-}
+});
 
-static void test_pasgal_mhc1() {
+test::define_test("pasgal_mhc1", [] {
     auto graph = RgfaGraph<DnaStr, u32>::from_file("data/pasgal-MHC1.gfa", {
             .add_reverse_complement = true,
             .add_extends = true,
@@ -106,7 +109,7 @@ static void test_pasgal_mhc1() {
         assert(graph.data.edges[i].next == INV_SIZE ||
                 graph.data.edges[i].next < graph.data.edges.size());
     }
-}
+});
 
 // using TG = triegraph::Manager<triegraph::dna::DnaConfig<14>>;
 
@@ -132,18 +135,7 @@ static void test_pasgal_mhc1() {
 //     //auto graph = RgfaGraph<DnaStr, u32>::from_file("data/HG_22_linear.gfa");
 // }
 
-template <typename ITH> /* iter helper */
-std::vector<u32> node_collector(ITH ith) {
-    std::vector<u32> res;
-    std::ranges::transform(
-            ith,
-            std::back_inserter(res),
-            [](auto e) { return e.node_id; });
-    std::ranges::sort(res);
-    return res;
-}
-
-static void test_revcomp() {
+test::define_test("revcomp", [] {
     auto graph = RgfaGraph<DnaStr, u32>::Builder({
             .add_reverse_complement = true, .add_extends = false })
         .add_node(DnaStr("ac"), "s1")
@@ -162,13 +154,23 @@ static void test_revcomp() {
     assert(graph.node(5).seg.to_str() == "cgt");
     assert(graph.node(7).seg.to_str() == "gt");
 
+    auto node_collector = [](auto ith) {
+        std::vector<u32> res;
+        std::ranges::transform(
+                ith,
+                std::back_inserter(res),
+                [](auto e) { return e.node_id; });
+        std::ranges::sort(res);
+        return res;
+    };
+
     assert((node_collector(graph.forward_from(7)) == std::vector<u32>{3, 5}));
     assert((node_collector(graph.forward_from(5)) == std::vector<u32>{1}));
     assert((node_collector(graph.forward_from(3)) == std::vector<u32>{1}));
     assert((node_collector(graph.forward_from(1)) == std::vector<u32>{}));
-}
+});
 
-static void test_extends() {
+test::define_test("extends", [] {
     auto graph = RgfaGraph<DnaStr, u32>::Builder({
             .add_reverse_complement = false, .add_extends = true })
         .add_node(DnaStr("ac"), "s1")
@@ -187,16 +189,6 @@ static void test_extends() {
     assert(graph.node(3).seg_id == "extend:" + graph.node(1).seg_id);
     assert(std::ranges::distance(graph.forward_from(4)) == 0);
     assert(graph.node(4).seg_id == "extend:" + graph.node(2).seg_id);
-}
+});
 
-int main() {
-    test_iter_concept();
-    test_settings();
-    test_small();
-    test_revcomp();
-    test_extends();
-    test_pasgal_mhc1();
-    // test_hg22_linear();
-
-    return 0;
-}
+});

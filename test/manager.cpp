@@ -2,7 +2,8 @@
 #include "util/util.h"
 #include "alphabet/dna_letter.h"
 
-#include <iostream>
+// #include <iostream>
+#include "helper.h"
 
 using namespace triegraph;
 
@@ -28,9 +29,17 @@ struct Cfg {
 // constexpr bool is_type_complete_v
 //     <T, std::void_t<decltype(sizeof(T))>> = true;
 
-int main() {
-    std::cerr << sizeof(triegraph::Manager<Cfg>::NodeLen) << std::endl;
-    std::cerr << sizeof(triegraph::Manager<Cfg>::Kmer) << std::endl;
-    // std::cerr << is_type_complete_v<Cfg::huu> << std::endl;
-    return 0;
-}
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("compiles", [] {
+    assert(sizeof(triegraph::Manager<Cfg>::Kmer) == 8);
+});
+
+});
+
+// int main() {
+//     std::cerr << sizeof(triegraph::Manager<Cfg>::NodeLen) << std::endl;
+//     std::cerr << sizeof(triegraph::Manager<Cfg>::Kmer) << std::endl;
+//     // std::cerr << is_type_complete_v<Cfg::huu> << std::endl;
+//     return 0;
+// }

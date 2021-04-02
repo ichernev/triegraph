@@ -1,9 +1,9 @@
 #include "dna_config.h"
 #include "manager.h"
 
-#include <assert.h>
-#include <iostream>
 #include <ranges>
+
+#include "helper.h"
 
 using namespace triegraph;
 
@@ -38,7 +38,10 @@ M4::Graph build_graph() {
       ******************/
 }
 
-static void test_next_edit_edges_fwd() {
+
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("next_edit_edges_fwd", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -61,9 +64,9 @@ static void test_next_edit_edges_fwd() {
     };
 
     assert(std::ranges::equal(h, expected));
-}
+});
 
-static void test_next_edit_edges_split() {
+test::define_test("next_edit_edges_split", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -92,9 +95,9 @@ static void test_next_edit_edges_split() {
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
-}
+});
 
-static void test_next_edit_edges_trie_inner() {
+test::define_test("next_edit_edges_trie_inner", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -124,9 +127,9 @@ static void test_next_edit_edges_trie_inner() {
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
-}
+});
 
-static void test_next_edit_edges_trie_edge() {
+test::define_test("next_edit_edges_trie_edge", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -150,10 +153,9 @@ static void test_next_edit_edges_trie_edge() {
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
-}
+});
 
-
-static void test_next_edit_edges_trie_to_graph() {
+test::define_test("next_edit_edges_trie_to_graph", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -183,19 +185,9 @@ static void test_next_edit_edges_trie_to_graph() {
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
-}
+});
 
-template<typename IT>
-static std::vector<typename IT::value_type> _collect_it(IT it) {
-    std::vector<typename IT::value_type> res;
-    while (it.has_more()) {
-        res.emplace_back(*it);
-        ++it;
-    }
-    return res;
-}
-
-static void test_prev_handles_linear() {
+test::define_test("prev_handles_linear", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -215,11 +207,12 @@ static void test_prev_handles_linear() {
     auto expected = std::vector<M4::Handle> { { 0, 0 } };
     assert(std::ranges::equal(h, expected));
 
-    auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(0, 1)));
-    assert(std::ranges::equal(itv, expected));
-}
+    // auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(0, 1)));
 
-static void test_prev_handles_split() {
+    assert(std::ranges::equal(tg.prev_graph_handles(M4::Handle(0, 1)), expected));
+});
+
+test::define_test("prev_handles_split", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -231,12 +224,12 @@ static void test_prev_handles_split() {
     // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
 
-    auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(3, 0)));
+    // auto itv = _collect_it();
     // std::ranges::copy(itv, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    assert(std::ranges::equal(itv, expected));
-}
+    assert(std::ranges::equal(tg.prev_graph_handles(M4::Handle(3, 0)), expected));
+});
 
-static void test_prev_handles_graph_to_trie() {
+test::define_test("prev_handles_graph_to_trie", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -248,18 +241,18 @@ static void test_prev_handles_graph_to_trie() {
         M4::Kmer::from_str("acgg"),
         M4::Kmer::from_str("cacg"),
     };
-    std::cerr << "expected" << std::endl;
-    std::copy(expected.begin(), expected.end(),
-            std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    std::cerr << "actual" << std::endl;
+    // std::cerr << "expected" << std::endl;
+    // std::copy(expected.begin(), expected.end(),
+    //         std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    // std::cerr << "actual" << std::endl;
     // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
     // std::cerr << M4::Handle(M4::Kmer::from_str("acgg")).is_trie() << std::endl;
     // std::cerr << M4::Handle(M4::Kmer::from_str("cacg")).is_trie() << std::endl;
     // std::cerr << (M4::Kmer::from_str("acgg").data & M4::Kmer::ON_MASK) << std::endl;
     assert(std::ranges::equal(h, expected));
-}
+});
 
-static void test_prev_handles_trie() {
+test::define_test("prev_handles_trie", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -270,9 +263,9 @@ static void test_prev_handles_trie() {
     auto expected = std::vector<M4::Handle> { M4::Kmer::from_str("aca") };
     // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
-}
+});
 
-static void test_up_handle_trie() {
+test::define_test("up_handle_trie", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -281,9 +274,9 @@ static void test_up_handle_trie() {
 
     auto handle = tg.up_trie_handle(M4::Kmer::from_str("acac"));
     assert(handle.is_trie() && handle.kmer == M4::Kmer::from_str("aca"));
-}
+});
 
-static void test_next_match_many() {
+test::define_test("next_match_many", [] {
     auto graph = M4::Graph::Builder({ .add_reverse_complement = false })
         .add_node(M4::Str("acgtacgtacgt"), "s1")
         .add_node(M4::Str("ttt"), "s2")
@@ -301,9 +294,9 @@ static void test_next_match_many() {
     assert(tg.next_match_many(M4::Handle(0, 12), M4::Str("ttt")) == 0);
     assert(tg.next_match_many(M4::Handle(), M4::Str("acg")) == 0); // invalid
     assert(tg.next_match_many(M4::Kmer::from_str("acg"), M4::Str("acg")) == 0); // trie
-}
+});
 
-static void test_exact_short_match() {
+test::define_test("exact_short_match", [] {
     auto tg = M4::triegraph_from_graph(
             build_graph(),
             M4::Settings {
@@ -314,25 +307,9 @@ static void test_exact_short_match() {
     assert(tg.exact_short_match(M4::Str("acac")) == M4::Handle(M4::Kmer::from_str("acac")));
     assert(tg.exact_short_match(M4::Str("ttt")) == M4::Handle::invalid());
     assert(tg.exact_short_match(M4::Str("acacg")) == M4::Handle::invalid());
-}
+});
+
+});
 
 } /* unnamed namespace */
 
-int main() {
-    test_next_edit_edges_fwd();
-    test_next_edit_edges_split();
-    test_next_edit_edges_trie_inner();
-    test_next_edit_edges_trie_edge();
-    test_next_edit_edges_trie_to_graph();
-
-    test_prev_handles_linear();
-    test_prev_handles_split();
-    test_prev_handles_graph_to_trie();
-    test_prev_handles_trie();
-    test_up_handle_trie();
-
-    test_next_match_many();
-    test_exact_short_match();
-
-    return 0;
-}

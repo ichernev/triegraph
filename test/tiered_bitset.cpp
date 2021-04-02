@@ -8,7 +8,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <assert.h>
+#include "helper.h"
 
 using triegraph::u8;
 using triegraph::u16;
@@ -33,8 +33,9 @@ struct Helper {
     // static inline Initializator init = {};
 };
 
-// ni - no-inner (only leaves)
-static void test_ni_trie_presense() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("no_inner_trie_presense", [] {
     using TB = Helper<4, 3, triegraph::dna::DnaLetter>::TB;
     TB::Kmer::setK(3);
 
@@ -63,9 +64,9 @@ static void test_ni_trie_presense() {
     assert( tb.contains(TB::Kmer::from_str("t")));
     assert( tb.contains(TB::Kmer::from_str("ta")));
     assert(!tb.contains(TB::Kmer::from_str("tt")));
-}
+});
 
-static void test_wi_trie_presense() {
+test::define_test("with_inner_trie_presense", [] {
     using TB = Helper<4, 3, triegraph::dna::DnaLetter, true>::TB;
     TB::Kmer::setK(3);
 
@@ -101,11 +102,6 @@ static void test_wi_trie_presense() {
     assert( tb.contains(TB::Kmer::from_str("t")));
     assert( tb.contains(TB::Kmer::from_str("ta")));
     assert(!tb.contains(TB::Kmer::from_str("tt")));
-}
+});
 
-int main() {
-    test_ni_trie_presense();
-    test_wi_trie_presense();
-
-    return 0;
-}
+});

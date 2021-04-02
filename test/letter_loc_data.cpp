@@ -3,7 +3,8 @@
 
 #include <utility>
 #include <vector>
-#include <assert.h>
+
+#include "helper.h"
 
 struct LLNoIdx : public triegraph::dna::DnaConfig<0> {
     static constexpr int LetterLocIdxShift = -1;
@@ -54,7 +55,9 @@ static std::vector<std::pair<TG::LetterLoc, TG::NodePos>> get_expected() {
     };
 }
 
-static void test_lloc_no_idx() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("lloc_no_idx", [] {
     auto g = build_graph();
     auto ll = TG::LetterLocData(g);
     auto expected = get_expected();
@@ -67,9 +70,9 @@ static void test_lloc_no_idx() {
         assert(ll.expand(e.first) == e.second);
         assert(ll.compress(e.second) == e.first);
     }
-}
+});
 
-static void test_lloc_with_idx() {
+test::define_test("lloc_with_idx", [] {
     using TG2 = triegraph::Manager<LLWithIdx>;
 
     auto g = build_graph();
@@ -84,25 +87,19 @@ static void test_lloc_with_idx() {
         assert(ll.expand(e.first) == e.second);
         assert(ll.compress(e.second) == e.first);
     }
-}
+});
 
-static void test_lloc_iter() {
+test::define_test("lloc_iter", [] {
     auto g = build_graph();
     auto ll = TG::LetterLocData(g);
     auto expected = get_expected();
 
-    std::ranges::copy(ll, std::ostream_iterator<TG::NodePos>(std::cerr, "\n"));
+    // std::ranges::copy(ll, std::ostream_iterator<TG::NodePos>(std::cerr, "\n"));
     assert(std::ranges::equal(
                 expected | std::ranges::views::transform(
                     &std::pair<TG::LetterLoc, TG::NodePos>::second
                     /*[](const auto &p) { return p.second; }*/),
                 ll));
-}
+});
 
-int main() {
-    test_lloc_no_idx();
-    test_lloc_with_idx();
-    test_lloc_iter();
-
-    return 0;
-}
+});

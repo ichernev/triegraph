@@ -2,7 +2,8 @@
 #include "manager.h"
 
 #include <algorithm>
-#include <assert.h>
+
+#include "helper.h"
 
 template <bool allow_inner>
 struct Cfg : public triegraph::dna::DnaConfig<0> {
@@ -10,7 +11,9 @@ struct Cfg : public triegraph::dna::DnaConfig<0> {
     static constexpr bool triedata_allow_inner = allow_inner;
 };
 
-static void test_ni() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("no_inner", [] {
     using TG = triegraph::Manager<Cfg<false>>;
     TG::init({ .add_reverse_complement = false, .trie_depth = 4 });
 
@@ -31,9 +34,9 @@ static void test_ni() {
             std::vector<TG::LetterLoc> { 6 }));
     assert(std::ranges::equal(td.t2g_values_for(TG::Kmer::from_str("acgg")),
             std::vector<TG::LetterLoc> { }));
-}
+});
 
-static void test_wi() {
+test::define_test("with_inner", [] {
     using TG = triegraph::Manager<Cfg<true>>;
     TG::init({ .add_reverse_complement = false, .trie_depth = 4 });
 
@@ -72,11 +75,6 @@ static void test_wi() {
     assert(!td.trie_contains(kmer_s("tta")));
     assert(!td.trie_contains(kmer_s("tttt")));
     assert( td.trie_contains(kmer_s("acg")));
-}
+});
 
-int main() {
-    test_ni();
-    test_wi();
-
-    return 0;
-};
+});

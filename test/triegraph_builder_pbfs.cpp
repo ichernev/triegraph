@@ -1,9 +1,9 @@
 #include "dna_config.h"
 #include "manager.h"
 
-#include <assert.h>
-#include <iostream>
 #include <algorithm>
+
+#include "helper.h"
 
 using namespace triegraph;
 
@@ -30,7 +30,13 @@ static TG::TrieGraphData build_tgd(TG::Graph &&g,
             }).data;
 }
 
-static void test_all_tiny_linear_graph() {
+struct Cfg : public dna::DnaConfig<0> {
+    static constexpr bool triedata_allow_inner = true;
+};
+
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("all_tiny_linear_graph", [] {
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgtac"), "s1")
         .build();
@@ -49,9 +55,9 @@ static void test_all_tiny_linear_graph() {
     assert(std::ranges::equal(
                 trie2graph(tg, TG::Kmer::from_str("gtac")),
                 std::vector<TG::LetterLoc> { 6, 10 }));
-}
+});
 
-static void test_all_small_nonlinear_graph() {
+test::define_test("all_small_nonlinear_graph", [] {
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("cg"), "s2")
@@ -90,9 +96,9 @@ static void test_all_small_nonlinear_graph() {
     assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("cga")));
     assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("ata")));
     assert(tg.trie_data.trie_inner_contains(TG::Kmer::from_str("cga")));
-}
+});
 
-static void test_all_multiple_ends() {
+test::define_test("all_multiple_ends", [] {
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acg"), "s1")
         .add_node(TG::Str("c"), "s2")
@@ -133,9 +139,9 @@ static void test_all_multiple_ends() {
     assert(std::ranges::equal(
                 trie2graph(tg, TG::Kmer::from_str("cgga")),
                 std::vector<TG::LetterLoc> { }));
-}
+});
 
-static void test_se2_tiny_linear_graph() {
+test::define_test("se2_tiny_linear_graph", [] {
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgtacgtac"), "s1")
         .build();
@@ -155,13 +161,9 @@ static void test_se2_tiny_linear_graph() {
     assert(std::ranges::equal(
                 trie2graph(tg, TG::Kmer::from_str("gtac")),
                 std::vector<TG::LetterLoc> { 6, 10 }));
-}
-
-struct Cfg : public dna::DnaConfig<0> {
-    static constexpr bool triedata_allow_inner = true;
-};
-
-static void test_cut_early() {
+});
+test::define_test("cut_early", [] {
+// static void test_cut_early() {
     using TGX = Manager<Cfg>;
     auto kmer_s = &TGX::Kmer::from_str;
     auto g = TGX::Graph::Builder({ .add_reverse_complement = false })
@@ -211,15 +213,6 @@ static void test_cut_early() {
     assert(!tg.trie_contains(kmer_s("acac")));
     assert( tg.trie_contains(kmer_s("aca")));
     assert( tg.trie_contains(kmer_s("ata")));
-}
+});
 
-int main() {
-    test_all_tiny_linear_graph();
-    test_all_small_nonlinear_graph();
-    test_all_multiple_ends();
-
-    test_se2_tiny_linear_graph();
-    test_cut_early();
-
-    return 0;
-}
+});

@@ -11,10 +11,9 @@
 #include "alphabet/dna_letter.h"
 #include "alphabet/str.h"
 
-#include <assert.h>
-
-#include <iostream>
 #include <sstream>
+
+#include "helper.h"
 
 using namespace triegraph;
 using dna::DnaLetter;
@@ -22,7 +21,9 @@ using dna::DnaLetters;
 
 using DnaStr = Str<dna::DnaLetter, u32>;
 
-static void test_create() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("create", [] {
     auto dna_str = DnaStr("acgt");
     assert(dna_str.length == 4);
     assert(dna_str.capacity == 1);
@@ -31,18 +32,18 @@ static void test_create() {
     assert(dna_str[2] == DnaLetters::G);
     assert(dna_str[3] == DnaLetters::T);
     assert(dna_str.data[0] == 0xe4); // 1110 0100
-}
+});
 
-static void test_view() {
+test::define_test("view", [] {
     auto dna_str = DnaStr("acgt");
     auto dna_view = dna_str.get_view(2);
     assert(dna_view.length == 2);
     assert(dna_view.offset == 2);
     assert(dna_view[0] == DnaLetters::G);
     assert(dna_view[1] == DnaLetters::T);
-}
+});
 
-static void test_view_compare() {
+test::define_test("view_compare", [] {
     try {
         auto str = DnaStr("aaacaaat");
         auto v1 = str.get_view(0, 4);
@@ -51,18 +52,18 @@ static void test_view_compare() {
     } catch (const char *x) {
         std::cerr << "got exception " << x << std::endl;
     }
-}
+});
 
-static void test_stream_input() {
+test::define_test("stream_input", [] {
     std::istringstream io("acgt");
     DnaStr s;
 
     io >> s;
     assert(s.length == 4);
     assert(s[1] == DnaLetters::C);
-}
+});
 
-static void test_stream_output() {
+test::define_test("stream_output", [] {
     std::ostringstream io;
     DnaStr s("acgt");
 
@@ -72,9 +73,9 @@ static void test_stream_output() {
     io.str("");
     io << s.get_view(1, 2);
     assert(io.str() == "cg");
-}
+});
 
-static void test_str_iterator() {
+test::define_test("str_iterator", [] {
     DnaStr s("acgt");
     auto it = s.begin();
     assert(*it == DnaLetters::A); ++it;
@@ -82,27 +83,27 @@ static void test_str_iterator() {
     assert(*it == DnaLetters::G); ++it;
     assert(*it == DnaLetters::T); ++it;
     assert(it == s.end());
-}
+});
 
-static void test_view_iterator() {
+test::define_test("view_iterator", [] {
     DnaStr s("acgt");
     auto v = s.get_view(1, 2);
     auto it = v.begin();
     assert(*it == DnaLetters::C); ++it;
     assert(*it == DnaLetters::G); ++it;
     assert(it == v.end());
-}
+});
 
-static void test_move() {
+test::define_test("move", [] {
     DnaStr s("acgt");
 
     DnaStr s2 = std::move(s);
     s = std::move(s2);
 
     assert(s.length == 4);
-}
+});
 
-static void test_revcomp() {
+test::define_test("revcomp", [] {
     std::string s;
     constexpr u32 size = 512;
     srand(0);
@@ -123,20 +124,6 @@ static void test_revcomp() {
     for (Letter l : rc) {
         assert(l == ds[size - ++i].rev_comp());
     }
-}
+});
 
-int main() {
-    std::cerr << "Running str tests" << std::endl;
-
-    test_create();
-    test_view();
-    test_view_compare();
-    test_stream_input();
-    test_stream_output();
-    test_str_iterator();
-    test_view_iterator();
-    test_move();
-    test_revcomp();
-
-    return 0;
-}
+});

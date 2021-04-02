@@ -1,16 +1,15 @@
 #include "dna_config.h"
 #include "manager.h"
 
-#include <assert.h>
-#include <iostream>
-
-namespace {
+#include "helper.h"
 
 using namespace triegraph;
 
 using TG = Manager<dna::DnaConfig<0>>;
 
-static void test_linear() {
+int m = test::define_module(__FILE__, [] {
+
+test::define_test("linear", [] {
     TG::init({ .trie_depth = 15 });
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("acg"), "s1")
@@ -21,9 +20,9 @@ static void test_linear() {
     auto expected = std::vector<TG::Handle> { { 0, 1 } };
 
     assert(std::equal(h.begin(), h.end(), expected.begin()));
-}
+});
 
-static void test_split() {
+test::define_test("split", [] {
     TG::init({ .trie_depth = 15 });
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("a"), "s1")
@@ -38,13 +37,7 @@ static void test_split() {
     auto expected = std::vector<TG::Handle> { { 1, 0 }, { 0, 0 } };
 
     assert(std::equal(h.begin(), h.end(), expected.begin()));
-}
+});
 
-} /* unnamed namespace */
+});
 
-int main() {
-    test_linear();
-    test_split();
-
-    return 0;
-}
