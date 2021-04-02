@@ -115,7 +115,6 @@ struct PrevHandleIter {
         } else if (h.pos() == 0) {
             return make_split(g.backward_from(h.node()));
         } else {
-            std::cerr << "here nice " << h.node() << " " << h.pos() -1 << std::endl;
             return make_single(Handle(h.node(), h.pos() - 1));
         }
     }
@@ -137,7 +136,6 @@ struct PrevHandleIter {
 
     template <typename... Args>
     static Self make_single(Args&&... args) {
-        std::cerr << "making single" << std::endl;
         return Self().set<&Self::single>(std::forward<Args>(args)...);
     }
     template <typename... Args>
