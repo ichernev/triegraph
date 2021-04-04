@@ -189,6 +189,8 @@ struct Str {
 
         return static_cast<Letter>((this->data[cell] >> cell_bit) & Letter::mask);
     }
+    Letter front() const { return this->operator[](0); }
+    Letter back() const { return this->operator[](size()-1); }
 
     void set(Size idx, Letter val) {
         Size cell = idx / letters_per_store;
