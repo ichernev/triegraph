@@ -10,7 +10,8 @@ using namespace std::literals;
 using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
 using Logger = triegraph::Logger;
 
-typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s, decltype(TG::Settings::algo) algo) {
+typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s,
+        decltype(TG::Settings::algo) algo) {
     s.algo = algo;
     if (algo == TG::Settings::BFS) {
         return TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
@@ -20,6 +21,9 @@ typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s, decltyp
                 graph, s, TG::Settings::NoSkip {});
     } else if (algo == TG::Settings::POINT_BFS) {
         return TG::pairs_from_graph<TG::TrieGraphBuilderPBFS>(
+                graph, s, TG::Settings::NoSkip {});
+    } else if (algo == TG::Settings::NODE_BFS) {
+        return TG::pairs_from_graph<TG::TrieGraphBuilderNBFS>(
                 graph, s, TG::Settings::NoSkip {});
     }
     assert(0);
@@ -82,17 +86,19 @@ int main(int argc, char *argv[]) {
             std::string gfa_file = argv[2];
             std::string algo = argv[3];
 
-            assert(algo == "bfs" || algo == "back_track" || algo == "pbfs");
+            assert(algo == "bfs" || algo == "back_track" || algo == "pbfs" ||
+                    algo == "node_bfs");
 
-            auto algo_v = algo == "bfs" ?
-                TG::Settings::BFS : algo == "back_track" ?
-                TG::Settings::BACK_TRACK : TG::Settings::POINT_BFS;
+            auto algo_v = algo == "bfs" ? TG::Settings::BFS :
+                algo == "back_track" ? TG::Settings::BACK_TRACK :
+                algo == "pbfs" ? TG::Settings::POINT_BFS :
+                TG::Settings::NODE_BFS;
             auto graph = TG::Graph::from_file(gfa_file, {});
             auto lloc = TG::LetterLocData(graph);
             TG::Settings s {
                 .trie_depth = triegraph::log4_ceil(lloc.num_locations)
             };
-            TG::init(s);
+            // TG::init(s);
 
             if (argv[1] == "pairs"s || argv[1] == "print-pairs"s) {
                 auto pairs = get_pairs(graph, s, algo_v);

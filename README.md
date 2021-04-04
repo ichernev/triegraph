@@ -89,8 +89,8 @@ Properties:
 - does not support selective start locations
 - does not support shorter kmers
 
-TODO Optimizations:
-- top sort nodes and traverse in top sort order
+Done Optimizations:
+- top sort nodes and traverse in top sort order => done in Node BFS
 
 Point BFS
 ---------
@@ -112,6 +112,22 @@ Done Optimizations:
   - 4.5x speedup
 - special case: kmer fits in starting node + single successor
 - special case: kmer fits in starting node + all successors
+
+Node BFS
+--------
+
+This algorithm is designed to give optimal performance on linear graphs, single
+pass for DAGs and minimize visited nodes cyclic graphs.
+
+It traverses graph nodes, as opposed to the other algorithms that use letter
+locations. Every node keeps kmers that reach it's begining. Also nodes are
+traversed using a priority queue on topological order, so if node A can
+"provide" kmers for node B, A is traversed before B.
+
+Properties:
+- very fast
+- does not support selective start locations
+- does not support shorter kmers
 
 (Extra) choosing starting locations
 -----------------------------------

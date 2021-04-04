@@ -9,6 +9,7 @@
 #include "triegraph/handle.h"
 #include "triegraph/triegraph_builder_bt.h"
 #include "triegraph/triegraph_builder.h"
+#include "triegraph/triegraph_builder_nbfs.h"
 #include "triegraph/triegraph_builder_pbfs.h"
 #include "triegraph/triegraph_data.h"
 #include "triegraph/triegraph_edge_iter.h"
@@ -77,6 +78,8 @@ struct Manager : Cfg {
         Graph, LetterLocData, Kmer>;
     using TrieGraphBuilderPBFS = triegraph::TrieGraphBuilderPBFS<
         Graph, LetterLocData, Kmer>;
+    using TrieGraphBuilderNBFS = triegraph::TrieGraphBuilderNBFS<
+        Graph, LetterLocData, Kmer>;
 
     using Handle = triegraph::Handle<Kmer, NodePos>;
     using EditEdge = triegraph::EditEdge<Handle>;
@@ -90,7 +93,7 @@ struct Manager : Cfg {
     struct Settings {
         bool add_reverse_complement = true;
         u64 trie_depth = sizeof(typename Kmer::Holder) * BITS_PER_BYTE / Cfg::Letter::bits - 1;
-        enum { BFS, BACK_TRACK, POINT_BFS } algo = BFS;
+        enum { BFS, BACK_TRACK, POINT_BFS, NODE_BFS } algo = BFS;
         int skip_every = 1; // 1 means don't skip
         int cut_early_threshold = 0; // for POINT_BFS only
 
@@ -178,21 +181,25 @@ struct Manager : Cfg {
 
     template<typename Builder>
     static vec_pairs pairs_from_graph(const Graph &graph, Settings s, Settings::NoSkip) {
+        init(s);
         // std::cerr << "settings:\n" << s;
         auto lloc = LetterLocData(graph);
         // std::cerr << "total locations " << lloc.num_locations << std::endl;
+        auto scope = Logger::get().begin_scoped("builder wrap");
         return Builder(graph, lloc).get_pairs(lloc, s.cut_early_threshold);
     }
 
     template <typename Builder>
     static vec_pairs pairs_from_graph(const Graph &graph,
             Settings s, Settings::SkipEvery skip_every) {
+        init(s);
         // std::cerr << "settings:\n" << s;
         auto lloc = LetterLocData(graph);
         auto sp = ConnectedComponents(graph).compute_starting_points();
         auto ss = SparseStarts(graph);
         auto lsp = ss.compute_starts_every(skip_every.n, sp);
         { auto _ = std::move(sp); }
+        auto scope = Logger::get().begin_scoped("builder wrap");
         return Builder(graph, lloc).get_pairs(lsp, s.cut_early_threshold);
     }
 
