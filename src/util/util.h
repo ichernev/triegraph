@@ -13,6 +13,11 @@ using u32 = unsigned int;
 using u64 = unsigned long long;
 constexpr int BITS_PER_BYTE = 8;
 
+using i8 = signed char;
+using i16 = signed short;
+using i32 = signed int;
+using i64 = signed long long;
+
 constexpr u64 pow(u64 base, u64 power) {
     u64 res = 1;
     while (power --) {

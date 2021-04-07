@@ -2,6 +2,8 @@
 #define __LOGGER_H__
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <chrono>
 #include <vector>
 #include <utility>
@@ -9,6 +11,7 @@
 #include <iomanip>
 #include <ctime>
 #include <cstdlib> /* atexit */
+#include <unistd.h> /* getpid */
 
 namespace triegraph {
 
@@ -18,6 +21,75 @@ namespace triegraph {
 //     (void) x;
 //     os << std::endl;
 // }
+
+struct MemRes {
+    i64 vmpeak;
+    i64 vmsize;
+    i64 vmrss;
+    i64 vmswap;
+
+    MemRes() {}
+    MemRes(const MemRes &) = default;
+    MemRes(MemRes &&) = default;
+    MemRes &operator= (const MemRes &) = default;
+    MemRes &operator= (MemRes &&) = default;
+
+    MemRes &operator-= (const MemRes &other) {
+        vmpeak -= other.vmpeak;
+        vmsize -= other.vmsize;
+        vmrss -= other.vmrss;
+        vmswap -= other.vmswap;
+        return *this;
+    }
+
+    MemRes operator- (const MemRes &other) const {
+        MemRes tmp = *this;
+        return tmp -= other;
+    }
+
+    static MemRes current() {
+        std::ostringstream fn;
+        fn << "/proc/" << getpid() << "/status";
+        std::ifstream ifs { fn.str() };
+
+        MemRes res;
+        std::string line;
+        while (std::getline(ifs, line)) {
+            std::istringstream lines(line);
+            std::string label;
+            lines >> label;
+            if (label == "VmPeak:") { lines >> res.vmpeak; }
+            if (label == "VmSize:") { lines >> res.vmsize; }
+            if (label == "VmRSS:") { lines >> res.vmrss; }
+            if (label == "VmSwap:") { lines >> res.vmswap; }
+        }
+        return res;
+    }
+
+    static std::string human_mem(i64 kb, bool add_sign = true) {
+        auto suffix = std::vector { "kb", "mb", "gb" };
+
+        char sign = kb >= 0 ? '+' : '-';
+        u32 sid = 0;
+        u64 amt = std::abs(kb); u32 rem = 0;
+        while (sid + 1 < suffix.size() && amt >= 1000) {
+            rem = amt % 1000;
+            amt /= 1000;
+            sid += 1;
+        }
+
+        std::ostringstream res;
+        if (add_sign) res << sign;
+        if (amt < 10) {
+            res << amt << "." << (rem / 100) << (rem / 10) % 10 << suffix[sid];
+        } else if (amt < 100) {
+            res << amt << "." << (rem / 100) << suffix[sid];
+        } else {
+            res << amt << suffix[sid];
+        }
+        return res.str();
+    }
+};
 
 struct Logger {
 
@@ -46,6 +118,7 @@ struct Logger {
         instant begin;
         tag_t tag;
         bool expanded;
+        MemRes mem;
     };
 
     Logger() : os(std::cerr) {
@@ -89,7 +162,7 @@ struct Logger {
         for (size_t i = 0; i < timers.size(); ++i) {
             print<NONE>(os, '|');
         }
-        timers.emplace_back(clock::now(), tag, false);
+        timers.emplace_back(clock::now(), tag, false, MemRes::current());
         print<NONE>(os, ",- ", tag);
     }
 
@@ -113,7 +186,9 @@ struct Logger {
         if (!elem.expanded) {
             print(os, '[');
             _time_diff(elem.begin);
-            print_ln<NONE>(os, ']');
+            print<NONE>(os, "] ");
+            _mem_diff(elem.mem);
+            print_ln<NONE>(os);
         } else {
             _ts();
             for (size_t i = 0; i < timers.size(); ++i) {
@@ -121,7 +196,9 @@ struct Logger {
             }
             print<NONE>(os, "`- ", elem.tag, " finished [");
             _time_diff(elem.begin);
-            print_ln<NONE>(os, "]");
+            print<NONE>(os, "] ");
+            _mem_diff(elem.mem);
+            print_ln<NONE>(os);
         }
     }
 
@@ -165,6 +242,7 @@ private:
             }
         }
     }
+
     void _ts()
     {
         auto now = std::chrono::system_clock::now();
@@ -184,6 +262,12 @@ private:
         }
     }
 
+    void _mem_diff(MemRes old) {
+        MemRes nu = MemRes::current();
+        print<SPACE>(os,
+                MemRes::human_mem((nu - old).vmsize),
+                "total", MemRes::human_mem(nu.vmsize, false));
+    }
 
     std::ostream &os;
     std::vector<Timer> timers;
