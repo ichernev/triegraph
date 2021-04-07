@@ -151,6 +151,31 @@ connection we add the neighbour to the queue. If the queue is empty, then we
 pick a random node that has been touched, but still has inbound degree > 0,
 assign tag = N-1, and traverse it.
 
+TODO (Extra) Complexity estimator
+---------------------------------
+
+The amount of kmers at the start of every node can be estimated (upper bound)
+with a simple algorithm, roughtly following Node BFS, but without the actual
+kmer computation.
+
+Each node has a start number (how many different kmers reach the start of the
+node) and end number (how many kmers reach the end).
+
+* start[i] = sum(end[j]) for every node j with edge j-i
+* end[i] = min(start[i], maxend(L)), where L is the length of node i
+* maxend(L) = 1 if L >= K else O^(K-L), where O is number of letter options (4
+  for DNA)
+
+These numbers can be computed with one pass in topological order (if we ignore
+loops). Loops introduce a problem, because they might reinforce themselves
+(demand higher and higher values on each pass). Most hopefully won't, so after
+the numbers are ready ignoring loops, put all through the back edges (the
+loops), and mark the ones that do reinforce themselves as infinite.
+
+After the numbers are computed, we can try to isolate complexity components
+that have high numbers, and run a shorter-kmer-aware algorithm on those.
+A complexity component is a connected component ending with nodes with L >= K.
+
 Holding the TrieData
 ====================
 
