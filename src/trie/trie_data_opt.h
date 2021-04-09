@@ -4,6 +4,7 @@
 #include "util/util.h"
 #include "util/pow_histogram.h"
 #include "util/dense_multimap.h"
+#include "util/sorted_vector.h"
 #include "util/logger.h"
 
 #include <type_traits>
@@ -291,8 +292,8 @@ struct TrieDataOpt {
     TrieDataOpt(TrieDataOpt &&) = default;
     TrieDataOpt &operator= (TrieDataOpt &&) = default;
 
-    DenseMultimap<KHolder, NumKmers, LetterLoc> trie2graph;
-    DenseMultimap<LetterLoc, NumKmers, KHolder> graph2trie;
+    DenseMultimap<KHolder, NumKmers, LetterLoc, SortedVector<NumKmers, u8>> trie2graph;
+    DenseMultimap<LetterLoc, NumKmers, KHolder, SortedVector<NumKmers, u8>> graph2trie;
     TieredBitset<Kmer, allow_inner> active_trie;
 
     using t2g_values_view = iter_pair<

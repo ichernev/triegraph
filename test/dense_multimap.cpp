@@ -56,7 +56,6 @@ test::define_test("values_for", [] {
     assert(std::ranges::equal(dm.values_for(4), std::vector<u32> { }));
     assert(std::ranges::equal(dm.values_for(5), std::vector<u32> { 8 }));
     assert(std::ranges::equal(dm.values_for(6), std::vector<u32> { }));
-    assert(0);
 });
 
 test::define_test("contains", [] {

@@ -10,9 +10,10 @@ namespace triegraph {
 template <typename Beacon, typename Diff = u8>
 struct SortedVector {
 
-    SortedVector(u32 beacon_interval, u32 bits_per_diff = sizeof(Diff) * 8)
+    SortedVector(u32 beacon_interval = 32, u32 bits_per_diff = sizeof(Diff) * 8)
         : beacon_interval(beacon_interval),
           bits_per_diff(bits_per_diff),
+          sum(0),
           diff_sentinel(pow(2, bits_per_diff) - 1)
     {}
 
@@ -30,6 +31,7 @@ struct SortedVector {
     u64 capacity() const { return diffs.capacity(); }
 
     void push_back(Beacon elem) {
+        // assert(elem >= sum);
         u64 sz = diffs.size();
         if (sz % beacon_interval == 0) {
             beacons.push_back(elem);
@@ -40,6 +42,7 @@ struct SortedVector {
             diffs.push_back(diff_sentinel);
             of_diffs[sz] = elem - sum;
         }
+        // input.push_back(elem);
         sum = elem;
     }
 
@@ -56,13 +59,36 @@ struct SortedVector {
         return res;
     }
 
-// private:
+    Beacon at(Beacon idx) const {
+        if (idx >= size()) {
+            throw "idx-out-of-range";
+        }
+        return operator[](idx);
+    }
+
+    // void sanity_check() {
+    //     assert(input.size() == size());
+    //     for (u64 i = 0; i < size(); ++i) {
+    //         if (input[i] != operator[](i)) {
+    //             std::cerr << "i " << i << std::endl;
+    //             for (u64 j = i < 40 ? 0 : i - 40; j < i+40; ++j) {
+    //                 std::cerr << operator[](j) << "-" << input[j]<< " ";
+    //             }
+    //             std::cerr << std::endl;
+    //         }
+    //         assert(input[i] == operator[](i));
+    //     }
+    // }
+
+private:
     u32 beacon_interval;
     u32 bits_per_diff;
 
     std::vector<Beacon> beacons;
     std::vector<Diff> diffs;
     std::unordered_map<Beacon, Beacon> of_diffs;
+
+    // std::vector<Beacon> input;
 
     Beacon sum; // used during build
     Diff diff_sentinel;

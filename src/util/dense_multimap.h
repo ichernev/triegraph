@@ -7,7 +7,8 @@
 
 namespace triegraph {
 
-template <typename A, typename B, typename C>
+template <typename A, typename B, typename C,
+         typename StartsContainer = std::vector<B>>
 struct DenseMultimap {
     // TODO(opt): use sorted-vector+map, compact-vector
     // TODO(opt): compute sizes for sorted-vector from histograms
@@ -38,6 +39,7 @@ struct DenseMultimap {
             }
         }
 
+        // starts.sanity_check();
     }
     void sanity_check() {
         // assert(start.size() == this->max_a);
@@ -169,7 +171,7 @@ private:
         return starts.at(a);
     }
 
-    std::vector<B> starts; // indexed by A
+    StartsContainer starts; // indexed by A
     std::vector<C> elems; // indexed by B
 };
 
