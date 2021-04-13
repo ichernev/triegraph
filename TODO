@@ -2,6 +2,10 @@
 # add check if todo_idx overflows
 # figure out edge iterators
 
+https://github.com/maickrau/GraphAligner/blob/master/src/GfaGraph.cpp
+https://github.com/maickrau/GraphAligner/blob/master/src/GraphAlignerGAFAlignment.h
+
+
 # with K=16
 graph nodes:               959062
 graph edges:              1318376
