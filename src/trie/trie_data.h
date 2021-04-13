@@ -24,6 +24,82 @@ namespace triegraph {
 
 //     TrieData() {}
 // };
+template <typename Key_, typename Val_>
+struct SimpleMMap {
+    using Key = Key_;
+    using Val = Val_;
+    // using ValueIter = std::vector<Val>::const_iterator;
+    using Map = std::unordered_multimap<Key, Val>;
+
+    Map key_vals;
+
+    using const_iterator = Map::const_iterator;
+    struct KeyPair {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = Key;
+        using reference_type = value_type;
+        using Self = KeyPair;
+
+        KeyPair(const const_iterator &begin, const const_iterator &end)
+            : it(begin), end_(end) {}
+        // KeyIter() : p(nullptr), a() {}
+        // KeyIter(const Parent &p) : p(&p), a(p.start.size()) {}
+        // KeyIter(const Parent &p, A a) : p(&p), a(a) { adjust(); }
+        const_iterator begin() const { return it; }
+        const_iterator end() const { return end_; }
+
+        reference_type operator* () const { return it->first; }
+        Self &operator++ () { adjust(it->first); return *this; }
+        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+        bool empty() const { return it == end_; }
+        // bool operator== (const Self &other) const { return it == other.it; }
+
+        void adjust(const Key &key) {
+            while (++it != end && it->first == key)
+                ;
+        }
+
+        const_iterator it, end_;
+    };
+
+    struct ValueIter {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = Val;
+        using reference_type = value_type;
+        using Self = ValueIter;
+
+        ValueIter(const const_iterator &it) : it(it) {}
+
+        reference_type operator* () const { return it->second; }
+        Self &operator++ () { ++it; return *this; }
+        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+        bool operator== (const Self &other) const { return it == other.it; }
+
+        const_iterator it;
+    };
+    using const_value_iterator = ValueIter;
+
+    const_iterator begin() const { return key_vals.begin(); }
+    const_iterator end() const { return key_vals.end(); }
+
+    KeyPair keys() const {
+        return KeyPair(begin(), end());
+    }
+
+    iter_pair<const_value_iterator, const_value_iterator> values_for(const Key &key) const {
+        return { const_value_iterator(begin()), const_value_iterator(end()) };
+    }
+
+    std::pair<const_iterator, const_iterator> equal_range(const Key &key) const {
+        return key_vals.equal_range(key);
+    }
+
+    bool contains(const Key &key) const {
+        return key_vals.contains(key);
+    }
+};
 
 template <typename Key_, typename Size_, typename Val_>
 struct PMMultiMap {
@@ -31,12 +107,12 @@ struct PMMultiMap {
     using Size = Size_;
     using Val = Val_;
     using ValueIter = std::vector<Val>::const_iterator;
-    using Map = HashPolicy<Key, Size>::Map;
+    using Map = std::unordered_map<Key, Size>;
 
-    std::unordered_multimap<Key, Val> key2id;
-    // Map key2id;
-    // std::vector<std::vector<Val>> vals;
-    // Size num_vals;
+    // std::unordered_multimap<Key, Val> key2id;
+    Map key2id;
+    std::vector<std::vector<Val>> vals;
+    Size num_vals;
 
     void reserve(Size sz) {
         key2id.reserve(sz);
