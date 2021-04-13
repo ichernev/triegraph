@@ -10,6 +10,7 @@ template <typename Graph_>
 struct TopOrder {
     using Graph = Graph_;
     using NodeLoc = Graph::NodeLoc;
+    using EdgeLoc = Graph::EdgeLoc;
 
     std::vector<NodeLoc> idx;
 
@@ -33,6 +34,18 @@ struct TopOrder {
 
     Comparator comp() const { return { *this }; }
 
+    std::vector<NodeLoc> get_ordered_nodes() const {
+        std::vector<NodeLoc> res(idx.size());
+        for (NodeLoc i = 0; i < idx.size(); ++i) {
+            res[idx.size() - 1 - idx[i]] = i;
+        }
+        return res;
+    }
+
+    bool is_backedge(typename Graph::EdgeExtra edge) const {
+        return idx[edge.from] <= idx[edge.to];
+    }
+
     void sanity_check(const Graph &g, bool dag) const {
         std::vector<NodeLoc> idx_copy = idx;
         std::ranges::sort(idx_copy);
@@ -50,9 +63,9 @@ struct TopOrder {
 
     struct Builder {
         const Graph &graph;
-        std::stack<NodeLoc> stk;
+        std::stack<std::pair<NodeLoc, EdgeLoc>> stk;
         std::vector<bool> in_stk;
-        std::vector<bool> out;
+        // std::vector<bool> out;
 
         std::vector<NodeLoc> top_ord;
         NodeLoc top_ord_idx;
@@ -60,7 +73,7 @@ struct TopOrder {
         Builder(const Graph &graph)
             : graph(graph),
               in_stk(graph.num_nodes(), false),
-              out(graph.num_nodes(), false),
+              // out(graph.num_nodes(), false),
               top_ord(graph.num_nodes(), Graph::INV_SIZE),
               top_ord_idx(0)
         {}
@@ -73,25 +86,51 @@ struct TopOrder {
             return { std::move(top_ord) };
         }
 
+        TopOrder build(std::ranges::range auto const& range) && {
+            for (const auto &ni : range) {
+                assert(!in_stk[ni]);
+                _dfs(ni);
+            }
+            return { std::move(top_ord) };
+        }
+
         void _dfs(NodeLoc start) {
-            stk.push(start);
-            in_stk[start] = true;
+            _push(start);
+            // stk.emplace(start,
+            //         (*graph.forward_from(start).begin()).edge_id);
+            // in_stk[start] = true;
 
             while (!stk.empty()) {
-                NodeLoc ni = stk.top();
+                auto [ni, ei] = stk.top(); stk.pop();
 
-                if (out[ni] == true) {
+                if (ei == Graph::INV_SIZE) {
                     top_ord[ni] = top_ord_idx++;
-                    stk.pop();
+                    // stk.pop();
                 } else {
-                    for (const auto &fwd : graph.forward_from(ni))
-                        if (!in_stk[fwd.node_id]) {
-                            stk.push(fwd.node_id);
-                            in_stk[fwd.node_id] = true;
-                        }
-                    out[ni] = true;
+                    auto fwd = graph.forward_edge(ei);
+                    stk.emplace(ni, fwd.next_id);
+
+                    if (!in_stk[fwd.to]) {
+                        _push(fwd.to);
+                        // stk.emplace(fwd.to,
+                        //         (*graph.forward_from(fwd.to).begin()).edge_id);
+                        // in_stk[fwd.to] = true;
+                    }
+
+                    // out[ni] = true;
                 }
             }
+        }
+
+        void _push(NodeLoc node) {
+            auto fwd = graph.forward_from(node);
+            EdgeLoc ei = Graph::INV_SIZE;
+            if (!fwd.empty()) {
+                ei = (*fwd.begin()).edge_id;
+            }
+
+            stk.emplace(node, ei);
+            in_stk[node] = true;
         }
     };
 

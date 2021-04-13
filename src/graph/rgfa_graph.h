@@ -131,6 +131,58 @@ struct RgfaGraph {
         return const_iterator {this->data, data.redge_start[node_id]};
     }
 
+    struct EdgeExtra {
+        NodeLoc from;
+        NodeLoc to;
+        EdgeLoc edge_id;
+        EdgeLoc next_id;
+    };
+
+    bool is_reverse_edge(EdgeLoc edge_id) const { return edge_id & 1; }
+    EdgeExtra forward_edge(EdgeLoc edge_id) const {
+        return {
+            .from = data.edges[edge_id ^ 1].to,
+            .to = data.edges[edge_id].to,
+            .edge_id = edge_id,
+            .next_id = data.edges[edge_id].next,
+        };
+    }
+    EdgeExtra reverse_edge(EdgeLoc edge_id) const {
+        return forward_edge(edge_id ^ 1);
+    }
+
+    struct ConstEdgeIterSent {};
+    struct ConstEdgeIter {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = EdgeExtra;
+        using reference         = value_type;
+        using Self              = ConstEdgeIter;
+        using Sent              = ConstEdgeIterSent;
+
+        ConstEdgeIter() : graph(nullptr), edge_id(INV_SIZE) {}
+        ConstEdgeIter(const RgfaGraph &g, EdgeLoc edge_id) : graph(&g), edge_id(edge_id) {}
+
+        reference operator*() const {
+            return graph->forward_edge(edge_id);
+        }
+
+        Self& operator++() { edge_id += 2; return *this; }
+        Self operator++(int) { Self tmp = *this; ++(*this); return tmp; }
+
+        bool operator== (const Self& other) const { return edge_id == other.edge_id; }
+        bool operator== (const Sent& other) const { return edge_id >= graph->data.edges.size(); }
+
+        const RgfaGraph *graph;
+        EdgeLoc edge_id;
+    };
+
+    using const_edge_iterator = ConstEdgeIter;
+    using const_edge_iterator_sent = ConstEdgeIterSent;
+    using const_edge_iter_view = iter_pair<const_edge_iterator, const_edge_iterator_sent>;
+    const_edge_iter_view forward_edges() const { return const_edge_iterator { *this, 0 }; }
+    const_edge_iter_view reverse_edges() const { return const_edge_iterator { *this, 1 }; }
+
     struct Builder {
         using Self = Builder;
 
