@@ -1,6 +1,8 @@
 #ifndef __LOGGER_H__
 #define __LOGGER_H__
 
+#include "util/util.h"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -153,7 +155,7 @@ struct Logger {
         print_ln(os, std::forward<Args>(args)...);
     }
 
-    void begin(const std::string &tag) {
+    Logger &begin(const std::string &tag) {
         if (!timers.empty() && !timers.back().expanded) {
             print_ln(os);
             timers.back().expanded = true;
@@ -164,6 +166,8 @@ struct Logger {
         }
         timers.emplace_back(clock::now(), tag, false, MemRes::current());
         print<NONE>(os, ",- ", tag);
+
+        return *this;
     }
 
     struct ScopedTimer {
@@ -181,7 +185,7 @@ struct Logger {
         return ScopedTimer(*this, tag);
     }
 
-    void end() {
+    Logger &end() {
         auto elem = timers.back(); timers.pop_back();
         if (!elem.expanded) {
             print(os, '[');
@@ -200,6 +204,7 @@ struct Logger {
             _mem_diff(elem.mem);
             print_ln<NONE>(os);
         }
+        return *this;
     }
 
 private:
