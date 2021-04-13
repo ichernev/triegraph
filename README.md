@@ -151,7 +151,7 @@ connection we add the neighbour to the queue. If the queue is empty, then we
 pick a random node that has been touched, but still has inbound degree > 0,
 assign tag = N-1, and traverse it.
 
-TODO (Extra) Complexity estimator
+(Extra) Complexity estimator
 ---------------------------------
 
 The amount of kmers at the start of every node can be estimated (upper bound)

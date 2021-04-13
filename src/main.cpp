@@ -56,9 +56,7 @@ typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &ll
     return res;
 }
 
-void print_pairs(const TG::Graph &graph, const TG::LetterLocData &lloc,
-        TG::vec_pairs pairs) {
-
+void prep_pairs(TG::vec_pairs &pairs) {
     {
         auto st = Logger::get().begin_scoped("sorting pairs");
         std::ranges::sort(pairs);
@@ -69,6 +67,12 @@ void print_pairs(const TG::Graph &graph, const TG::LetterLocData &lloc,
         auto new_size = sr.begin() - pairs.begin();
         pairs.resize(new_size);
     }
+}
+
+void print_pairs(const TG::Graph &graph, const TG::LetterLocData &lloc,
+        TG::vec_pairs pairs) {
+    prep_pairs(pairs);
+
     auto st = Logger::get().begin_scoped("printing");
     for (const auto &p : pairs) {
         TG::NodePos np = lloc.expand(p.second);
@@ -78,11 +82,50 @@ void print_pairs(const TG::Graph &graph, const TG::LetterLocData &lloc,
     }
 }
 
+std::vector<TG::NodeLoc> shortest_path(const TG::Graph &graph,
+        TG::NodeLoc start, TG::NodeLoc finish) {
+    // node, previous-id
+    std::vector<std::pair<TG::NodeLoc, TG::NodeLoc>> q;
+    std::unordered_set<TG::NodeLoc> vis;
+
+    q.emplace_back(start, TG::Graph::INV_SIZE);
+    vis.emplace(start);
+    TG::NodeLoc qp;
+    for (qp = 0; qp < q.size(); ++qp) {
+        auto [node, prev_id] = q[qp];
+
+        if (node == finish)
+            break;
+
+        for (const auto &fwd : graph.forward_from(node)) {
+            if (!vis.contains(fwd.node_id)) {
+                q.emplace_back(fwd.node_id, qp);
+                vis.emplace(fwd.node_id);
+            }
+        }
+    }
+
+    if (qp == q.size())
+        return {};
+
+    // restore path
+    std::vector<TG::NodeLoc> res;
+    while (qp != TG::Graph::INV_SIZE) {
+        // std::cerr << "qp " << qp << std::endl;
+        res.emplace_back(q[qp].first);
+        qp = q[qp].second;
+    }
+    std::ranges::reverse(res);
+    return res;
+}
+
 int main(int argc, char *argv[]) {
     assert(argc >= 2);
 
     try {
-        if (argv[1] == "pairs"s || argv[1] == "print-pairs"s || argv[1] == "td"s) {
+        if (argv[1] == "pairs"s || argv[1] == "print-pairs"s ||
+                argv[1] == "td"s || argv[1] == "ce-test"s ||
+                argv[1] == "print-top-order"s) {
             std::string gfa_file = argv[2];
             std::string algo = argv[3];
 
@@ -100,13 +143,76 @@ int main(int argc, char *argv[]) {
             };
             // TG::init(s);
 
-            if (argv[1] == "pairs"s || argv[1] == "print-pairs"s) {
+            if (argv[1] == "pairs"s || argv[1] == "print-pairs"s ||
+                    argv[1] == "ce-test"s) {
                 auto pairs = get_pairs(graph, s, algo_v);
 
                 if (argv[1] == "print-pairs"s)
                     print_pairs(graph, lloc, std::move(pairs));
+                else if (argv[1] == "ce-test"s) {
+                    prep_pairs(pairs);
+                    std::ranges::sort(pairs, [](const auto &a, const auto &b) {
+                            return a.second < b.second;
+                    });
+                    auto ce = TG::ComplexityEstimator(
+                            graph,
+                            TG::TopOrder::Builder(graph).build(),
+                            s.trie_depth,
+                            4, // backedge_init
+                            2).compute(); // backedge_max_trav
+
+                    // for (TG::NodeLoc i = 0; i < graph.num_nodes(); ++i) {
+                    //     std::cout << graph.node(i).seg_id << " "
+                    //         << ce.get_starts()[i] << std::endl;
+                    //     // auto np_beg = lloc.compress(TG::NodePos(i, 0));
+                    //     // auto er_beg = std::ranges::equal_range(
+                    //     //         pairs, std::make_pair(TG::Kmer::empty(), np_beg),
+                    //     //         [](const auto &a, const auto &b) {
+                    //     //             return a.second < b.second;
+                    //     //         });
+                    //     // std::cout << graph.node(i).seg_id << " "
+                    //     //     << er_beg.size() << std::endl;
+                    // }
+
+                    for (TG::NodeLoc i = 0; i < graph.num_nodes(); ++i) {
+                        auto np_beg = lloc.compress(TG::NodePos(i, 0));
+                        auto er_beg = std::ranges::equal_range(
+                                pairs, std::make_pair(TG::Kmer::empty(), np_beg),
+                                [](const auto &a, const auto &b) {
+                                    return a.second < b.second;
+                                });
+                        if (ce.get_starts()[i] < er_beg.size()) {
+                            std::cerr << "BEG issue at node " << i << " "
+                                << graph.node(i).seg_id << std::endl;
+                            std::cerr << ce.get_starts()[i] << " " << er_beg.size() << std::endl;
+                            assert(ce.get_starts()[i] >= er_beg.size());
+                        }
+                    }
+                }
             } else if (argv[1] == "td"s) {
                 auto td = get_td(graph, lloc, s, algo_v);
+            } else if (argv[1] == "print-top-order"s) {
+                // auto starts = ConnectedComponents<TG::Graph>(graph).compute_starting_points();
+                // auto top_ord = TG::TopOrder::Builder(graph).build(starts);
+                auto top_ord = TG::TopOrder::Builder(graph).build();
+                for (TG::NodeLoc i = 0; i < graph.num_nodes(); ++i) {
+                    std::cout << "N " << graph.node(i).seg_id << " " << top_ord.idx[i] << std::endl;
+                }
+                for (const auto &edge : graph.forward_edges()) {
+                    if (top_ord.is_backedge(edge)) {
+                        std::cout << "E " << graph.node(edge.from).seg_id << " " << graph.node(edge.to).seg_id
+                            << " EST:" << top_ord.idx[edge.to] - top_ord.idx[edge.from]
+                            << std::endl;
+                        auto sp = shortest_path(graph, edge.to, edge.from);
+                        std::cout << " shortest len: " << sp.size() << std::endl;
+                        if (sp.size() < 50) {
+                            for (const auto node_id : sp) {
+                                std::cout << " " << graph.node(node_id).seg_id;
+                            }
+                            std::cout << std::endl;
+                        }
+                    }
+                }
             }
         } else {
             for (int i = 0; i < argc; ++i) {

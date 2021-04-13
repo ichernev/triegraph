@@ -2,10 +2,12 @@
 #define __MANAGER_H__
 
 #include "alphabet/str.h"
+#include "graph/complexity_estimator.h"
+#include "graph/connected_components.h"
 #include "graph/letter_loc_data.h"
 #include "graph/rgfa_graph.h"
 #include "graph/sparse_starts.h"
-#include "graph/connected_components.h"
+#include "graph/top_order.h"
 #include "triegraph/handle.h"
 #include "triegraph/triegraph_builder_bt.h"
 #include "triegraph/triegraph_builder.h"
@@ -44,6 +46,12 @@ struct Manager : Cfg {
         Str,
         typename Cfg::NodeLoc,
         typename Cfg::EdgeLoc>;
+    using TopOrder = triegraph::TopOrder<
+        Graph>;
+    using ComplexityEstimator = triegraph::ComplexityEstimator<
+        Graph,
+        TopOrder,
+        typename Cfg::KmerHolder>;
     using NodePos = triegraph::NodePos<
         typename Cfg::NodeLoc,
         typename Cfg::NodeLen>;
