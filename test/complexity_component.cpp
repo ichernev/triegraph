@@ -178,4 +178,31 @@ test::define_test("in/out shared", [] {
     }
 });
 
+
+test::define_test("joining iterators", [] {
+    auto graph = TG::Graph::Builder({
+            .add_reverse_complement = false,
+            .add_extends = false })
+        .add_node(TG::Str("a"), "s1") /* disjoint */
+        .add_node(TG::Str("a"), "s2") /* components */
+        .build();
+
+    auto cc1 = ComplexityComponent::Builder(graph, 0, 2).build();
+    auto cc2 = ComplexityComponent::Builder(graph, 1, 2).build();
+
+    // auto vv = std::vector<TG::NodeLoc> {0, 1};
+    // auto jv = vv
+    //     | std::ranges::views::transform([&graph] (auto id) { return ComplexityComponent::Builder(graph, id, 2).build(); })
+    //     | std::ranges::views::transform([&graph] (auto const& cc) { return cc.starts_inside(graph, 2); })
+    //     | std::ranges::views::join;
+    auto vv = std::vector<ComplexityComponent> { std::move(cc1), std::move(cc2) };
+    auto jv = vv | std::ranges::views::transform([&graph] (auto const& cc) {
+            return cc.starts_inside(graph, 2); })
+        | std::ranges::views::join;
+
+    std::vector<TG::NodePos> res;
+    std::ranges::copy(jv, std::back_inserter(res));
+    assert(std::ranges::equal(res, std::vector<TG::NodePos> { {0, 0}, {1, 0} }));
+});
+
 });

@@ -77,8 +77,8 @@ struct ComplexityComponent {
         NodeLen rel_pos = 0;
     };
 
-    iter_pair<NodeIter, NodeIterSent> starts_inside(
-            const Graph &graph, u32 trie_depth) const {
+    using const_nodepos_view = iter_pair<NodeIter, NodeIterSent>;
+    const_nodepos_view starts_inside(const Graph &graph, u32 trie_depth) const {
         return { NodeIter(graph, *this, trie_depth) };
     }
 
