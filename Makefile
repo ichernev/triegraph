@@ -2,17 +2,21 @@ SRCS := $(wildcard src/*.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 TARGETS  := $(patsubst %.cpp,%,$(SRCS))
 TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
+SLOWS := $(patsubst %.cpp,%,$(wildcard slow/*.cpp))
 BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
-DEPS := $(OBJS:%.o=%.d) $(TESTS:%=%.d)
+DEPS := $(OBJS:%.o=%.d) $(TESTS:%=%.d) $(SLOWS:%=%.d)
 
 SHORT := -Wfatal-errors
-CPPFLAGS = -MMD $(SHORT) -std=c++20 -Isrc -Wall -O2
+CPPFLAGS = -MMD $(SHORT) -std=c++20 -Isrc -Itest -Wall -O2
 
 .PHONY: all
 all: $(TARGETS)
 
 .PHONY: tests
 tests: $(TESTS)
+
+.PHONY: slow
+slow: $(SLOWS)
 
 .PHONY: benchmarks
 benchmarks: $(BENCHES)

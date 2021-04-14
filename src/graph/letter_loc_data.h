@@ -16,6 +16,7 @@ struct NodePos {
 
     NodePos(NodeLoc node = 0, NodeLen pos = 0) : pos(pos), node(node) {}
     bool operator == (const NodePos &other) const = default;
+    bool operator < (const NodePos &other) const { return node != other.node ? node < other.node : pos < other.pos; }
 
     friend std::ostream &operator << (std::ostream &os, const NodePos &np) {
         return os << "nodepos:" << np.node << ":" << np.pos;
