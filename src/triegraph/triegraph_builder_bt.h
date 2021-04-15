@@ -33,8 +33,9 @@ struct TrieGraphBTBuilder {
     TrieGraphBTBuilder(TrieGraphBTBuilder &&) = delete;
     TrieGraphBTBuilder &operator= (TrieGraphBTBuilder &&) = delete;
 
-    template <std::ranges::input_range R>
-    decltype(pairs) &&get_pairs(const R &starts, u32 /* unused */) && {
+    decltype(pairs) &&get_pairs(
+            std::ranges::input_range auto&& starts,
+            u32 /* unused */) && {
         auto scope = Logger::get().begin_scoped("back track builder");
         kmer = Kmer::empty();
         for (const auto &start_np : starts) {

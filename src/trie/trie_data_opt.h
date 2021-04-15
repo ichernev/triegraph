@@ -108,7 +108,7 @@ struct TieredBitset {
     std::vector<bool> present;
 
     TieredBitset() {}
-    TieredBitset(std::ranges::range auto const& c)
+    TieredBitset(std::ranges::input_range auto&& c)
         : present(Kmer::NUM_COMPRESSED - Kmer::NUM_LEAFS)
     {
         auto &log = Logger::get();

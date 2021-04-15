@@ -14,7 +14,7 @@ struct DenseMultimap {
     // TODO(opt): compute sizes for sorted-vector from histograms
 
     DenseMultimap() {}
-    DenseMultimap(std::ranges::range auto const& range) {
+    DenseMultimap(std::ranges::sized_range auto&& range) {
         // this->max_a = a_max;
         auto last = range.end(); --last;
         A a_max = (*last).first + 1;

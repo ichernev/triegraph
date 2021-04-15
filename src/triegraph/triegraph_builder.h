@@ -85,8 +85,7 @@ struct TrieGraphBuilder {
     TrieGraphBuilder(TrieGraphBuilder &&) = delete;
     TrieGraphBuilder &operator= (TrieGraphBuilder &&) = delete;
 
-    template <std::ranges::input_range R>
-    pairs_t get_pairs(const R & /* ignored */, u32 /* ignored */) {
+    pairs_t get_pairs(std::ranges::input_range auto&& /* ignored */, u32 /* ignored */) {
         auto &log = Logger::get();
         auto scope = log.begin_scoped("bfs builder");
 

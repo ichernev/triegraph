@@ -169,22 +169,20 @@ struct ComplexityComponentWalker {
         return { OuterIter(*this, graph, trie_depth) };
     }
 
-    template <std::ranges::range R>
     struct Builder {
         Builder(const Graph &graph,
-                const R &cc_seeds,
                 u32 trie_depth)
             : graph(graph),
-              cc_seeds(cc_seeds),
               trie_depth(trie_depth)
         {}
 
-        ComplexityComponentWalker build() {
+        ComplexityComponentWalker build(std::ranges::input_range auto&& cc_seeds) const {
             std::vector<ComplexityComponent> ccs;
             std::vector<bool> in_cc(graph.num_nodes(), false);
             std::vector<bool> in_cci(graph.num_nodes(), false);
 
             for (NodeLoc cc_seed: cc_seeds) {
+                // std::cerr << "cc_seed: " << cc_seed << std::endl;
                 // only "short" nodes can be cc seeds
                 if (graph.node(cc_seed).seg.size() >= trie_depth) {
                     std::cerr << "WOOT " << cc_seed << std::endl;
@@ -217,7 +215,6 @@ struct ComplexityComponentWalker {
         }
 
         const Graph &graph;
-        const R &cc_seeds;
         const u32 trie_depth;
     };
 };

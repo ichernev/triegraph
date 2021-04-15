@@ -57,11 +57,8 @@ test::define_test("pasgal + rand cc", [] {
     //     std::cerr << node_id << " " << graph.node(node_id).seg.size() << std::endl;
     // }
 
-    auto ccw = ComplexityComponentWalker::Builder(
-            graph,
-            std::ranges::views::all(cc_seeds),
-            trie_depth)
-        .build();
+    auto ccw = ComplexityComponentWalker::Builder(graph, trie_depth)
+        .build(cc_seeds);
 
     std::vector<TG::NodePos> all_starts;
 
@@ -145,11 +142,8 @@ test::define_test("hg_22 + rand cc", [] {
     //     std::cerr << node_id << " " << graph.node(node_id).seg.size() << std::endl;
     // }
 
-    auto ccw = ComplexityComponentWalker::Builder(
-            graph,
-            std::ranges::views::all(cc_seeds),
-            trie_depth)
-        .build();
+    auto ccw = ComplexityComponentWalker::Builder(graph, trie_depth)
+        .build(cc_seeds);
 
     std::vector<TG::NodePos> all_starts;
 

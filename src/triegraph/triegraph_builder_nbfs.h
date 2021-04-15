@@ -52,7 +52,7 @@ struct TrieGraphBuilderNBFS {
           kd(graph.num_nodes())
     {}
 
-    pairs_t get_pairs(std::ranges::range auto const& /*ignored*/, u32 /*ignored*/) && {
+    pairs_t get_pairs(std::ranges::input_range auto&& /*ignored*/, u32 /*ignored*/) && {
         auto scope = Logger::get().begin_scoped("node_bfs builder");
 
         auto starts = ConnectedComponents(graph).compute_starting_points();

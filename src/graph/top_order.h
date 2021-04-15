@@ -86,7 +86,7 @@ struct TopOrder {
             return { std::move(top_ord) };
         }
 
-        TopOrder build(std::ranges::range auto const& range) && {
+        TopOrder build(std::ranges::input_range auto&& range) && {
             for (const auto &ni : range) {
                 assert(!in_stk[ni]);
                 _dfs(ni);

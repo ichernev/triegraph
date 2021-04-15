@@ -14,11 +14,11 @@ namespace triegraph {
 struct PowHistogram {
 
     PowHistogram() {}
-    PowHistogram(std::ranges::range auto const &range) {
-        add(range);
+    PowHistogram(std::ranges::input_range auto&& range) {
+        add(std::forward<decltype(range)>(range));
     }
 
-    void add(std::ranges::range auto const &range) {
+    void add(std::ranges::input_range auto&& range) {
         for (const auto &n : range) {
             add(n);
         }
