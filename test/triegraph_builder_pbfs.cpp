@@ -18,7 +18,7 @@ static std::vector<TG::LetterLoc> trie2graph(const TG::TrieGraphData &tg, TG::Km
 }
 
 static TG::TrieGraphData build_tgd(TG::Graph &&g,
-        int start_every = 1, int cut_early_threshold = 500) {
+        u32 start_every = 1, u32 cut_early_threshold = 500) {
     return TG::triegraph_from_graph(
             std::move(g),
             {

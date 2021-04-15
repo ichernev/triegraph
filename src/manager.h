@@ -8,6 +8,8 @@
 #include "graph/rgfa_graph.h"
 #include "graph/sparse_starts.h"
 #include "graph/top_order.h"
+#include "graph/complexity_component.h"
+#include "graph/complexity_component_walker.h"
 #include "triegraph/handle.h"
 #include "triegraph/triegraph_builder_bt.h"
 #include "triegraph/triegraph_builder.h"
@@ -46,12 +48,6 @@ struct Manager : Cfg {
         Str,
         typename Cfg::NodeLoc,
         typename Cfg::EdgeLoc>;
-    using TopOrder = triegraph::TopOrder<
-        Graph>;
-    using ComplexityEstimator = triegraph::ComplexityEstimator<
-        Graph,
-        TopOrder,
-        typename Cfg::KmerHolder>;
     using NodePos = triegraph::NodePos<
         typename Cfg::NodeLoc,
         typename Cfg::NodeLen>;
@@ -60,6 +56,17 @@ struct Manager : Cfg {
         Graph,
         typename Cfg::LetterLoc,
         Cfg::LetterLocIdxShift>;
+    using TopOrder = triegraph::TopOrder<
+        Graph>;
+    using ComplexityEstimator = triegraph::ComplexityEstimator<
+        Graph,
+        TopOrder,
+        typename Cfg::KmerHolder>;
+    using ComplexityComponent = triegraph::ComplexityComponent<
+        Graph,
+        NodePos>;
+    using ComplexityComponentWalker = triegraph::ComplexityComponentWalker<
+        ComplexityComponent>;
     using ConnectedComponents = triegraph::ConnectedComponents<
         Graph>;
     using SparseStarts = triegraph::SparseStarts<
@@ -102,8 +109,8 @@ struct Manager : Cfg {
         bool add_reverse_complement = true;
         u64 trie_depth = sizeof(typename Kmer::Holder) * BITS_PER_BYTE / Cfg::Letter::bits - 1;
         enum { BFS, BACK_TRACK, POINT_BFS, NODE_BFS } algo = BFS;
-        int skip_every = 1; // 1 means don't skip
-        int cut_early_threshold = 0; // for POINT_BFS only
+        u32 skip_every = 1; // 1 means don't skip
+        u32 cut_early_threshold = 0; // for POINT_BFS only
 
         void validate() const {
             if (algo == BFS && skip_every != 1) {
@@ -136,7 +143,7 @@ struct Manager : Cfg {
         }
 
         struct NoSkip {};
-        struct SkipEvery { int n; };
+        struct SkipEvery { u32 n; };
     };
 
     static TrieGraph triegraph_from_rgfa_file(const std::string &file, Settings s = {}) {
