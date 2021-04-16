@@ -1,6 +1,7 @@
 #include "dna_config.h"
 #include "manager.h"
 #include "util/logger.h"
+#include "util/cmdline.h"
 
 #include <assert.h>
 #include <string>
@@ -31,11 +32,11 @@ typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s,
 }
 
 typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &lloc,
-        TG::Settings s, decltype(TG::Settings::algo) algo) {
+        TG::Settings s, decltype(TG::Settings::algo) algo, bool do_sanity_check) {
     auto pairs = get_pairs(graph, s, algo);
     auto res = TG::TrieData(pairs, lloc);
 
-    {
+    if (do_sanity_check) {
         auto scope = Logger::get().begin_scoped("sanity check");
         res.sanity_check(pairs, lloc);
     }
@@ -120,14 +121,19 @@ std::vector<TG::NodeLoc> shortest_path(const TG::Graph &graph,
 }
 
 int main(int argc, char *argv[]) {
-    assert(argc >= 2);
+    auto cmdline = triegraph::CmdLine(argc, argv);
+
+    assert(cmdline.positional.size() == 3);
+    auto cmd = cmdline.positional[0];
+    auto gfa_file = cmdline.positional[1];
+    auto algo = cmdline.positional[2];
+    auto td_rel = cmdline.get_or<triegraph::i32>("trie-depth-rel", 0);
+    auto td_abs = cmdline.get_or<triegraph::u32>("trie-depth", 0);
 
     try {
-        if (argv[1] == "pairs"s || argv[1] == "print-pairs"s ||
-                argv[1] == "td"s || argv[1] == "ce-test"s ||
-                argv[1] == "print-top-order"s) {
-            std::string gfa_file = argv[2];
-            std::string algo = argv[3];
+        if (cmd == "pairs"s || cmd == "print-pairs"s ||
+                cmd == "td"s || cmd == "ce-test"s ||
+                cmd == "print-top-order"s) {
 
             assert(algo == "bfs" || algo == "back_track" || algo == "pbfs" ||
                     algo == "node_bfs");
@@ -139,17 +145,19 @@ int main(int argc, char *argv[]) {
             auto graph = TG::Graph::from_file(gfa_file, {});
             auto lloc = TG::LetterLocData(graph);
             TG::Settings s {
-                .trie_depth = triegraph::log4_ceil(lloc.num_locations)
+                .trie_depth = (td_abs == 0 ?
+                    triegraph::log4_ceil(lloc.num_locations) + td_rel :
+                    td_abs)
             };
             // TG::init(s);
 
-            if (argv[1] == "pairs"s || argv[1] == "print-pairs"s ||
-                    argv[1] == "ce-test"s) {
+            if (cmd == "pairs"s || cmd == "print-pairs"s ||
+                    cmd == "ce-test"s) {
                 auto pairs = get_pairs(graph, s, algo_v);
 
-                if (argv[1] == "print-pairs"s)
+                if (cmd == "print-pairs"s)
                     print_pairs(graph, lloc, std::move(pairs));
-                else if (argv[1] == "ce-test"s) {
+                else if (cmd == "ce-test"s) {
                     prep_pairs(pairs);
                     std::ranges::sort(pairs, [](const auto &a, const auto &b) {
                             return a.second < b.second;
@@ -189,9 +197,9 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
-            } else if (argv[1] == "td"s) {
-                auto td = get_td(graph, lloc, s, algo_v);
-            } else if (argv[1] == "print-top-order"s) {
+            } else if (cmd == "td"s) {
+                auto td = get_td(graph, lloc, s, algo_v, cmdline.get<bool>("--sanity-check"));
+            } else if (cmd == "print-top-order"s) {
                 // auto starts = ConnectedComponents<TG::Graph>(graph).compute_starting_points();
                 // auto top_ord = TG::TopOrder::Builder(graph).build(starts);
                 auto top_ord = TG::TopOrder::Builder(graph).build();
