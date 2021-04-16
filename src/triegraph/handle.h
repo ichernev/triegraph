@@ -47,6 +47,13 @@ struct Handle {
             return other.is_graph() ? nodepos == other.nodepos : false;
     }
 
+    bool operator< (const Handle &other) const {
+        if (is_trie())
+            return other.is_trie() ? kmer < other.kmer : true;
+        else
+            return other.is_graph() ? nodepos < other.nodepos : false;
+    }
+
     friend std::ostream &operator<< (std::ostream &os, const Handle &h) {
         if (h.is_trie())
             os << "trie:" << h.depth_in_trie() << ":" << h.kmer;

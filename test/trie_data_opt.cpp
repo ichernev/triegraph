@@ -28,12 +28,15 @@ test::define_test("no_inner", [] {
             { TG::Kmer::from_str("gtac"), 6 }
     }, lloc);
 
-    assert(std::ranges::equal(td.t2g_values_for(TG::Kmer::from_str("acgt")),
-            std::vector<TG::LetterLoc> { 4, 8 }));
-    assert(std::ranges::equal(td.t2g_values_for(TG::Kmer::from_str("gtac")),
-            std::vector<TG::LetterLoc> { 6 }));
-    assert(std::ranges::equal(td.t2g_values_for(TG::Kmer::from_str("acgg")),
-            std::vector<TG::LetterLoc> { }));
+    assert(test::equal_sorted(
+                td.t2g_values_for(TG::Kmer::from_str("acgt")),
+                std::vector<TG::LetterLoc> { 4, 8 }));
+    assert(test::equal_sorted(
+                td.t2g_values_for(TG::Kmer::from_str("gtac")),
+                std::vector<TG::LetterLoc> { 6 }));
+    assert(test::equal_sorted(
+                td.t2g_values_for(TG::Kmer::from_str("acgg")),
+                std::vector<TG::LetterLoc> { }));
 });
 
 test::define_test("with_inner", [] {
@@ -54,11 +57,11 @@ test::define_test("with_inner", [] {
     }, lloc);
 
     using vec_l = std::vector<TG::LetterLoc>;
-    assert(std::ranges::equal(td.t2g_values_for(kmer_s("acgt")), vec_l { 4, 8 }));
-    assert(std::ranges::equal(td.t2g_values_for(kmer_s("gtac")), vec_l { 6 }));
-    assert(std::ranges::equal(td.t2g_values_for(kmer_s("acgg")), vec_l { }));
-    assert(std::ranges::equal(td.t2g_values_for(kmer_s("tt")),   vec_l { 2 }));
-    assert(std::ranges::equal(td.t2g_values_for(kmer_s("tta")),  vec_l { }));
+    assert(test::equal_sorted(td.t2g_values_for(kmer_s("acgt")), vec_l { 4, 8 }));
+    assert(test::equal_sorted(td.t2g_values_for(kmer_s("gtac")), vec_l { 6 }));
+    assert(test::equal_sorted(td.t2g_values_for(kmer_s("acgg")), vec_l { }));
+    assert(test::equal_sorted(td.t2g_values_for(kmer_s("tt")),   vec_l { 2 }));
+    assert(test::equal_sorted(td.t2g_values_for(kmer_s("tta")),  vec_l { }));
 
     assert( td.t2g_contains(kmer_s("acgt")));
     assert( td.t2g_contains(kmer_s("gtac")));

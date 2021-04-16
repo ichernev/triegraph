@@ -61,7 +61,7 @@ struct DenseMultimap {
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = std::pair<A, C>;
-        using reference_type = value_type;
+        using reference = value_type;
 
         using Self = PairIter;
         using Parent = DenseMultimap;
@@ -73,7 +73,7 @@ struct DenseMultimap {
         {
             adjust();
         }
-        reference_type operator* () const {
+        reference operator* () const {
             // std::cerr << "IN **" << a << " " << b << " " << p->elems[b] << std::endl;
             return {a, p->elems.at(b)};
         }
@@ -102,7 +102,7 @@ struct DenseMultimap {
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = A;
-        using reference_type = value_type;
+        using reference = value_type;
         using Self = KeyIter;
         using Parent = DenseMultimap;
 
@@ -110,7 +110,7 @@ struct DenseMultimap {
         KeyIter(const Parent &p) : p(&p), a(p.starts.size()) {}
         KeyIter(const Parent &p, A a) : p(&p), a(a) { adjust(); }
 
-        reference_type operator* () const { return a; }
+        reference operator* () const { return a; }
         Self &operator++ () { ++a; adjust(); return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
         bool operator== (const Self &other) const { return a == other.a; }
@@ -129,13 +129,13 @@ struct DenseMultimap {
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = C;
-        using reference_type = value_type;
+        using reference = value_type;
         using Self = ValIter;
 
         ValIter() : it() {}
         ValIter(std::vector<value_type>::const_iterator it) : it(it) {}
 
-        reference_type operator* () const { return *it; }
+        reference operator* () const { return *it; }
         Self &operator++ () { ++it; return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
         difference_type operator- (const Self &other) { return it - other.it; }

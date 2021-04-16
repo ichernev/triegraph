@@ -158,7 +158,7 @@ test::define_test("trie_inner", [] {
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::T },
     };
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::ranges::equal(h, expected));
+    assert(test::equal_sorted(h, test::sorted(expected)));
 });
 test::define_test("trie_to_graph", [] {
 // static void test_trie_to_graph() {
@@ -239,7 +239,7 @@ test::define_test("trie_to_graph", [] {
     };
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
-    assert(std::ranges::equal(h, expected));
+    assert(test::equal_sorted(h, test::sorted(expected)));
 });
 
 });

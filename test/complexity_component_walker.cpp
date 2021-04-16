@@ -11,14 +11,6 @@ using ComplexityComponent = triegraph::ComplexityComponent<
 using ComplexityComponentWalker = triegraph::ComplexityComponentWalker<
     ComplexityComponent>;
 
-template <std::ranges::view V, typename T = std::ranges::range_value_t<V>>
-static std::vector<T> _sorted_ip(V view) {
-    std::vector<T> res;
-    std::ranges::copy(view, std::back_inserter(res));
-    std::ranges::sort(res, std::less<T> {});
-    return res;
-}
-
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("all in cc", [] {
@@ -32,12 +24,12 @@ test::define_test("all in cc", [] {
     auto ccw = ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {0, 1});
 
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.cc_starts(graph, 2),
                 std::vector<TG::NodePos> { {0, 0}, {1, 0} }));
 
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.non_cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.non_cc_starts(graph, 2),
                 std::vector<TG::NodePos> { }));
 });
 
@@ -52,12 +44,12 @@ test::define_test("none in cc", [] {
     auto ccw = ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {});
 
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.cc_starts(graph, 2),
                 std::vector<TG::NodePos> { }));
 
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.non_cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.non_cc_starts(graph, 2),
                 std::vector<TG::NodePos> { {0, 0}, {1, 0} }));
 });
 
@@ -73,14 +65,14 @@ test::define_test("simple incoming", [] {
     auto ccw = ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {1});
 
-    // for (auto const &p : _sorted_ip(ccw.cc_starts(graph, 2))) {
+    // for (auto const &p : test::sorted(ccw.cc_starts(graph, 2))) {
     //     std::cerr << p << std::endl;
     // }
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.cc_starts(graph, 2),
                 std::vector<TG::NodePos> { {0, 2}, {0, 3}, {1, 0} }));
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.non_cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.non_cc_starts(graph, 2),
                 std::vector<TG::NodePos> { {0, 0}, {0, 1} }));
 });
 
@@ -98,15 +90,15 @@ test::define_test("shared incoming", [] {
     auto ccw = ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {1, 2});
 
-    // for (auto const &p : _sorted_ip(ccw.cc_starts(graph, 2))) {
+    // for (auto const &p : test::sorted(ccw.cc_starts(graph, 2))) {
     //     std::cerr << p << std::endl;
     // }
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.cc_starts(graph, 2),
                 std::vector<TG::NodePos> { {0, 2}, {0, 3}, {1, 0}, {2, 0} }));
 
-    assert(std::ranges::equal(
-                _sorted_ip(ccw.non_cc_starts(graph, 2)),
+    assert(test::equal_sorted(
+                ccw.non_cc_starts(graph, 2),
                 std::vector<TG::NodePos> { {0, 0}, {0, 1} }));
 });
 

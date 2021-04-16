@@ -249,7 +249,7 @@ test::define_test("prev_handles_graph_to_trie", [] {
     // std::cerr << M4::Handle(M4::Kmer::from_str("acgg")).is_trie() << std::endl;
     // std::cerr << M4::Handle(M4::Kmer::from_str("cacg")).is_trie() << std::endl;
     // std::cerr << (M4::Kmer::from_str("acgg").data & M4::Kmer::ON_MASK) << std::endl;
-    assert(std::ranges::equal(h, expected));
+    assert(test::equal_sorted(h, expected));
 });
 
 test::define_test("prev_handles_trie", [] {
@@ -262,7 +262,7 @@ test::define_test("prev_handles_trie", [] {
     auto h = tg.prev_trie_handles(M4::Kmer::from_str("acac"));
     auto expected = std::vector<M4::Handle> { M4::Kmer::from_str("aca") };
     // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    assert(std::ranges::equal(h, expected));
+    assert(test::equal_sorted(h, expected));
 });
 
 test::define_test("up_handle_trie", [] {

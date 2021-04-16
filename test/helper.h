@@ -11,6 +11,23 @@ std::string test_module_name;
 std::vector<std::pair<std::string, std::function<void()>>> tests;
 
 namespace test {
+
+    template <std::ranges::input_range R,
+             typename T = std::ranges::range_value_t<R>,
+             typename Cmp = std::less<T>>
+    static std::vector<T> sorted(R &&range) {
+        std::vector<T> res;
+        std::ranges::copy(range, std::back_inserter(res));
+        std::ranges::sort(res, Cmp {});
+        return res;
+    }
+
+    static bool equal_sorted(
+            std::ranges::input_range auto&& range1,
+            std::ranges::input_range auto&& range2) {
+        return std::ranges::equal(sorted(range1), range2);
+    }
+
     static int define_module(const char *filename, std::function<void()> &&fn) {
         test_module_name = filename;
         fn();

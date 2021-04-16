@@ -4,6 +4,7 @@
 #include "util/util.h"
 #include "util/pow_histogram.h"
 #include "util/dense_multimap.h"
+#include "util/simple_multimap.h"
 #include "util/sorted_vector.h"
 #include "util/logger.h"
 
@@ -169,10 +170,51 @@ struct TieredBitset {
 
 };
 
+template <typename Kmer_, typename LetterLocData_>
+struct TrieDataBaseSMM {
+    using Kmer = Kmer_;
+    using KHolder = Kmer::Holder;
+    using LetterLocData = LetterLocData_;
+    using LetterLoc = LetterLocData::LetterLoc;
+
+    SimpleMultimap<KHolder, LetterLoc> trie2graph;
+    SimpleMultimap<LetterLoc, KHolder> graph2trie;
+
+    TrieDataBaseSMM() {}
+
+    TrieDataBaseSMM(const TrieDataBaseSMM &) = delete;
+    TrieDataBaseSMM &operator= (const TrieDataBaseSMM &) = delete;
+    TrieDataBaseSMM(TrieDataBaseSMM &&) = default;
+    TrieDataBaseSMM &operator= (TrieDataBaseSMM &&) = default;
+};
+
+template <typename Kmer_, typename LetterLocData_,
+         typename NumKmers_ = LetterLocData_::LetterLoc>
+struct TrieDataBaseDMM {
+    using Kmer = Kmer_;
+    using KHolder = Kmer::Holder;
+    using LetterLocData = LetterLocData_;
+    using LetterLoc = LetterLocData::LetterLoc;
+    using NumKmers = NumKmers_;
+
+    DenseMultimap<KHolder, NumKmers, LetterLoc/*, SortedVector<NumKmers, u8> */> trie2graph;
+    DenseMultimap<LetterLoc, NumKmers, KHolder/*, SortedVector<NumKmers, u8> */> graph2trie;
+
+    TrieDataBaseDMM() {}
+
+    TrieDataBaseDMM(const TrieDataBaseDMM &) = delete;
+    TrieDataBaseDMM &operator= (const TrieDataBaseDMM &) = delete;
+    TrieDataBaseDMM(TrieDataBaseDMM &&) = default;
+    TrieDataBaseDMM &operator= (TrieDataBaseDMM &&) = default;
+};
+
 template <typename Kmer_, typename LetterLocData_,
          typename NumKmers_ = LetterLocData_::LetterLoc,
-         bool allow_inner = false>
-struct TrieDataOpt {
+         bool allow_inner = false,
+         typename Base =
+            /*TrieDataBaseSMM<Kmer_, LetterLocData_>*/
+            TrieDataBaseDMM<Kmer_, LetterLocData_, NumKmers_>>
+struct TrieDataOpt final : public Base {
     using Kmer = Kmer_;
     using KHolder = Kmer::Holder;
     using LetterLocData = LetterLocData_;
@@ -183,6 +225,8 @@ struct TrieDataOpt {
 
     TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
+        auto &trie2graph = this->trie2graph;
+        auto &graph2trie = this->graph2trie;
         auto &log = Logger::get();
 
         auto scope = log.begin_scoped("trie data");
@@ -214,77 +258,10 @@ struct TrieDataOpt {
         log.end();
         log.begin("build inner");
         using key_iter_pair = iter_pair<
-            typename decltype(trie2graph)::const_key_iterator,
-            typename decltype(trie2graph)::const_key_iterator,
+            typename decltype(Base::trie2graph)::const_key_iterator,
+            typename decltype(Base::trie2graph)::const_key_iterator,
             KmerCodec>;
         active_trie = { key_iter_pair(trie2graph.keys()) };
-    }
-
-    void sanity_check(std::vector<std::pair<Kmer, LetterLoc>> pairs,
-            const LetterLocData &letter_loc) {
-        // using Fwd = PairFwd<Kmer, LetterLoc>;
-        // using Rev = PairRev<Kmer, LetterLoc>;
-        u64 maxkmer = total_kmers();
-        // test trie2graph
-        std::ranges::sort(pairs);
-        assert(std::ranges::equal(
-                    pairs | std::ranges::views::transform(
-                        [](const auto &p) {
-                        return std::make_pair(
-                                KmerCodec::to_int(p.first),
-                                p.second);
-                        }),
-                    trie2graph));
-
-        auto pbeg = pairs.begin(), pend = pairs.end();
-        for (u64 i = 0; i < maxkmer; ++i) {
-            if (pbeg != pend && pbeg->first == KmerCodec::to_ext(i)) {
-                assert(trie2graph.contains(i));
-                auto vv = trie2graph.values_for(i);
-                assert(!vv.empty());
-                while (!vv.empty()) {
-                    assert(*vv == pbeg->second);
-                    ++vv;
-                    ++pbeg;
-                }
-            } else {
-                // test empty range
-                assert(!trie2graph.contains(i));
-                assert(trie2graph.values_for(i).empty());
-                auto er = trie2graph.equal_range(i);
-                assert(er.first == er.second);
-            }
-        }
-
-        std::ranges::sort(pairs, PairSwitchComp<Kmer, LetterLoc> {});
-        assert(std::ranges::equal(
-                    pairs | std::ranges::views::transform(
-                        [](const auto &p) {
-                        return std::make_pair(
-                                p.second,
-                                KmerCodec::to_int(p.first));
-                        }
-                        ),
-                    graph2trie));
-        pbeg = pairs.begin(), pend = pairs.end();
-        for (u64 i = 0; i < letter_loc.num_locations; ++i) {
-            if (pbeg != pend && pbeg->second == i) {
-                assert(graph2trie.contains(i));
-                auto vv = graph2trie.values_for(i);
-                assert(!vv.empty());
-                while (!vv.empty()) {
-                    assert(*vv == KmerCodec::to_int(pbeg->first));
-                    ++vv;
-                    ++pbeg;
-                }
-            } else {
-                // test empty range
-                assert(!graph2trie.contains(i));
-                assert(graph2trie.values_for(i).empty());
-                auto er = graph2trie.equal_range(i);
-                assert(er.first == er.second);
-            }
-        }
     }
 
     TrieDataOpt(const TrieDataOpt &) = delete;
@@ -292,29 +269,29 @@ struct TrieDataOpt {
     TrieDataOpt(TrieDataOpt &&) = default;
     TrieDataOpt &operator= (TrieDataOpt &&) = default;
 
-    DenseMultimap<KHolder, NumKmers, LetterLoc, SortedVector<NumKmers, u8>> trie2graph;
-    DenseMultimap<LetterLoc, NumKmers, KHolder, SortedVector<NumKmers, u8>> graph2trie;
+//     DenseMultimap<KHolder, NumKmers, LetterLoc/*, SortedVector<NumKmers, u8> */> trie2graph;
+//     DenseMultimap<LetterLoc, NumKmers, KHolder/*, SortedVector<NumKmers, u8> */> graph2trie;
     TieredBitset<Kmer, allow_inner> active_trie;
 
     using t2g_values_view = iter_pair<
-        typename decltype(trie2graph)::const_value_iterator,
-        typename decltype(trie2graph)::const_value_iterator>;
+        typename decltype(Base::trie2graph)::const_value_iterator,
+        typename decltype(Base::trie2graph)::const_value_iterator>;
     t2g_values_view t2g_values_for(Kmer kmer) const {
-        return trie2graph.values_for(KmerCodec::to_int(kmer));
+        return this->trie2graph.values_for(KmerCodec::to_int(kmer));
     }
     bool t2g_contains(Kmer kmer) const {
-        return trie2graph.contains(KmerCodec::to_int(kmer));
+        return this->trie2graph.contains(KmerCodec::to_int(kmer));
     }
 
     using g2t_values_view = iter_pair<
-        typename decltype(graph2trie)::const_value_iterator,
-        typename decltype(graph2trie)::const_value_iterator,
+        typename decltype(Base::graph2trie)::const_value_iterator,
+        typename decltype(Base::graph2trie)::const_value_iterator,
         KmerCodec>;
     g2t_values_view g2t_values_for(LetterLoc loc) const {
-        return graph2trie.values_for(loc);
+        return this->graph2trie.values_for(loc);
     }
     bool g2t_contains(LetterLoc loc) const {
-        return graph2trie.contains(loc);
+        return this->graph2trie.contains(loc);
     }
 
     bool trie_inner_contains(Kmer kmer) const {
@@ -338,13 +315,13 @@ struct TrieDataOpt {
     }
 
     PowHistogram t2g_histogram() const {
-        return PowHistogram(trie2graph.keys() | std::ranges::views::transform([&](const auto &k) {
-                    return std::ranges::distance(trie2graph.values_for(k));
+        return PowHistogram(this->trie2graph.keys() | std::ranges::views::transform([&](const auto &k) {
+                    return std::ranges::distance(this->trie2graph.values_for(k));
                 }));
     }
     PowHistogram g2t_histogram() const {
-        return PowHistogram(graph2trie.keys() | std::ranges::views::transform([&](const auto &k) {
-                    return std::ranges::distance(graph2trie.values_for(k));
+        return PowHistogram(this->graph2trie.keys() | std::ranges::views::transform([&](const auto &k) {
+                    return std::ranges::distance(this->graph2trie.values_for(k));
                 }));
     }
 };

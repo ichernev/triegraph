@@ -19,7 +19,12 @@ struct EditEdge {
     enum {MATCH, SUB, INS, DEL} edit;
     Letter letter;
 
-    bool operator ==(const EditEdge &) const = default;
+    bool operator== (const EditEdge &) const = default;
+    bool operator< (const EditEdge &other) const {
+        if (handle != other.handle) return handle < other.handle;
+        if (edit != other.edit) return edit < other.edit;
+        return letter < other.letter;
+    }
 
     const char *edit_name() const {
         switch (edit) {

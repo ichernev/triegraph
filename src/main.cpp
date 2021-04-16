@@ -37,10 +37,10 @@ typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &ll
     TG::prep_pairs(pairs);
     auto res = TG::TrieData(pairs, lloc);
 
-    if (do_sanity_check) {
-        auto scope = Logger::get().begin_scoped("sanity check");
-        res.sanity_check(pairs, lloc);
-    }
+    // if (do_sanity_check) {
+    //     auto scope = Logger::get().begin_scoped("sanity check");
+    //     res.sanity_check(pairs, lloc);
+    // }
 
     std::cerr << "T2G Histogrm:" << std::endl;
     res.t2g_histogram().print(std::cerr);
