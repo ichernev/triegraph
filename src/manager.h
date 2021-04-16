@@ -105,37 +105,62 @@ struct Manager : Cfg {
     using TrieGraph = triegraph::TrieGraph<
         TrieGraphData>;
 
+    enum struct Algo { BFS, BACK_TRACK, POINT_BFS, NODE_BFS, UNKNOWN };
+    static constexpr std::array<Algo, 4> algorithms = {
+        Algo::BFS, Algo::BACK_TRACK, Algo::POINT_BFS, Algo::NODE_BFS };
+
+    static constexpr const char *algo_name(Algo algo) {
+        switch (algo) {
+            case Algo::BFS: return "BFS";
+            case Algo::BACK_TRACK: return "BACK_TRACK";
+            case Algo::POINT_BFS: return "POINT_BFS";
+            case Algo::NODE_BFS: return "NODE_BFS";
+            default: return "";
+        }
+    }
+
+    static constexpr Algo algo_from_name(std::string name) {
+        auto lname = to_lower(name);
+        if (lname == "bfs")
+            return Algo::BFS;
+        if (lname == "back_track" || lname == "bt")
+            return Algo::BACK_TRACK;
+        if (lname == "point_bfs" || lname == "pbfs")
+            return Algo::POINT_BFS;
+        if (lname == "node_bfs" || lname == "nbfs")
+            return Algo::NODE_BFS;
+        return Algo::UNKNOWN;
+    }
+
+    friend std::ostream &operator<< (std::ostream &os, const Algo &algo) {
+        return os << algo_name(algo);
+    }
+
     struct Settings {
         bool add_reverse_complement = true;
         u64 trie_depth = sizeof(typename Kmer::Holder) * BITS_PER_BYTE / Cfg::Letter::bits - 1;
-        enum { BFS, BACK_TRACK, POINT_BFS, NODE_BFS } algo = BFS;
+        // using enum Algo;
+        Algo algo;
+        // enum { BFS, BACK_TRACK, POINT_BFS, NODE_BFS } algo = BFS;
         u32 skip_every = 1; // 1 means don't skip
         u32 cut_early_threshold = 0; // for POINT_BFS only
 
         void validate() const {
-            if (algo == BFS && skip_every != 1) {
+            if (algo == Algo::BFS && skip_every != 1) {
                 std::cerr << "skip_every is not supported with BFS" << std::endl;
                 throw -1;
             }
-            if (cut_early_threshold != 0 && algo != POINT_BFS) {
+            if (cut_early_threshold != 0 && algo != Algo::POINT_BFS) {
                 std::cerr << "cut_early_threshold is only supported for POINT_BFS" << std::endl;
                 throw -1;
             }
         }
 
-        const char *algo_name() const {
-            switch (algo) {
-                case BFS: return "BFS";
-                case BACK_TRACK: return "BACK_TRACK";
-                case POINT_BFS: return "POINT_BFS";
-                default: return "";
-            }
-        }
 
         friend std::ostream &operator<< (std::ostream &os, const Settings &s) {
             os << "add_reverse_complement=" << s.add_reverse_complement << '\n'
                 << "trie_depth=" << s.trie_depth << '\n'
-                << "algo=" << s.algo_name() << '\n'
+                << "algo=" << algo_name(s.algo) << '\n'
                 << "skip_every=" << s.skip_every << '\n'
                 << "cut_early_threshold=" << s.cut_early_threshold << '\n'
                 << std::flush;
@@ -166,13 +191,13 @@ struct Manager : Cfg {
         using SkipEvery = Settings::SkipEvery;
         if (s.skip_every == 1) {
             switch (s.algo) {
-                case Settings::BFS:
+                case Algo::BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderBFS>(
                             std::move(graph), s, NoSkip {});
-                case Settings::BACK_TRACK:
+                case Algo::BACK_TRACK:
                     return triegraph_from_graph_impl<TrieGraphBuilderBT>(
                             std::move(graph), s, NoSkip {});
-                case Settings::POINT_BFS:
+                case Algo::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
                             std::move(graph), s, NoSkip {});
                 default:
@@ -180,10 +205,10 @@ struct Manager : Cfg {
             }
         } else {
             switch (s.algo) {
-                case Settings::BACK_TRACK:
+                case Algo::BACK_TRACK:
                     return triegraph_from_graph_impl<TrieGraphBuilderBT>(
                             std::move(graph), s, SkipEvery { s.skip_every });
-                case Settings::POINT_BFS:
+                case Algo::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
                             std::move(graph), s, SkipEvery { s.skip_every });
                 default:

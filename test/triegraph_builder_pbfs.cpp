@@ -24,7 +24,7 @@ static TG::TrieGraphData build_tgd(TG::Graph &&g,
             {
                 .add_reverse_complement = false,
                 .trie_depth = 4,
-                .algo = TG::Settings::POINT_BFS,
+                .algo = TG::Algo::POINT_BFS,
                 .skip_every = start_every,
                 .cut_early_threshold = cut_early_threshold,
             }).data;
@@ -200,7 +200,7 @@ test::define_test("cut_early", [] {
             {
                 .add_reverse_complement = false,
                 .trie_depth = 4,
-                .algo = TGX::Settings::POINT_BFS,
+                .algo = TGX::Algo::POINT_BFS,
                 .skip_every = 100,
                 .cut_early_threshold = 8,
             }).data.trie_data;

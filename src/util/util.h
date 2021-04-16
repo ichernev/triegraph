@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <ranges>
+#include <algorithm>
 #include <iostream>
 
 namespace triegraph {
@@ -143,6 +144,13 @@ struct iter_pair : std::ranges::view_base {
 
     operator std::pair<iter_codec<IT1, Codec>, iter_codec<IT2, Codec>>() const { return { first, second }; }
 };
+
+std::string to_lower(std::string str) {
+    std::string res;
+    std::ranges::transform(str, std::back_inserter(res),
+            [](char c) { return std::tolower(c); });
+    return res;
+}
 
 } /* namespace triegraph */
 

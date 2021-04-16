@@ -22,7 +22,7 @@ static TG::TrieGraphData build_tgd(TG::Graph &&g) {
             {
                 .add_reverse_complement = false,
                 .trie_depth = 4,
-                .algo = TG::Settings::BFS
+                .algo = TG::Algo::BFS
             }).data;
 }
 

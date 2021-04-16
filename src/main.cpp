@@ -14,16 +14,16 @@ using Logger = triegraph::Logger;
 typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s,
         decltype(TG::Settings::algo) algo) {
     s.algo = algo;
-    if (algo == TG::Settings::BFS) {
+    if (algo == TG::Algo::BFS) {
         return TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
                 graph, s, TG::Settings::NoSkip {});
-    } else if (algo == TG::Settings::BACK_TRACK) {
+    } else if (algo == TG::Algo::BACK_TRACK) {
         return TG::pairs_from_graph<TG::TrieGraphBuilderBT>(
                 graph, s, TG::Settings::NoSkip {});
-    } else if (algo == TG::Settings::POINT_BFS) {
+    } else if (algo == TG::Algo::POINT_BFS) {
         return TG::pairs_from_graph<TG::TrieGraphBuilderPBFS>(
                 graph, s, TG::Settings::NoSkip {});
-    } else if (algo == TG::Settings::NODE_BFS) {
+    } else if (algo == TG::Algo::NODE_BFS) {
         return TG::pairs_from_graph<TG::TrieGraphBuilderNBFS>(
                 graph, s, TG::Settings::NoSkip {});
     }
@@ -135,13 +135,9 @@ int main(int argc, char *argv[]) {
                 cmd == "td"s || cmd == "ce-test"s ||
                 cmd == "print-top-order"s) {
 
-            assert(algo == "bfs" || algo == "back_track" || algo == "pbfs" ||
-                    algo == "node_bfs");
+            auto algo_v = TG::algo_from_name(algo);
+            assert(algo_v != TG::Algo::UNKNOWN);
 
-            auto algo_v = algo == "bfs" ? TG::Settings::BFS :
-                algo == "back_track" ? TG::Settings::BACK_TRACK :
-                algo == "pbfs" ? TG::Settings::POINT_BFS :
-                TG::Settings::NODE_BFS;
             auto graph = TG::Graph::from_file(gfa_file, {});
             auto lloc = TG::LetterLocData(graph);
             TG::Settings s {

@@ -24,7 +24,7 @@ static TG::TrieGraphData build_tgd(TG::Graph &&g) {
             {
                 .add_reverse_complement = false,
                 .trie_depth = 4,
-                .algo = TG::Settings::BACK_TRACK
+                .algo = TG::Algo::BACK_TRACK
             }).data;
 }
 int m = test::define_module(__FILE__, [] {
