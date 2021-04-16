@@ -2,6 +2,7 @@
 #include "manager.h"
 
 #include "util/cmdline.h"
+#include "util/logger.h"
 
 using namespace triegraph;
 
@@ -58,9 +59,9 @@ int main(int argc, char *argv[]) {
     auto td_rel = cmdline.get_or<i32>("trie-depth-rel", 0);
     auto td_abs = cmdline.get_or<u32>("trie-depth", 0);
 
-
+    Logger::get().begin("reading graph");
     auto graph = TG::Graph::from_file(gfa_file, {});
-    std::cerr << "WWWWW " << std::endl;
+    Logger::get().end().begin("building lloc");
     auto lloc = TG::LetterLocData(graph);
     TG::Settings s {
         .trie_depth = td_abs == 0 ?
@@ -68,11 +69,12 @@ int main(int argc, char *argv[]) {
             td_abs,
         .cut_early_threshold = pbfs_kmer_cutoff,
     };
+    Logger::get().end().begin("TG::init");
     TG::init(s);
 
-    std::cerr << "WOOOT 0" << std::endl;
+    Logger::get().end().begin("top_order build");
     auto top_ord = TG::TopOrder::Builder(graph).build();
-    std::cerr << "WOOOT 1" << std::endl;
+    Logger::get().end().begin("CE building");
     auto ce = TG::ComplexityEstimator(
             graph,
             top_ord,
@@ -80,8 +82,6 @@ int main(int argc, char *argv[]) {
             backedge_init,
             backedge_max_trav)
         .compute();
-
-    std::cerr << "WOOOT 2" << std::endl;
 
     auto cc_seed_v = std::views::iota(0u)
         | std::views::take(graph.num_nodes())
@@ -93,25 +93,51 @@ int main(int argc, char *argv[]) {
     // std::cerr << "X_____X" << std::endl;
     // std::ranges::copy(cc_seed_v, std::ostream_iterator<TG::NodeLoc>(std::cerr, "\n"));
 
+    Logger::get().end().begin("CCW building");
     auto ccw = TG::ComplexityComponentWalker::Builder(
             graph,
             s.trie_depth)
         .build(cc_seed_v);
 
-    std::cerr << "before p1" << std::endl;
+    auto num_cc_starts = std::ranges::distance(ccw.cc_starts(graph, s.trie_depth));
+    auto num_non_cc_starts = std::ranges::distance(ccw.non_cc_starts(graph, s.trie_depth));
+    auto num_all_starts = lloc.num_locations;
+
+    Logger::get().log(
+            "cc_starts", num_cc_starts,
+            "as %", (num_cc_starts * 100.0) / num_all_starts,
+            "non_cc_starts", num_non_cc_starts,
+            "as %", (num_non_cc_starts * 100.0) / num_all_starts);
+
+    Logger::get().end().begin("CCW non_cc_starts");
     auto p1 = get_pairs(graph, lloc, algo_fast, ccw.non_cc_starts(graph, s.trie_depth), s);
-    std::cerr << "before p2" << std::endl;
+
+    Logger::get().end().begin("CCW cc_starts");
     auto p2 = get_pairs(graph, lloc, algo_slow, ccw.cc_starts(graph, s.trie_depth), s);
-    std::cerr << "after p2" << std::endl;
+
+    Logger::get().end().begin("merge pairs");
     std::ranges::copy(p2, std::back_inserter(p1));
     { auto _ = std::move(p2); }
 
+    Logger::get().end().begin("build TD");
     auto td = TG::TrieData(std::move(p1), lloc);
+    Logger::get().end();
 
     std::cerr << "T2G Histogrm:" << std::endl;
     td.t2g_histogram().print(std::cerr);
     std::cerr << "G2T Histogrm:" << std::endl;
     td.g2t_histogram().print(std::cerr);
+    auto nkmers = std::ranges::distance(td.trie2graph.keys());
+    auto nlocs = std::ranges::distance(td.graph2trie.keys());
+    std::cerr << "num kmers: " << nkmers << std::endl;
+    std::cerr << "all kmers: " << TG::TrieData::total_kmers() << std::endl;
+    std::cerr << "num locs: " << nlocs << std::endl;
+    std::cerr << "all locs: " << lloc.num_locations << std::endl;
+    std::cerr << "ff: " << double(nkmers) / nlocs << std::endl;
+    std::cerr << "used kmers: " << double(nkmers) / TG::TrieData::total_kmers() << std::endl;
+
+    std::cerr << "t2g elem size: " << td.trie2graph.size() << std::endl;
+    std::cerr << "g2t elem size: " << td.graph2trie.size() << std::endl;
 
     return 0;
 }
