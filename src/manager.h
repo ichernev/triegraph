@@ -288,6 +288,20 @@ struct Manager : Cfg {
                 "on_mask =", std::hex, on_mask, std::dec);
         Kmer::setK(s.trie_depth, on_mask);
     }
+
+    static void prep_pairs(vec_pairs &pairs) {
+        {
+            auto st = Logger::get().begin_scoped("sorting pairs");
+            std::ranges::sort(pairs);
+        }
+        {
+            auto st = Logger::get().begin_scoped("removing dupes");
+            auto sr = std::ranges::unique(pairs);
+            auto new_size = sr.begin() - pairs.begin();
+            pairs.resize(new_size);
+        }
+    }
+
 };
 
 } /* namespace triegraph */

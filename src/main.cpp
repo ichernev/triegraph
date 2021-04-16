@@ -34,6 +34,7 @@ typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s,
 typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &lloc,
         TG::Settings s, decltype(TG::Settings::algo) algo, bool do_sanity_check) {
     auto pairs = get_pairs(graph, s, algo);
+    TG::prep_pairs(pairs);
     auto res = TG::TrieData(pairs, lloc);
 
     if (do_sanity_check) {
@@ -57,22 +58,9 @@ typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &ll
     return res;
 }
 
-void prep_pairs(TG::vec_pairs &pairs) {
-    {
-        auto st = Logger::get().begin_scoped("sorting pairs");
-        std::ranges::sort(pairs);
-    }
-    {
-        auto st = Logger::get().begin_scoped("removing dupes");
-        auto sr = std::ranges::unique(pairs);
-        auto new_size = sr.begin() - pairs.begin();
-        pairs.resize(new_size);
-    }
-}
-
 void print_pairs(const TG::Graph &graph, const TG::LetterLocData &lloc,
         TG::vec_pairs pairs) {
-    prep_pairs(pairs);
+    TG::prep_pairs(pairs);
 
     auto st = Logger::get().begin_scoped("printing");
     for (const auto &p : pairs) {
@@ -154,7 +142,7 @@ int main(int argc, char *argv[]) {
                 if (cmd == "print-pairs"s)
                     print_pairs(graph, lloc, std::move(pairs));
                 else if (cmd == "ce-test"s) {
-                    prep_pairs(pairs);
+                    TG::prep_pairs(pairs);
                     std::ranges::sort(pairs, [](const auto &a, const auto &b) {
                             return a.second < b.second;
                     });

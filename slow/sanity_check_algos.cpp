@@ -15,19 +15,6 @@ std::size_t hash_pairs(const TG::vec_pairs &pairs) {
     return res;
 }
 
-void prep_pairs(TG::vec_pairs &pairs) {
-    {
-        auto st = Logger::get().begin_scoped("sorting pairs");
-        std::ranges::sort(pairs);
-    }
-    {
-        auto st = Logger::get().begin_scoped("removing dupes");
-        auto sr = std::ranges::unique(pairs);
-        auto new_size = sr.begin() - pairs.begin();
-        pairs.resize(new_size);
-    }
-}
-
 static typename TG::vec_pairs get_pairs(
         const TG::Graph &graph, TG::Settings s, TG::Algo algo) {
     s.algo = algo;
@@ -60,7 +47,7 @@ static void test_algo_pairs_eq(std::string gfa_file) {
     std::vector<std::size_t> hashes;
     for (auto algo : TG::algorithms) {
         auto pairs = get_pairs(graph, s, algo);
-        prep_pairs(pairs);
+        TG::prep_pairs(pairs);
         // std::cerr << "np " << pairs.size() << std::endl;
         hashes.emplace_back(hash_pairs(pairs));
     }
