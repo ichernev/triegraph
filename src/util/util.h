@@ -61,14 +61,14 @@ quot_rem<u32> div(T a, T b) {
     return { quot, a - b * quot };
 }
 
-template <bool, typename A, typename B>
-struct choose_type { using type = A; };
+template <u32 n, typename First, typename... Rest>
+struct choose_type { using type = choose_type<n-1, Rest...>::type; };
 
-template<typename A, typename B>
-struct choose_type<false, A, B> { using type = B; };
+template<typename First, typename... Rest>
+struct choose_type<0u, First, Rest...> { using type = First; };
 
-template <bool b, typename A, typename B>
-using choose_type_t = choose_type<b, A, B>::type;
+template <u32 n, typename First, typename... Rest>
+using choose_type_t = choose_type<n, First, Rest...>::type;
 
 template <typename Ext, typename Int = Ext>
 struct CodecIdentity {

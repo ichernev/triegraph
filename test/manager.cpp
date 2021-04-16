@@ -18,6 +18,7 @@ struct Cfg {
     static constexpr bool triedata_allow_inner = false;
     static constexpr bool triedata_advanced = true;
     static constexpr int LetterLocIdxShift = -1;
+    static constexpr u32 TDMapType = 0u;
     static constexpr u64 KmerLen = 0;
     static constexpr KmerHolder on_mask = KmerHolder(1) << 63;
 };

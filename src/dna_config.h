@@ -20,6 +20,7 @@ struct DnaConfig {
     using KmerHolder = u32;
     static constexpr bool triedata_allow_inner = false;
     static constexpr bool triedata_advanced = true;
+    static constexpr u32 TDMapType = 1u; /* use DMM */
     static constexpr int LetterLocIdxShift = 4;
     static constexpr u64 KmerLen = trie_depth;
     static constexpr KmerHolder on_mask = KmerHolder(1) << (

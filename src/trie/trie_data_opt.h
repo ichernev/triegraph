@@ -28,60 +28,6 @@ struct PairSwitchComp {
     }
 };
 
-// template <typename A_, typename B_>
-// struct PairFwd {
-//     using A = A_;
-//     using B = B_;
-//     using pair = std::pair<A, B>;
-//     struct comparator {
-//         bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
-//             return a.first == b.first ? a.second < b.second : a.first < b.first;
-//         }
-//     };
-//     static A getA(const std::pair<A, B> &a) { return a.first; }
-//     static B getB(const std::pair<A, B> &a) { return a.second; }
-// };
-
-// template <typename A_, typename B_>
-// struct PairRev {
-//     using A = A_;
-//     using B = B_;
-//     using pair = std::pair<A, B>;
-//     struct comparator {
-//         bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
-//             return a.second == b.second ? a.first < b.first : a.second < b.second;
-//         }
-//     };
-//     static B getA(const std::pair<A, B> &a) { return a.second; }
-//     static A getB(const std::pair<A, B> &a) { return a.first; }
-// };
-
-// template <typename Kmer, bool allow_inner = false>
-// struct CookKmer {
-//     typename Kmer::Holder operator() (const Kmer &k) const {
-//         return k.compress_leaf();
-//     }
-// };
-// template <typename Kmer>
-// struct CookKmer<Kmer, true> {
-//     typename Kmer::Holder operator() (const Kmer &k) const {
-//         return k.compress();
-//     }
-// };
-
-// Codec::ext_type
-// Codec::int_type
-// Codec::to_int(ext_type)
-// Codec::to_ext(int_type)
-// template <typename Ext, typename Int = Ext>
-// struct CodecIdentity {
-//     using ext_type = Ext;
-//     using int_type = Int;
-
-//     int_type to_int(const ext_type &ext) const { return ext; }
-//     ext_type to_ext(const int_type &in) const { return in; }
-// };
-
 template <typename Kmer, typename KmerComp = Kmer::Holder, bool allow_inner = false>
 struct CodecKmer {
     using ext_type = Kmer;
@@ -170,63 +116,21 @@ struct TieredBitset {
 
 };
 
-template <typename Kmer_, typename LetterLocData_>
-struct TrieDataBaseSMM {
+template <typename Kmer_,
+         typename LetterLocData_,
+         bool allow_inner,
+         typename T2GMap,
+         typename G2TMap>
+struct TrieDataOpt {
     using Kmer = Kmer_;
     using KHolder = Kmer::Holder;
     using LetterLocData = LetterLocData_;
     using LetterLoc = LetterLocData::LetterLoc;
-
-    SimpleMultimap<KHolder, LetterLoc> trie2graph;
-    SimpleMultimap<LetterLoc, KHolder> graph2trie;
-
-    TrieDataBaseSMM() {}
-
-    TrieDataBaseSMM(const TrieDataBaseSMM &) = delete;
-    TrieDataBaseSMM &operator= (const TrieDataBaseSMM &) = delete;
-    TrieDataBaseSMM(TrieDataBaseSMM &&) = default;
-    TrieDataBaseSMM &operator= (TrieDataBaseSMM &&) = default;
-};
-
-template <typename Kmer_, typename LetterLocData_,
-         typename NumKmers_ = LetterLocData_::LetterLoc>
-struct TrieDataBaseDMM {
-    using Kmer = Kmer_;
-    using KHolder = Kmer::Holder;
-    using LetterLocData = LetterLocData_;
-    using LetterLoc = LetterLocData::LetterLoc;
-    using NumKmers = NumKmers_;
-
-    DenseMultimap<KHolder, NumKmers, LetterLoc/*, SortedVector<NumKmers, u8> */> trie2graph;
-    DenseMultimap<LetterLoc, NumKmers, KHolder/*, SortedVector<NumKmers, u8> */> graph2trie;
-
-    TrieDataBaseDMM() {}
-
-    TrieDataBaseDMM(const TrieDataBaseDMM &) = delete;
-    TrieDataBaseDMM &operator= (const TrieDataBaseDMM &) = delete;
-    TrieDataBaseDMM(TrieDataBaseDMM &&) = default;
-    TrieDataBaseDMM &operator= (TrieDataBaseDMM &&) = default;
-};
-
-template <typename Kmer_, typename LetterLocData_,
-         typename NumKmers_ = LetterLocData_::LetterLoc,
-         bool allow_inner = false,
-         typename Base =
-            /*TrieDataBaseSMM<Kmer_, LetterLocData_>*/
-            TrieDataBaseDMM<Kmer_, LetterLocData_, NumKmers_>>
-struct TrieDataOpt final : public Base {
-    using Kmer = Kmer_;
-    using KHolder = Kmer::Holder;
-    using LetterLocData = LetterLocData_;
-    using LetterLoc = LetterLocData::LetterLoc;
-    using NumKmers = NumKmers_;
 
     using KmerCodec = CodecKmer<Kmer, typename Kmer::Holder, allow_inner>;
 
     TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
-        auto &trie2graph = this->trie2graph;
-        auto &graph2trie = this->graph2trie;
         auto &log = Logger::get();
 
         auto scope = log.begin_scoped("trie data");
@@ -258,8 +162,8 @@ struct TrieDataOpt final : public Base {
         log.end();
         log.begin("build inner");
         using key_iter_pair = iter_pair<
-            typename decltype(Base::trie2graph)::const_key_iterator,
-            typename decltype(Base::trie2graph)::const_key_iterator,
+            typename T2GMap::const_key_iterator,
+            typename T2GMap::const_key_iterator,
             KmerCodec>;
         active_trie = { key_iter_pair(trie2graph.keys()) };
     }
@@ -269,29 +173,29 @@ struct TrieDataOpt final : public Base {
     TrieDataOpt(TrieDataOpt &&) = default;
     TrieDataOpt &operator= (TrieDataOpt &&) = default;
 
-//     DenseMultimap<KHolder, NumKmers, LetterLoc/*, SortedVector<NumKmers, u8> */> trie2graph;
-//     DenseMultimap<LetterLoc, NumKmers, KHolder/*, SortedVector<NumKmers, u8> */> graph2trie;
+    T2GMap trie2graph;
+    G2TMap graph2trie;
     TieredBitset<Kmer, allow_inner> active_trie;
 
     using t2g_values_view = iter_pair<
-        typename decltype(Base::trie2graph)::const_value_iterator,
-        typename decltype(Base::trie2graph)::const_value_iterator>;
+        typename T2GMap::const_value_iterator,
+        typename T2GMap::const_value_iterator>;
     t2g_values_view t2g_values_for(Kmer kmer) const {
-        return this->trie2graph.values_for(KmerCodec::to_int(kmer));
+        return trie2graph.values_for(KmerCodec::to_int(kmer));
     }
     bool t2g_contains(Kmer kmer) const {
-        return this->trie2graph.contains(KmerCodec::to_int(kmer));
+        return trie2graph.contains(KmerCodec::to_int(kmer));
     }
 
     using g2t_values_view = iter_pair<
-        typename decltype(Base::graph2trie)::const_value_iterator,
-        typename decltype(Base::graph2trie)::const_value_iterator,
+        typename G2TMap::const_value_iterator,
+        typename G2TMap::const_value_iterator,
         KmerCodec>;
     g2t_values_view g2t_values_for(LetterLoc loc) const {
-        return this->graph2trie.values_for(loc);
+        return graph2trie.values_for(loc);
     }
     bool g2t_contains(LetterLoc loc) const {
-        return this->graph2trie.contains(loc);
+        return graph2trie.contains(loc);
     }
 
     bool trie_inner_contains(Kmer kmer) const {
@@ -315,13 +219,13 @@ struct TrieDataOpt final : public Base {
     }
 
     PowHistogram t2g_histogram() const {
-        return PowHistogram(this->trie2graph.keys() | std::ranges::views::transform([&](const auto &k) {
-                    return std::ranges::distance(this->trie2graph.values_for(k));
+        return PowHistogram(trie2graph.keys() | std::ranges::views::transform([&](const auto &k) {
+                    return std::ranges::distance(trie2graph.values_for(k));
                 }));
     }
     PowHistogram g2t_histogram() const {
-        return PowHistogram(this->graph2trie.keys() | std::ranges::views::transform([&](const auto &k) {
-                    return std::ranges::distance(this->graph2trie.values_for(k));
+        return PowHistogram(graph2trie.keys() | std::ranges::views::transform([&](const auto &k) {
+                    return std::ranges::distance(graph2trie.values_for(k));
                 }));
     }
 };

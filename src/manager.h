@@ -30,7 +30,7 @@ namespace triegraph {
 template<typename Cfg>
 struct Manager : Cfg {
     static constexpr bool kmer_fixed_k = Cfg::KmerLen != 0;
-    using Kmer = choose_type_t<
+    using Kmer = std::conditional_t<
         kmer_fixed_k,
         triegraph::Kmer<
             typename Cfg::Letter,
@@ -73,13 +73,29 @@ struct Manager : Cfg {
         Graph,
         NodePos>;
     static_assert(!Cfg::triedata_allow_inner || Cfg::triedata_advanced);
-    using TrieData = choose_type_t<
+    using T2GSMM = SimpleMultimap<
+        typename Cfg::KmerHolder,
+        typename Cfg::LetterLoc>;
+    using T2GDMM = DenseMultimap<
+        typename Cfg::KmerHolder,
+        typename Cfg::LetterLoc,
+        typename Cfg::LetterLoc>;
+    using G2TSMM = SimpleMultimap<
+        typename Cfg::LetterLoc,
+        typename Cfg::KmerHolder>;
+    using G2TDMM = DenseMultimap<
+        typename Cfg::LetterLoc,
+        typename Cfg::LetterLoc,
+        typename Cfg::KmerHolder>;
+    using T2GMap = choose_type_t<Cfg::TDMapType, T2GSMM, T2GDMM>;
+    using G2TMap = choose_type_t<Cfg::TDMapType, G2TSMM, G2TDMM>;
+    using TrieData = std::conditional_t<
         Cfg::triedata_advanced,
         triegraph::TrieDataOpt<
             Kmer,
             LetterLocData,
-            typename LetterLocData::LetterLoc,
-            Cfg::triedata_allow_inner>,
+            Cfg::triedata_allow_inner,
+            T2GMap, G2TMap>,
         triegraph::TrieData<
             Kmer,
             typename LetterLocData::LetterLoc>>;
@@ -268,7 +284,7 @@ struct Manager : Cfg {
     }
 
     struct FixedKKmer {}; struct DynamicKKmer {};
-    using KmerTag = choose_type_t<kmer_fixed_k, FixedKKmer, DynamicKKmer>;
+    using KmerTag = std::conditional_t<kmer_fixed_k, FixedKKmer, DynamicKKmer>;
 
     static void init(Settings s = {}) {
         init(s, KmerTag {});
