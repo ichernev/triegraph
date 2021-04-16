@@ -151,7 +151,7 @@ struct Logger {
         for (size_t i = 1; i < timers.size(); ++i) {
             print<NONE>(os, '|');
         }
-        print<NONE>(os, ":- "); _time_diff(timers.back().begin);
+        print<NONE>(os, ":- "); /* _time_diff(timers.back().begin); */
         print_ln(os, std::forward<Args>(args)...);
     }
 
