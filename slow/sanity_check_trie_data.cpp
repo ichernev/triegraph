@@ -3,6 +3,9 @@
 #include "dna_config.h"
 #include "manager.h"
 
+#include "util/hybrid_multimap.h"
+#include "util/simple_multimap.h"
+
 using namespace triegraph;
 using TG = Manager<dna::DnaConfig<0>>;
 
@@ -86,31 +89,67 @@ static void sanity_check(
 }
 
 
+template <typename TrieData>
+struct TestTrieData {
+    static void test_with_file(std::string gfa_file) {
+        auto graph = TG::Graph::from_file(gfa_file, {});
+        auto lloc = TG::LetterLocData(graph);
+        auto s = TG::Settings {
+            .trie_depth = log4_ceil(lloc.num_locations),
+            // .trie_depth = (td_abs == 0 ?
+            //     triegraph::log4_ceil(lloc.num_locations) + td_rel :
+            //     td_abs)
+        };
+        auto pairs = TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
+                graph, s, TG::Settings::NoSkip {});
+        TG::prep_pairs(pairs);
+        auto res = TrieData(pairs, lloc);
+        sanity_check(res, pairs, lloc);
+    }
 
-static void sanity_check_trie_data(std::string gfa_file) {
-    auto graph = TG::Graph::from_file(gfa_file, {});
-    auto lloc = TG::LetterLocData(graph);
-    auto s = TG::Settings {
-        .trie_depth = log4_ceil(lloc.num_locations),
-        // .trie_depth = (td_abs == 0 ?
-        //     triegraph::log4_ceil(lloc.num_locations) + td_rel :
-        //     td_abs)
-    };
-    auto pairs = TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
-            graph, s, TG::Settings::NoSkip {});
-    TG::prep_pairs(pairs);
-    auto res = TG::TrieData(pairs, lloc);
-    sanity_check(res, pairs, lloc);
-}
+    void define_tests() {
+        test::define_test("pasgal", [] {
+            test_with_file("data/pasgal-MHC1.gfa");
+        });
+        // test::define_test("hg 22 non-linear", [] {
+        //     test_with_file("data/hg_22_nn.gfa");
+        // });
+        // test::define_test("hg 22 linear", [] {
+        //     test_with_file("data/HG_22_linear.gfa");
+        // });
+    }
+};
+
+using TrieDataSMM = TrieDataOpt<
+    TG::Kmer,
+    TG::LetterLocData,
+    TG::triedata_allow_inner,
+    SimpleMultimap<
+        typename TG::KmerHolder,
+        typename TG::LetterLoc>,
+    SimpleMultimap<
+        typename TG::LetterLoc,
+        typename TG::KmerHolder>>;
+
+using HMMMap = std::unordered_map<u32, std::pair<u32, u32>>;
+using TrieDataHMM = TrieDataOpt<
+    TG::Kmer,
+    TG::LetterLocData,
+    TG::triedata_allow_inner,
+    HybridMultimap<
+        typename TG::KmerHolder,
+        typename TG::LetterLoc,
+        typename TG::LetterLoc,
+        HMMMap>,
+    HybridMultimap<
+        typename TG::LetterLoc,
+        typename TG::LetterLoc,
+        typename TG::KmerHolder,
+        HMMMap>>;
+
 
 int m = test::define_module(__FILE__, [] {
-test::define_test("pasgal", [] {
-    sanity_check_trie_data("data/pasgal-MHC1.gfa");
-});
-test::define_test("hg 22 non-linear", [] {
-    sanity_check_trie_data("data/hg_22_nn.gfa");
-});
-test::define_test("hg 22 linear", [] {
-    sanity_check_trie_data("data/HG_22_linear.gfa");
-});
+    test::register_test_class<TestTrieData<TG::TrieData>>("Default");
+    test::register_test_class<TestTrieData<TrieDataSMM>>("SMM");
+    test::register_test_class<TestTrieData<TrieDataHMM>>("HMM");
 });

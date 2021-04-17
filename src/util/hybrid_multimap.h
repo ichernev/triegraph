@@ -36,12 +36,12 @@ struct HybridMultimap {
 
         elems.push_back((*it_beg).second);
         for (++it_beg; it_beg != it_end; ++it_beg) {
-            if (it_beg->first != k) {
+            if ((*it_beg).first != k) {
                 map.emplace(k, std::make_pair(beg, ElemNum(elems.size())));
-                k = it_beg->first;
+                k = (*it_beg).first;
                 beg = elems.size();
             }
-            elems.push_back(it_beg->second);
+            elems.push_back((*it_beg).second);
         }
         map.emplace(k, std::make_pair(beg, ElemNum(elems.size())));
     }
@@ -66,14 +66,19 @@ struct HybridMultimap {
               it(it),
               crnt(it == p.map.end() ? p.elems.size() : it->second.first)
         {}
+        PairIter(const Parent &p, It it, ElemNum crnt)
+            : parent(&p),
+              it(it),
+              crnt(crnt)
+        {}
 
-        reference operator* () const { return {it->first, parent->elems[crnt] }; }
+        reference operator* () const { return {(*it).first, parent->elems[crnt] }; }
         Self &operator++ () {
-            if (++crnt == it->second.second) {
+            if (++crnt == (*it).second.second) {
                 if (++it == parent->map.end())
                     crnt = parent->elems.size();
                 else
-                    crnt = it->second.first;
+                    crnt = (*it).second.first;
             }
             return *this;
         }
@@ -117,6 +122,14 @@ struct HybridMultimap {
             return { elems.begin() + it->second.first, elems.begin() + it->second.second };
         return { elems.end(), elems.end() };
     }
+
+    std::pair<const_iterator, const_iterator> equal_range(const Key &key) const {
+        if (auto it = map.find(key); it != map.end())
+            return { { *this, it }, { *this, it, (*it).second.second } };
+        return { { *this, map.end(), ElemNum(elems.size()) }, { *this, map.end(), ElemNum(elems.size()) } };
+    }
+
+    bool contains(const Key &key) const { return map.contains(key); }
 };
 
 } /* namespace triegraph */

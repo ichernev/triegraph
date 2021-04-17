@@ -8,6 +8,7 @@
 #include "util/logger.h"
 
 std::string test_module_name;
+std::string prefix;
 std::vector<std::pair<std::string, std::function<void()>>> tests;
 
 namespace test {
@@ -35,7 +36,16 @@ namespace test {
     }
 
     static void define_test(const char *test, std::function<void()> &&fn) {
-        tests.emplace_back(test, std::move(fn));
+        tests.emplace_back(prefix + test, std::move(fn));
+    }
+
+    template <typename TestClass>
+    static void register_test_class(const char *prefix) {
+        // this pointer is leaked for now, it shouldn't hurt
+        TestClass *ptr = new TestClass();
+        ::prefix = std::string() + prefix + "::";
+        ptr->define_tests();
+        ::prefix = "";
     }
 }
 
