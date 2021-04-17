@@ -10,7 +10,6 @@ namespace triegraph {
 template <typename A, typename B, typename C,
          typename StartsContainer = std::vector<B>>
 struct DenseMultimap {
-    // TODO(opt): use sorted-vector+map, compact-vector
     // TODO(opt): compute sizes for sorted-vector from histograms
 
     DenseMultimap() {}
