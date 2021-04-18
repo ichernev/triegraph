@@ -24,6 +24,9 @@
 #include "trie/trie_data.h"
 #include "trie/trie_data_opt.h"
 #include "util/util.h"
+#include "util/simple_multimap.h"
+#include "util/hybrid_multimap.h"
+#include "util/dense_multimap.h"
 
 namespace triegraph {
 
@@ -215,6 +218,9 @@ struct Manager : Cfg {
                             std::move(graph), s, NoSkip {});
                 case Algo::POINT_BFS:
                     return triegraph_from_graph_impl<TrieGraphBuilderPBFS>(
+                            std::move(graph), s, NoSkip {});
+                case Algo::NODE_BFS:
+                    return triegraph_from_graph_impl<TrieGraphBuilderNBFS>(
                             std::move(graph), s, NoSkip {});
                 default:
                     throw 0;
