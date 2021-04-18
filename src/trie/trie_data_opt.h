@@ -218,16 +218,39 @@ struct TrieDataOpt {
         }
     }
 
-    PowHistogram t2g_histogram() const {
-        return PowHistogram(trie2graph.keys() | std::ranges::views::transform([&](const auto &k) {
-                    return std::ranges::distance(trie2graph.values_for(k));
-                }));
-    }
-    PowHistogram g2t_histogram() const {
-        return PowHistogram(graph2trie.keys() | std::ranges::views::transform([&](const auto &k) {
-                    return std::ranges::distance(graph2trie.values_for(k));
-                }));
-    }
+    struct Stats {
+        PowHistogram t2g_hist;
+        PowHistogram g2t_hist;
+        KHolder num_kmers;
+        LetterLoc num_locs;
+        KHolder num_pairs;
+
+        Stats(const TrieDataOpt &td)
+            : t2g_hist(td.trie2graph.keys() | std::ranges::views::transform(
+                        [&td](const auto &k) {
+                            return std::ranges::distance(td.trie2graph.values_for(k));
+                        })),
+              g2t_hist(td.graph2trie.keys() | std::ranges::views::transform(
+                        [&td](const auto &k) {
+                            return std::ranges::distance(td.graph2trie.values_for(k));
+                        })),
+              num_kmers(std::ranges::distance(td.trie2graph.keys())),
+              num_locs(std::ranges::distance(td.graph2trie.keys())),
+              num_pairs(td.trie2graph.size())
+        {}
+
+        friend std::ostream &operator<< (std::ostream &os, const Stats &s) {
+            return os
+                << "T2G Histogrm:\n" << s.t2g_hist
+                << "G2T Histogram:\n" << s.g2t_hist
+                << "num kmers: " << s.num_kmers << '\n'
+                << "num locs: " << s.num_locs << '\n'
+                << "ff: " << double(s.num_kmers) / s.num_locs << '\n'
+                << "pairs: " << s.num_pairs;
+        }
+    };
+
+    Stats stats() const { return Stats(*this); }
 };
 
 } /* namespace triegraph */

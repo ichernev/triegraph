@@ -37,23 +37,12 @@ typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &ll
     TG::prep_pairs(pairs);
     auto res = TG::TrieData(pairs, lloc);
 
-    // if (do_sanity_check) {
-    //     auto scope = Logger::get().begin_scoped("sanity check");
-    //     res.sanity_check(pairs, lloc);
-    // }
-
-    std::cerr << "T2G Histogrm:" << std::endl;
-    res.t2g_histogram().print(std::cerr);
-    std::cerr << "G2T Histogrm:" << std::endl;
-    res.g2t_histogram().print(std::cerr);
-    auto nkmers = std::ranges::distance(res.trie2graph.keys());
-    auto nlocs = std::ranges::distance(res.graph2trie.keys());
-    std::cerr << "num kmers: " << nkmers << std::endl;
-    std::cerr << "all kmers: " << TG::TrieData::total_kmers() << std::endl;
-    std::cerr << "num locs: " << nlocs << std::endl;
-    std::cerr << "all locs: " << lloc.num_locations << std::endl;
-    std::cerr << "ff: " << double(nkmers) / nlocs << std::endl;
-    std::cerr << "used kmers: " << double(nkmers) / TG::TrieData::total_kmers() << std::endl;
+    auto stats = res.stats();
+    std::cerr << stats << std::endl;
+    std::cerr << "all kmers: " << TG::TrieData::total_kmers()
+        << " used: " << double(stats.num_kmers) / TG::TrieData::total_kmers() << std::endl;
+    std::cerr << "all locs: " << lloc.num_locations
+        << " used: " << double(stats.num_locs) / lloc.num_locations << std::endl;
 
     return res;
 }

@@ -42,25 +42,26 @@ struct PowHistogram {
         cumul[b] += n;
     }
 
-    void print(std::ostream &os) const {
-        auto rit = std::ranges::find_if(bins.rbegin(), bins.rend(),
+    friend std::ostream &operator<< (std::ostream &os, const PowHistogram &ph) {
+        auto rit = std::ranges::find_if(ph.bins.rbegin(), ph.bins.rend(),
                 [](auto b) { return b != 0; });
-        auto it = bins.end() - (rit - bins.rbegin());
+        auto it = ph.bins.end() - (rit - ph.bins.rbegin());
 
-        u64 btotal = std::accumulate(bins.begin(), it, 0llu);
-        u64 ctotal = std::accumulate(cumul.begin(), cumul.end(), 0llu);
+        u64 btotal = std::accumulate(ph.bins.begin(), it, 0llu);
+        u64 ctotal = std::accumulate(ph.cumul.begin(), ph.cumul.end(), 0llu);
         int bi = 0;
         u64 b_psum = 0;
         u64 c_psum = 0;
-        for (const auto &b : std::ranges::subrange(bins.begin(), it)) {
+        for (const auto &b : std::ranges::subrange(ph.bins.begin(), it)) {
             b_psum += b;
-            c_psum += cumul[bi];
+            c_psum += ph.cumul[bi];
             os << bi << " - "
                 << b << " (" << double(b_psum)/btotal << ") "
-                << cumul[bi] << " [" << double(c_psum)/ctotal << "]"
+                << ph.cumul[bi] << " [" << double(c_psum)/ctotal << "]"
                 << std::endl;
             ++bi;
         }
+        return os;
     }
 
 private:

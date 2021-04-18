@@ -123,21 +123,7 @@ int main(int argc, char *argv[]) {
     auto td = TG::TrieData(std::move(p1), lloc);
     Logger::get().end();
 
-    std::cerr << "T2G Histogrm:" << std::endl;
-    td.t2g_histogram().print(std::cerr);
-    std::cerr << "G2T Histogrm:" << std::endl;
-    td.g2t_histogram().print(std::cerr);
-    auto nkmers = std::ranges::distance(td.trie2graph.keys());
-    auto nlocs = std::ranges::distance(td.graph2trie.keys());
-    std::cerr << "num kmers: " << nkmers << std::endl;
-    std::cerr << "all kmers: " << TG::TrieData::total_kmers() << std::endl;
-    std::cerr << "num locs: " << nlocs << std::endl;
-    std::cerr << "all locs: " << lloc.num_locations << std::endl;
-    std::cerr << "ff: " << double(nkmers) / nlocs << std::endl;
-    std::cerr << "used kmers: " << double(nkmers) / TG::TrieData::total_kmers() << std::endl;
-
-    std::cerr << "t2g elem size: " << td.trie2graph.size() << std::endl;
-    std::cerr << "g2t elem size: " << td.graph2trie.size() << std::endl;
+    std::cerr << td.stats() << std::endl;
 
     return 0;
 }
