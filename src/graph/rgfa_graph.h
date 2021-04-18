@@ -354,14 +354,24 @@ struct RgfaGraph {
     };
 
     static RgfaGraph from_file(const std::string &file, Settings settings = {}) {
-        auto &log = Logger::get();
-        auto ts = log.begin_scoped("reading graph");
+        auto ts = Logger::get().begin_scoped("reading graph");
         std::ifstream io = std::ifstream(file);
 
         Builder builder(settings);
 
+        auto lfile = to_lower(file);
+        if (lfile.ends_with(".gfa") || lfile.ends_with(".rgfa")) {
+            from_gfa(io, builder);
+        } else if (lfile.ends_with(".fa") || lfile.ends_with(".fasta")) {
+            from_fasta(io, builder);
+        }
+
+        return builder.build();
+    }
+
+    static void from_gfa(std::istream &io, Builder &builder) {
         std::string line;
-        log.begin("reading nodes");
+        // log.begin("reading nodes");
         bool reading_nodes = true;
         while (std::getline(io, line)) {
             char head;
@@ -379,7 +389,7 @@ struct RgfaGraph {
                 }
                 case 'L': {
                     if (reading_nodes) {
-                        log.end(); log.begin("reading edges");
+                        // log.end(); log.begin("reading edges");
                         reading_nodes = false;
                     }
                     std::string seg_a, seg_b, cigar;
@@ -398,9 +408,45 @@ struct RgfaGraph {
             }
         }
 
-        log.end(); log.begin("building");
-        auto res = builder.build();
-        return res;
+        // log.end(); log.begin("building");
+        // auto res = builder.build();
+        // return res;
+    }
+
+    static void from_fasta(std::istream &io, Builder &builder) {
+        std::string line;
+        std::string seg_id;
+        std::string plain_seg;
+        auto finish_segment = [&builder, &seg_id, &plain_seg]() mutable {
+            if (!seg_id.empty() && !plain_seg.empty()) {
+                try {
+                    Str seg;
+                    std::istringstream(plain_seg) >> seg;
+                    builder.add_node(std::move(seg), std::move(seg_id));
+                } catch (const char *err) {
+                    std::cerr << "ERROR: " << err << std::endl;
+                    throw;
+                }
+            }
+            plain_seg.clear();
+        };
+
+        while (std::getline(io, line)) {
+            if (line[0] == '>') {
+                finish_segment();
+                seg_id = line.substr(1);
+            } else if (line[0] == ';') {
+                continue;
+            } else {
+                // used to strip whitespace at the end
+                // NOTE: if there are whitespace in the middle it will fuck it
+                // up
+                std::string piece;
+                std::istringstream(line) >> piece;
+                plain_seg += piece;
+            }
+        }
+        finish_segment();
     }
 
     friend std::ostream &operator<< (std::ostream &os, const RgfaGraph &graph) {

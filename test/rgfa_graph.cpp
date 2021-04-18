@@ -86,30 +86,30 @@ test::define_test("small", [] {
     }
 });
 
-test::define_test("pasgal_mhc1", [] {
-    auto graph = RgfaGraph<DnaStr, u32>::from_file("data/pasgal-MHC1.gfa", {
-            .add_reverse_complement = true,
-            .add_extends = true,
-    });
-    using Graph = RgfaGraph<DnaStr, u32>;
-    using NodeLoc = Graph::NodeLoc;
-    using EdgeLoc = Graph::EdgeLoc;
-    constexpr EdgeLoc INV_SIZE = Graph::INV_SIZE;
+// test::define_test("pasgal_mhc1", [] {
+//     auto graph = RgfaGraph<DnaStr, u32>::from_file("data/pasgal-MHC1.gfa", {
+//             .add_reverse_complement = true,
+//             .add_extends = true,
+//     });
+//     using Graph = RgfaGraph<DnaStr, u32>;
+//     using NodeLoc = Graph::NodeLoc;
+//     using EdgeLoc = Graph::EdgeLoc;
+//     constexpr EdgeLoc INV_SIZE = Graph::INV_SIZE;
 
-    assert(graph.data.nodes.size() == graph.data.edge_start.size());
-    assert(graph.data.nodes.size() == graph.data.redge_start.size());
-    for (NodeLoc i = 0; i < graph.data.nodes.size(); ++i) {
-        assert(graph.data.edge_start[i] == INV_SIZE ||
-                graph.data.edge_start[i] < graph.data.edges.size());
-        assert(graph.data.redge_start[i] == INV_SIZE ||
-                graph.data.redge_start[i] < graph.data.edges.size());
-    }
-    for (EdgeLoc i = 0; i < graph.data.edges.size(); ++i) {
-        assert(graph.data.edges[i].to < graph.data.nodes.size());
-        assert(graph.data.edges[i].next == INV_SIZE ||
-                graph.data.edges[i].next < graph.data.edges.size());
-    }
-});
+//     assert(graph.data.nodes.size() == graph.data.edge_start.size());
+//     assert(graph.data.nodes.size() == graph.data.redge_start.size());
+//     for (NodeLoc i = 0; i < graph.data.nodes.size(); ++i) {
+//         assert(graph.data.edge_start[i] == INV_SIZE ||
+//                 graph.data.edge_start[i] < graph.data.edges.size());
+//         assert(graph.data.redge_start[i] == INV_SIZE ||
+//                 graph.data.redge_start[i] < graph.data.edges.size());
+//     }
+//     for (EdgeLoc i = 0; i < graph.data.edges.size(); ++i) {
+//         assert(graph.data.edges[i].to < graph.data.nodes.size());
+//         assert(graph.data.edges[i].next == INV_SIZE ||
+//                 graph.data.edges[i].next < graph.data.edges.size());
+//     }
+// });
 
 // using TG = triegraph::Manager<triegraph::dna::DnaConfig<14>>;
 
@@ -189,6 +189,35 @@ test::define_test("extends", [] {
     assert(graph.node(3).seg_id == "extend:" + graph.node(1).seg_id);
     assert(std::ranges::distance(graph.forward_from(4)) == 0);
     assert(graph.node(4).seg_id == "extend:" + graph.node(2).seg_id);
+});
+
+test::define_test("fasta single", [] {
+    auto graph = RgfaGraph<DnaStr, u32>::from_file("data/simple.fasta", {
+            .add_reverse_complement = false,
+            .add_extends = false });
+
+    // std::cerr << graph;
+    assert(graph.num_nodes() == 1);
+    assert(graph.node(0).seg_id == "Simple header line");
+    assert(graph.node(0).seg == DnaStr("acgt"));
+});
+
+
+test::define_test("fasta multi", [] {
+    auto graph = RgfaGraph<DnaStr, u32>::from_file("data/multi.fasta", {
+            .add_reverse_complement = false,
+            .add_extends = false });
+
+    // std::cerr << graph;
+    assert(graph.num_nodes() == 3);
+    assert(graph.node(0).seg_id == "Simple header line1");
+    assert(graph.node(0).seg == DnaStr("acgt"));
+
+    assert(graph.node(1).seg_id == "Simple header line2");
+    assert(graph.node(1).seg == DnaStr("tgca"));
+
+    assert(graph.node(2).seg_id == "Simple header line3");
+    assert(graph.node(2).seg == DnaStr("aaaa"));
 });
 
 });

@@ -122,6 +122,10 @@ struct Str {
 
         const_iterator begin() const { return const_iterator(base->data, offset); }
         const_iterator end() const { return const_iterator(base->data, offset + length); }
+
+        bool operator== (const View &other) const {
+            return other.size() == size() && fast_match(other) == size();
+        }
     };
 
     Str() { this->data = nullptr; }
@@ -220,6 +224,8 @@ struct Str {
 
     const_iterator begin() const { return const_iterator(data, 0); }
     const_iterator end() const { return const_iterator(data, length); }
+
+    bool operator== (const Str &other) const { return View(*this) == View(other); }
 };
 
 } /* namespace triegraph */

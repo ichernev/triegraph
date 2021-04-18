@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
     assert(cmdline.positional.size() == 3);
     auto cmd = cmdline.positional[0];
-    auto gfa_file = cmdline.positional[1];
+    auto graph_file = cmdline.positional[1];
     auto algo = cmdline.positional[2];
     auto td_rel = cmdline.get_or<triegraph::i32>("trie-depth-rel", 0);
     auto td_abs = cmdline.get_or<triegraph::u32>("trie-depth", 0);
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
             auto algo_v = TG::algo_from_name(algo);
             assert(algo_v != TG::Algo::UNKNOWN);
 
-            auto graph = TG::Graph::from_file(gfa_file, {});
+            auto graph = TG::Graph::from_file(graph_file, {});
             auto lloc = TG::LetterLocData(graph);
             TG::Settings s {
                 .trie_depth = (td_abs == 0 ?
