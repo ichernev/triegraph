@@ -152,7 +152,7 @@ pick a random node that has been touched, but still has inbound degree > 0,
 assign tag = N-1, and traverse it.
 
 (Extra) Complexity estimator
----------------------------------
+----------------------------
 
 The amount of kmers at the start of every node can be estimated (upper bound)
 with a simple algorithm, roughtly following Node BFS, but without the actual
@@ -176,6 +176,25 @@ After the numbers are computed, we can try to isolate complexity components
 that have high numbers, and run a shorter-kmer-aware algorithm on those.
 A complexity component is a connected component ending with nodes with L >= K.
 
+### Complexity Components and Walker
+
+When a high-complexity node is found (via complexity estimator), usually
+isolating just this node is not enough due to the fact that the complexity
+actually starts before this node. ComplexityComponent stores a subgraph where
+all nodes are short (less than K), and lets you extract the component with
+ComplexityComponent::Builder (starting from a given node).
+ComplexityComponentWalker is a higher level interface that builds the necessary
+ComplexityComponents by a bunch of starting (complex) positions, and then
+provides 2 iterators for traversing both the "complex" and the "non-complex"
+positions.
+
+At the moment just graph-location iterators are provided, so Back Track and
+Point BFS can be used.
+
+TODO Veriant/Optimization:
+- Support subgraph for non-complex positions so BFS and Node BFS could be used
+  (much faster).
+
 Holding the TrieData
 ====================
 
@@ -183,15 +202,29 @@ TrieData holds the information produced by the TrieGraphBuilder. In theory it
 is a list of pairs of kmer and a graph location. In practise there should be
 fast access by kmer and graph location.
 
-Hash Table implementation
--------------------------
+A straight forward solution is to keep 2 maps, one from kmer to graph location
+and one from graph location to kmer. These should be multimaps (multiple values
+for the same key). There are 3 interchangeable multimap implementations:
 
-The simplest solution is to use a hash table (`unordered_multimap` in C++) to
-keep a mapping from kmer to graph locations and a mapping from graph locations
-to kmers.
+SimpleMultimap
+--------------
 
-Dense Hash Table
-----------------
+This is just a wrapper around `unordered_multimap` (anything satisfying the
+multimap interface will do). The reason a regular multimap doesn't work is the
+addition of `key_itrator` and `value_iterator` which in most cases yiled better
+performance than using a normal `pair_iterator`.
+
+HybridMultimap
+--------------
+
+Some 3rd party libraries offer more (space) efficient hashmap implementations
+but rarely offer multimap interface (just a map). To handle those
+HybridMultimap uses a map and a vector, where the map maps to a range in the
+vector, and thus supports multiple values per key. This is much more space
+efficient than mapping to a vector, so was chosen instead.
+
+DenseMultimap
+-------------
 
 For best theoretical performance the trie depth should be chosen such as, on
 average every kmer of full length points to one graph location and every graph
@@ -202,18 +235,40 @@ two full hash tables (every possible key has a value).
 To (ab)use this fact, there is no need to keep the keys, instead keys can be
 indices in an array of values. To handle cases where some keys have in fact
 multiple values assigned (unavoidable in practise), the values are stored in an
-array (values[]), and there is an additional array (start[]), indexed by key,
+array `values[]`, and there is an additional array `start[]`, indexed by key,
 which points to the index in the value array where the values for that key
 start. So the values for key k are `[values[start[k]], ...,
 values[start[k+1]-1]]` (it might be empty list if start[k] == start[k+1]).
 
-So each of the two hash tables is represented by two arrays. One of length
-max-key, and the other of length num-pairs.
+So the multimap is represented by two arrays. One of length max-key, and the
+other of length num-pairs.
 
 TODO Optimizations:
-- implement custom sorted-vector, that does not store full-size elements for
-  each index, but instead stores full value for 1/N of the elements (beacons),
-  and cummulative difference from the beacon for the rest
 - implement bit-compact vector, that stores N-bit integers so no space is
   wasted (so 34bit integer will take 34bits, i.e a million integers will take
   4.25G instead of 8G if stored as 64bits).
+
+Done Optimizations:
+- SortedVector for `start[]` array
+
+(Extra) SortedVector
+--------------------
+
+The `start` vector is sorted, and we can (ab)use this fact to reduce the memory
+requirements, by noting that every element is normally just slightly bigger (or
+the same) than the previous element.
+
+Storing every N-th element in a full sized integer (called beacons), and all
+intermediary diffs in a smaller integer (like char or short), will dramatically
+reduce memory footprint. In case the diff doesn't fit in the short integer,
+a special sentinel value is used and the actual value is stored in a regular
+map.
+
+SortedVector could be used as replacement of the regular vector `start` in
+DenseMultimap.
+
+TODO Variants/Optimizations:
+- currently the diff is element wise, but it could be switched to beacon-wise
+  (full-sized element to current element). The drawback is that the overflow
+  map will be consulted more often, but the lookup will take just 2 operations
+  (instead of N in the worst case, where N is the distance between beacons).
