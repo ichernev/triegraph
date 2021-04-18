@@ -2,6 +2,40 @@
 # add check if todo_idx overflows
 # figure out edge iterators
 
+Tasks
+=====
+
+- slow tests for (triegraph) multimap
+- put TrieGraphData stats (from main.cpp, cc_dual.cpp) in TrieGraphData class
+- use doxygen throughout
+- improve building
+    - support start from filename, graph, and finish at pairs/td/tgd
+    - start from all locations
+    - start from location iter
+    - support various configuration options for each component
+    - support reading config from Config-like object (CmdLine)
+- improve SortedVector speed with TrieData builder
+- run on bigger (600M+ locations) graphs
+- implement save/load for TrieData
+- implement 0-overhead pairs->TrieData
+    - using file system
+    - using complex algo (split pairs in 2 vecs):
+      - sort pairs by lloc                      [nlogn]
+      - allocate lloc_begs, fill from lloc
+      - free lloc
+      - allocate kmer_idx, sort by kmer         [nlogn]
+      - allocate kmer_begs, fill from kmer_idx
+      - migrate kmer_idx -> lloc (one by one)   [nlogn]
+- implement bit-compact vector
+    - figure out interface to make it compatible with all existing code
+    - use for pairs, TrieData
+- cleanup tests
+    - test only component under test
+    - move more complicated tests to slow/
+    - impl test script
+    - add timing to slow tests
+    - enable level cutoff in Logger, use in slow/
+
 https://github.com/maickrau/GraphAligner/blob/master/src/GfaGraph.cpp
 https://github.com/maickrau/GraphAligner/blob/master/src/GraphAlignerGAFAlignment.h
 
