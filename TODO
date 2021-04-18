@@ -5,8 +5,8 @@
 Tasks
 =====
 
-- slow tests for (triegraph) multimap
-- put TrieGraphData stats (from main.cpp, cc_dual.cpp) in TrieGraphData class
++ slow tests for (triedata) multimap
++ put TrieGraphData stats (from main.cpp, cc_dual.cpp) in TrieGraphData class
 - use doxygen throughout
 - improve building
     - support start from filename, graph, and finish at pairs/td/tgd
@@ -19,13 +19,17 @@ Tasks
 - implement save/load for TrieData
 - implement 0-overhead pairs->TrieData
     - using file system
+        - pairs class
+        - writing to disk
+        - streaming from disk (iter), configurable buffer
+        - sorting on disk, configurable buffer
     - using complex algo (split pairs in 2 vecs):
-      - sort pairs by lloc                      [nlogn]
-      - allocate lloc_begs, fill from lloc
-      - free lloc
-      - allocate kmer_idx, sort by kmer         [nlogn]
-      - allocate kmer_begs, fill from kmer_idx
-      - migrate kmer_idx -> lloc (one by one)   [nlogn]
+        - sort pairs by lloc                      [nlogn]
+        - allocate lloc_begs, fill from lloc
+        - free lloc
+        - allocate kmer_idx, sort by kmer         [nlogn]
+        - allocate kmer_begs, fill from kmer_idx
+        - migrate kmer_idx -> lloc (one by one)   [nlogn]
 - implement bit-compact vector
     - figure out interface to make it compatible with all existing code
     - use for pairs, TrieData
