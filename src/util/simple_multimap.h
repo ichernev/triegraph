@@ -47,19 +47,28 @@ struct SimpleMultimap {
         using reference = value_type;
         using Self = KeyIter;
 
-        KeyIter(const_iterator it = {}) : it(it) {}
+        KeyIter(const_iterator it = {}, const_iterator end = {})
+            : it(it),
+              end(end)
+        {}
 
         reference operator* () const { return (*it).first; }
-        Self &operator++ () { ++it; return *this; }
+        Self &operator++ () {
+            K crnt = (*it).first;
+            while (++it != end && (*it).first == crnt)
+                ;
+            return *this;
+        }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
         bool operator== (const Self &other) const { return it == other.it; }
 
         const_iterator it;
+        const_iterator end;
     };
 
     using const_key_iterator = KeyIter;
     iter_pair<const_key_iterator, const_key_iterator> keys() const {
-        return { const_key_iterator(map.begin()), const_key_iterator(map.end()) };
+        return { const_key_iterator(map.begin(), map.end()), const_key_iterator(map.end()) };
     }
 
     struct ValIter {
