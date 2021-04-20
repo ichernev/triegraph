@@ -1,42 +1,80 @@
-SRCS := $(wildcard src/*.cpp)
-OBJS := $(patsubst %.cpp,%.o,$(SRCS))
-TARGETS  := $(patsubst %.cpp,%,$(SRCS))
-TESTS := $(patsubst %.cpp,%,$(wildcard test/*.cpp))
-SLOWS := $(patsubst %.cpp,%,$(wildcard slow/*.cpp))
-BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
-DEPS := $(OBJS:%.o=%.d) $(TESTS:%=%.d) $(SLOWS:%=%.d)
+OUTPUT := output
+
+SRCS := $(shell find src -name '*.cpp')
+# OBJS := $(patsubst %.cpp,%.o,$(SRCS))
+TARGETS  := $(patsubst %.cpp,$(OUTPUT)/%,$(SRCS))
+TEST_SRCS := $(shell find test -name '*.cpp')
+TEST_TARGETS = $(patsubst %.cpp,$(OUTPUT)/%,$(TEST_SRCS))
+# SLOWS := $(patsubst %.cpp,%,$(wildcard slow/*.cpp))
+# BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
+DEPS := $(SRCS:%.cpp=$(OUTPUT)/%.d) $(TEST_SRCS:%.cpp=$(OUTPUT)/%.d)
 
 SHORT := -Wfatal-errors
-CPPFLAGS = -MMD $(SHORT) -std=c++20 -Isrc -Itest -Wall -O2
+CPPFLAGS := -MMD $(SHORT) -std=c++20 -Isrc -Wall -O2
+CPPFLAGS_TEST := $(CPPFLAGS) -Itest
+
+TCOLORS := awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /TEST MODULE/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
+
 
 .PHONY: all
-all: $(TARGETS)
+main: $(TARGETS)
 
 .PHONY: tests
-tests: $(TESTS)
+tests: $(TEST_TARGETS)
 
-.PHONY: slow
-slow: $(SLOWS)
-
-.PHONY: benchmarks
-benchmarks: $(BENCHES)
 
 .PHONY: test
-test: $(TESTS)
-	for t in $(TESTS); do echo ======= $$t =======; ./$$t; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
+test:
+	@if [ -n "$(ONLY)" ]; then \
+		make --no-print-directory build run ONLY="$(ONLY)" PREFIX=test; \
+	else \
+		make --no-print-directory tests run-tests; \
+	fi
 
-.PHONY: benchmark
-benchmark: $(BENCHES)
-	for b in $(BENCHES); do echo ======= $$b =======; ./$$b; done 2>&1 | awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /=======/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
+.PHONY: run-tests
+run-tests: $(TEST_TARGETS)
+	for t in $^; do ./$$t; done 2>&1 | $(TCOLORS)
 
-%: %.o
-	g++ $(CPPFLAGS) $< -o $@
+# build a bunch of targets specified by ONLY parameter
+.PHONY: build
+build:
+	for pcs in $(ONLY); do \
+		xpcs=$${pcs%.cpp}; \
+		xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
+		if [ -d "$$xpcs" ]; then \
+			find $$xpcs/ -name '*.cpp' | while read t; do \
+				make ./$(OUTPUT)/$${t%.cpp}; \
+			done; \
+		else \
+			make ./$(OUTPUT)/$$xpcs; \
+		fi; \
+	done
 
-%: %.cpp
+# run a bunch of targets specified by ONLY parameter
+.PHONY: run
+run:
+	for pcs in $(ONLY); do \
+		xpcs=$${pcs%.cpp}; \
+		xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
+		if [ -d "$$xpcs" ]; then \
+			find $$xpcs/ -name '*.cpp' | while read t; do \
+				./$(OUTPUT)/$${t%.cpp} 2>&1 | $(TCOLORS); \
+			done; \
+		else \
+			./$(OUTPUT)/$$xpcs 2>&1 | $(TCOLORS); \
+		fi; \
+	done
+
+$(OUTPUT)/test/%: test/%.cpp
+	@mkdir -p $(OUTPUT)/$(shell dirname $<)
+	g++ $(CPPFLAGS_TEST) $< -o $@
+
+$(OUTPUT)/%: %.cpp
+	@mkdir -p $(OUTPUT)/$(shell dirname $<)
 	g++ $(CPPFLAGS) $< -o $@
 
 .PHONY: clean
 clean:
-	rm -rf main $(OBJS) $(DEPS) $(TARGETS) $(TESTS)
+	rm -rf main $(DEPS) $(TARGETS) $(TEST_TARGETS)
 
 -include $(DEPS)
