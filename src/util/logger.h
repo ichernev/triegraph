@@ -2,6 +2,9 @@
 #define __LOGGER_H__
 
 #include "util/util.h"
+#include "util/memory.h"
+#include "util/timer.h"
+#include "util/human.h"
 
 #include <iostream>
 #include <fstream>
@@ -13,7 +16,6 @@
 #include <iomanip>
 #include <ctime>
 #include <cstdlib> /* atexit */
-#include <unistd.h> /* getpid */
 
 namespace triegraph {
 
@@ -24,76 +26,16 @@ namespace triegraph {
 //     os << std::endl;
 // }
 
-struct MemRes {
-    i64 vmpeak;
-    i64 vmsize;
-    i64 vmrss;
-    i64 vmswap;
-
-    MemRes() {}
-    MemRes(const MemRes &) = default;
-    MemRes(MemRes &&) = default;
-    MemRes &operator= (const MemRes &) = default;
-    MemRes &operator= (MemRes &&) = default;
-
-    MemRes &operator-= (const MemRes &other) {
-        vmpeak -= other.vmpeak;
-        vmsize -= other.vmsize;
-        vmrss -= other.vmrss;
-        vmswap -= other.vmswap;
-        return *this;
-    }
-
-    MemRes operator- (const MemRes &other) const {
-        MemRes tmp = *this;
-        return tmp -= other;
-    }
-
-    static MemRes current() {
-        std::ostringstream fn;
-        fn << "/proc/" << getpid() << "/status";
-        std::ifstream ifs { fn.str() };
-
-        MemRes res;
-        std::string line;
-        while (std::getline(ifs, line)) {
-            std::istringstream lines(line);
-            std::string label;
-            lines >> label;
-            if (label == "VmPeak:") { lines >> res.vmpeak; }
-            if (label == "VmSize:") { lines >> res.vmsize; }
-            if (label == "VmRSS:") { lines >> res.vmrss; }
-            if (label == "VmSwap:") { lines >> res.vmswap; }
-        }
-        return res;
-    }
-
-    static std::string human_mem(i64 kb, bool add_sign = true) {
-        auto suffix = std::vector { "kb", "mb", "gb" };
-
-        char sign = kb >= 0 ? '+' : '-';
-        u32 sid = 0;
-        u64 amt = std::abs(kb); u32 rem = 0;
-        while (sid + 1 < suffix.size() && amt >= 1000) {
-            rem = amt % 1000;
-            amt /= 1000;
-            sid += 1;
-        }
-
-        std::ostringstream res;
-        if (add_sign) res << sign;
-        if (amt < 10) {
-            res << amt << "." << (rem / 100) << (rem / 10) % 10 << suffix[sid];
-        } else if (amt < 100) {
-            res << amt << "." << (rem / 100) << suffix[sid];
-        } else {
-            res << amt << suffix[sid];
-        }
-        return res.str();
-    }
-};
-
 struct Logger {
+    using Timer = triegraph::Timer<>;
+    using tag_t = std::string;
+
+    struct Resources {
+        using duration_t = std::chrono::milliseconds::rep;
+
+        typename Timer::duration_rep time_ms;
+        Memory mem;
+    };
 
     enum separator { NONE, SPACE, NEWLINE };
     static inline Logger *instance = nullptr;
@@ -112,15 +54,14 @@ struct Logger {
     static void enable() { enabled = true; }
     static void disable() { enabled = false; }
 
-    using clock = std::chrono::steady_clock;
-    using instant = clock::time_point;
-    using tag_t = std::string;
+    // using clock = std::chrono::steady_clock;
+    // using instant = clock::time_point;
     // using timer = std::tuple<instant, tag_t, bool>;
-    struct Timer {
-        instant begin;
+    struct Snapshot {
+        Timer begin;
         tag_t tag;
         bool expanded;
-        MemRes mem;
+        Memory mem;
     };
 
     Logger() : os(std::cerr) {
@@ -164,7 +105,7 @@ struct Logger {
         for (size_t i = 0; i < timers.size(); ++i) {
             print<NONE>(os, '|');
         }
-        timers.emplace_back(clock::now(), tag, false, MemRes::current());
+        timers.emplace_back(Timer::now(), tag, false, Memory::current());
         print<NONE>(os, ",- ", tag);
 
         return *this;
@@ -185,13 +126,16 @@ struct Logger {
         return ScopedTimer(*this, tag);
     }
 
-    Logger &end() {
+    Logger &end() { Resources res; return end(res); }
+
+    Logger &end(Resources &res) {
         auto elem = timers.back(); timers.pop_back();
         if (!elem.expanded) {
             print(os, '[');
-            _time_diff(elem.begin);
+            res.time_ms = elem.begin.elapsed();
+            print<NONE>(os, to_human_time(res.time_ms));
             print<NONE>(os, "] ");
-            _mem_diff(elem.mem);
+            res.mem = _mem_diff(elem.mem);
             print_ln<NONE>(os);
         } else {
             _ts();
@@ -199,9 +143,10 @@ struct Logger {
                 print<NONE>(os, '|');
             }
             print<NONE>(os, "`- ", elem.tag, " finished [");
-            _time_diff(elem.begin);
+            res.time_ms = elem.begin.elapsed();
+            print<NONE>(os, to_human_time(res.time_ms));
             print<NONE>(os, "] ");
-            _mem_diff(elem.mem);
+            res.mem = _mem_diff(elem.mem);
             print_ln<NONE>(os);
         }
         return *this;
@@ -227,26 +172,26 @@ private:
         if (enabled) os << std::endl;
     }
 
-    void _time_diff(instant a) {
-        _time_diff(a, clock::now());
-    }
+    // typename Timer::duration_rep _time_diff(Timer a) {
+    //     return _time_diff(a, Timer::now());
+    // }
 
-    void _time_diff(instant a, instant b) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                b - a).count();
-        if (ms < 1000) {
-            print<NONE>(os, ms, "ms");
-        } else {
-            auto s = ms / 1000;
-            if (s < 10) {
-                print<NONE>(os, s, '.', ms / 100, ms / 10 % 10, "s");
-            } else if (s < 100) {
-                print<NONE>(os, s, '.', ms / 100, "s");
-            } else {
-                print<NONE>(os, s, "s");
-            }
-        }
-    }
+    // typename Timer::duration_rep _time_diff(Timer a, Timer b) {
+    //     auto ms = b - a;
+    //     if (ms < 1000) {
+    //         print<NONE>(os, ms, "ms");
+    //     } else {
+    //         auto s = ms / 1000;
+    //         if (s < 10) {
+    //             print<NONE>(os, s, '.', ms / 100, ms / 10 % 10, "s");
+    //         } else if (s < 100) {
+    //             print<NONE>(os, s, '.', ms / 100, "s");
+    //         } else {
+    //             print<NONE>(os, s, "s");
+    //         }
+    //     }
+    //     return ms;
+    // }
 
     void _ts()
     {
@@ -256,26 +201,26 @@ private:
         localtime_r(&in_time_t, &tmx);
         print<NONE>(os, std::put_time(&tmx, "%Y-%m-%d %X"));
 
-
         if (timers.size() == 0) {
             print<NONE>(os, ".000");
         } else {
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    clock::now() - timers[0].begin).count();
+            auto ms = timers[0].begin.elapsed();
             ms %= 1000;
             print<NONE>(os, '.', ms / 100, (ms / 10) % 10, ms % 10);
         }
     }
 
-    void _mem_diff(MemRes old) {
-        MemRes nu = MemRes::current();
+    Memory _mem_diff(Memory old) {
+        auto nu = Memory::current();
+        auto res = nu - old;
         print<SPACE>(os,
-                MemRes::human_mem((nu - old).vmsize),
-                "total", MemRes::human_mem(nu.vmsize, false));
+                to_human_mem(res.vmpeak),
+                "total", to_human_mem(nu.vmpeak, false));
+        return res;
     }
 
     std::ostream &os;
-    std::vector<Timer> timers;
+    std::vector<Snapshot> timers;
 };
 
 } /* namespace triegraph */
