@@ -21,7 +21,6 @@
 #include "triegraph/triegraph_handle_iter.h"
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
-#include "trie/trie_data.h"
 #include "trie/trie_data_opt.h"
 #include "util/util.h"
 #include "util/simple_multimap.h"
@@ -75,7 +74,6 @@ struct Manager : Cfg {
     using SparseStarts = triegraph::SparseStarts<
         Graph,
         NodePos>;
-    static_assert(!Cfg::triedata_allow_inner || Cfg::triedata_advanced);
     using T2GSMM = SimpleMultimap<
         typename Cfg::KmerHolder,
         typename Cfg::LetterLoc>;
@@ -92,16 +90,11 @@ struct Manager : Cfg {
         typename Cfg::KmerHolder>;
     using T2GMap = choose_type_t<Cfg::TDMapType, T2GSMM, T2GDMM>;
     using G2TMap = choose_type_t<Cfg::TDMapType, G2TSMM, G2TDMM>;
-    using TrieData = std::conditional_t<
-        Cfg::triedata_advanced,
-        triegraph::TrieDataOpt<
-            Kmer,
-            LetterLocData,
-            Cfg::triedata_allow_inner,
-            T2GMap, G2TMap>,
-        triegraph::TrieData<
-            Kmer,
-            typename LetterLocData::LetterLoc>>;
+    using TrieData = triegraph::TrieData<
+        Kmer,
+        LetterLocData,
+        Cfg::triedata_allow_inner,
+        T2GMap, G2TMap>;
     using TrieGraphData = triegraph::TrieGraphData<
         Graph,
         LetterLocData,

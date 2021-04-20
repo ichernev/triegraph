@@ -7,7 +7,6 @@
 
 template <bool allow_inner>
 struct Cfg : public triegraph::dna::DnaConfig<0> {
-    static constexpr bool triedata_advanced = true;
     static constexpr bool triedata_allow_inner = allow_inner;
 };
 

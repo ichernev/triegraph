@@ -16,7 +16,6 @@ struct Cfg {
     using LetterLoc = u32;
     using KmerHolder = u64;
     static constexpr bool triedata_allow_inner = false;
-    static constexpr bool triedata_advanced = true;
     static constexpr int LetterLocIdxShift = -1;
     static constexpr u32 TDMapType = 0u;
     static constexpr u64 KmerLen = 0;
