@@ -1,10 +1,2 @@
-*.o
-main
-test/*
-!test/*.cpp
-!test/*.h
-benchmark/*
-!benchmark/*.cpp
-slow/*
-!slow/*.cpp
-*.d
+output/
+tmp/
