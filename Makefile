@@ -38,7 +38,7 @@ run-tests: $(TEST_TARGETS)
 # build a bunch of targets specified by ONLY parameter
 .PHONY: build
 build:
-	for pcs in $(ONLY); do \
+	@for pcs in $(ONLY); do \
 		xpcs=$${pcs%.cpp}; \
 		xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
 		if [ -d "$$xpcs" ]; then \
@@ -53,7 +53,7 @@ build:
 # run a bunch of targets specified by ONLY parameter
 .PHONY: run
 run:
-	for pcs in $(ONLY); do \
+	@for pcs in $(ONLY); do \
 		xpcs=$${pcs%.cpp}; \
 		xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
 		if [ -d "$$xpcs" ]; then \
