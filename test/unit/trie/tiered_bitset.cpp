@@ -1,5 +1,5 @@
 #include "util/util.h"
-#include "trie/trie_data_opt.h"
+#include "trie/trie_data.h"
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
 #include "alphabet/letter.h"

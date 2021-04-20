@@ -21,7 +21,7 @@
 #include "triegraph/triegraph_handle_iter.h"
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
-#include "trie/trie_data_opt.h"
+#include "trie/trie_data.h"
 #include "util/util.h"
 #include "util/simple_multimap.h"
 #include "util/hybrid_multimap.h"

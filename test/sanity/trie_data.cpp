@@ -120,7 +120,7 @@ struct TestTrieData {
     }
 };
 
-using TrieDataSMM = TrieDataOpt<
+using TrieDataSMM = TrieData<
     TG::Kmer,
     TG::LetterLocData,
     TG::triedata_allow_inner,
@@ -132,7 +132,7 @@ using TrieDataSMM = TrieDataOpt<
         typename TG::KmerHolder>>;
 
 using HMMMap = std::unordered_map<u32, std::pair<u32, u32>>;
-using TrieDataHMM = TrieDataOpt<
+using TrieDataHMM = TrieData<
     TG::Kmer,
     TG::LetterLocData,
     TG::triedata_allow_inner,

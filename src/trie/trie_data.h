@@ -121,7 +121,7 @@ template <typename Kmer_,
          bool allow_inner,
          typename T2GMap,
          typename G2TMap>
-struct TrieDataOpt {
+struct TrieData {
     using Kmer = Kmer_;
     using KHolder = Kmer::Holder;
     using LetterLocData = LetterLocData_;
@@ -129,7 +129,7 @@ struct TrieDataOpt {
 
     using KmerCodec = CodecKmer<Kmer, typename Kmer::Holder, allow_inner>;
 
-    TrieDataOpt(std::vector<std::pair<Kmer, LetterLoc>> pairs,
+    TrieData(std::vector<std::pair<Kmer, LetterLoc>> pairs,
             const LetterLocData &letter_loc) {
         auto &log = Logger::get();
 
@@ -168,10 +168,10 @@ struct TrieDataOpt {
         active_trie = { key_iter_pair(trie2graph.keys()) };
     }
 
-    TrieDataOpt(const TrieDataOpt &) = delete;
-    TrieDataOpt &operator= (const TrieDataOpt &) = delete;
-    TrieDataOpt(TrieDataOpt &&) = default;
-    TrieDataOpt &operator= (TrieDataOpt &&) = default;
+    TrieData(const TrieData &) = delete;
+    TrieData &operator= (const TrieData &) = delete;
+    TrieData(TrieData &&) = default;
+    TrieData &operator= (TrieData &&) = default;
 
     T2GMap trie2graph;
     G2TMap graph2trie;
@@ -225,7 +225,7 @@ struct TrieDataOpt {
         LetterLoc num_locs;
         KHolder num_pairs;
 
-        Stats(const TrieDataOpt &td)
+        Stats(const TrieData &td)
             : t2g_hist(td.trie2graph.keys() | std::ranges::views::transform(
                         [&td](const auto &k) {
                             return std::ranges::distance(td.trie2graph.values_for(k));
