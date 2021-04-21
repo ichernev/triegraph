@@ -35,8 +35,9 @@ struct SortedVector {
         u64 sz = diffs.size();
         if (sz % beacon_interval == 0) {
             beacons.push_back(elem);
-            diffs.push_back(0);
-        } else if (elem - sum < diff_sentinel) {
+        }
+        // push diffs even for beacons
+        if (elem - sum < diff_sentinel) {
             diffs.push_back(elem - sum);
         } else {
             diffs.push_back(diff_sentinel);
@@ -47,16 +48,32 @@ struct SortedVector {
     }
 
     Beacon operator[] (Beacon idx) const {
+        if (idx == _cache_idx) {
+            return _cache_val;
+        }
+        if (idx == _cache_idx + 1) {
+            ++ _cache_idx;
+            _cache_val += get_diff(idx);
+            return _cache_val;
+        }
+        if (idx == _cache_idx - 1) {
+            _cache_val -= get_diff(_cache_idx --);
+            return _cache_val;
+        }
         auto dr = div(idx, beacon_interval);
         Beacon res = beacons[dr.quot];
         Beacon base_idx = idx - dr.rem;
         for (u32 i = 1; i <= dr.rem; ++i) {
-            if (diffs[base_idx + i] != diff_sentinel)
-                res += diffs[base_idx + i];
-            else
-                res += of_diffs.find(base_idx + i)->second;
+            res += get_diff(base_idx + i);
         }
+        _cache_idx = idx;
+        _cache_val = res;
         return res;
+    }
+
+    Beacon get_diff(Beacon idx) const {
+        return diffs[idx] != diff_sentinel ?
+            diffs[idx] : of_diffs.find(idx)->second;
     }
 
     Beacon at(Beacon idx) const {
@@ -88,6 +105,8 @@ private:
     std::vector<Diff> diffs;
     std::unordered_map<Beacon, Beacon> of_diffs;
 
+    mutable Beacon _cache_val;
+    mutable Beacon _cache_idx;
     // std::vector<Beacon> input;
 
     Beacon sum; // used during build
