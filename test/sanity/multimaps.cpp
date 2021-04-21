@@ -26,8 +26,19 @@ using SimpleSorted = std::vector<u32>;
 using AdvSorted = SortedVector<u32>;
 
 template <typename Multimap, typename RndGen = std::minstd_rand>
-struct MultimapTester {
-    static std::vector<std::pair<u32, u32>> gen_pairs(u32 size, u32 key_size, u32 val_size) {
+struct MultimapTester : public test::TestCaseBase {
+    u32 size, key_size, val_size;
+    std::vector<std::pair<u32, u32>> pairs;
+
+    MultimapTester(std::string &&name, u32 size, u32 key_size, u32 val_size)
+        : TestCaseBase(std::move(name)),
+          size(size),
+          key_size(key_size),
+          val_size(val_size)
+    {}
+
+    static std::vector<std::pair<u32, u32>> gen_pairs(
+            u32 size, u32 key_size, u32 val_size) {
         auto gen = RndGen();
         std::vector<std::pair<u32, u32>> pairs;
         pairs.reserve(size);
@@ -45,8 +56,11 @@ struct MultimapTester {
         return pairs;
     }
 
-    static void test(u32 size, u32 key_size, u32 val_size) {
-        auto pairs = gen_pairs(size, key_size, val_size);
+    virtual void prepare() {
+        pairs = gen_pairs(size, key_size, val_size);
+    }
+
+    void run() {
         auto mm = Multimap(pairs);
 
         assert(test::equal_sorted(mm, pairs));
@@ -70,30 +84,23 @@ struct MultimapTester {
         keys.resize(uk.begin() - keys.begin());
 
         assert(test::equal_sorted(mm.keys(), keys));
-    }
+   }
 
-    void define_tests() {
-        test::define_test("small-256", [] {
-            test(256u, 128u, 128u);
-        });
-        test::define_test("medium-5k", [] {
-            test(5000u, 3000u, 3000u);
-        });
-        test::define_test("medium-50k", [] {
-            test(50000u, 30000u, 30000u);
-        });
-        test::define_test("medium-500k", [] {
-            test(500000u, 300000u, 300000u);
-        });
-        test::define_test("big-50m", [] {
-            test(50000000u, 30000000u, 30000000u);
-        });
+    using Self = MultimapTester;
+
+    static void define_tests(std::string pref) {
+        pref += "::";
+        test::add_test<Self>(pref + "small-256", 256u, 128u, 128u);
+        test::add_test<Self>(pref + "medium-5k", 5000u, 3000u, 3000u);
+        test::add_test<Self>(pref + "medium-50k", 50000u, 30000u, 30000u);
+        test::add_test<Self>(pref + "medium-500k", 500000u, 300000u, 300000u);
+        test::add_test<Self>(pref + "big-50m", 50000000u, 30000000u, 30000000u);
     }
 };
 
 int m = test::define_module(__FILE__, [] {
-    test::register_test_class<MultimapTester<SMM>>("SMM");
-    test::register_test_class<MultimapTester<HMM>>("HMM");
-    test::register_test_class<MultimapTester<DMM<SimpleSorted>>>("DMM_simple");
-    test::register_test_class<MultimapTester<DMM<AdvSorted>>>("DMM_advanced");
+    MultimapTester<SMM>::define_tests("SMM");
+    MultimapTester<HMM>::define_tests("HMM");
+    MultimapTester<DMM<SimpleSorted>>::define_tests("DMM_simple");
+    MultimapTester<DMM<AdvSorted>>::define_tests("DMM_adv");
 });

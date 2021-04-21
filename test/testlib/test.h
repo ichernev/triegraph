@@ -11,9 +11,9 @@
 #include "util/timer.h"
 #include "util/memory.h"
 
-std::string test_module_name;
-std::string prefix;
-std::vector<std::pair<std::string, std::function<void()>>> tests;
+// std::string test_module_name;
+// std::string prefix;
+// std::vector<std::pair<std::string, std::function<void()>>> tests;
 
 enum struct ResType { NORMAL, CHILD_FAIL, ERROR };
 std::ostream &operator<< (std::ostream &os, const ResType &rt) {
@@ -83,39 +83,79 @@ namespace {
 
 namespace test {
 
+    struct TestCaseBase;
+    struct TestModule {
+        TestModule(const std::string &name) : name(name) {}
+
+        std::string name;
+        std::string prefix;
+        std::vector<std::unique_ptr<TestCaseBase>> tests;
+    };
+    std::vector<TestModule> modules;
+
+    struct TestCaseBase {
+        virtual void prepare() {};
+        virtual void run() {};
+        virtual ~TestCaseBase() {};
+
+        TestCaseBase(const std::string &name) : name(name) {}
+        TestCaseBase(std::string &&name) : name(std::move(name)) {}
+
+        TestCaseBase(const TestCaseBase &) = delete;
+        TestCaseBase &operator= (const TestCaseBase &) = delete;
+        TestCaseBase(TestCaseBase &&) = default;
+        TestCaseBase &operator= (TestCaseBase &&) = default;
+
+        std::string name;
+    };
+
+    struct TestCaseSimple : public TestCaseBase {
+        TestCaseSimple(std::string &&name,
+                std::function<void()> &&runner)
+            : TestCaseBase(std::move(name)),
+              runner(std::move(runner)) {}
+        virtual void run() {
+            runner();
+        }
+        std::function<void()> runner;
+    };
+
     template <std::ranges::input_range R,
              typename T = std::ranges::range_value_t<R>,
              typename Cmp = std::less<T>>
-    static std::vector<T> sorted(R &&range) {
+    std::vector<T> sorted(R &&range) {
         std::vector<T> res;
         std::ranges::copy(range, std::back_inserter(res));
         std::ranges::sort(res, Cmp {});
         return res;
     }
 
-    static bool equal_sorted(
+    bool equal_sorted(
             std::ranges::input_range auto&& range1,
             std::ranges::input_range auto&& range2) {
         return std::ranges::equal(sorted(range1), range2);
     }
 
     static int define_module(const char *filename, std::function<void()> &&fn) {
-        test_module_name = filename;
+        modules.emplace_back(filename);
         fn();
         return 0;
     }
 
-    static void define_test(const char *test, std::function<void()> &&fn) {
-        tests.emplace_back(prefix + test, std::move(fn));
+    void define_test(const char *test_name, std::function<void()> &&fn) {
+        auto &m = modules.back();
+        m.tests.emplace_back(std::make_unique<TestCaseSimple>(
+                    m.prefix + test_name, std::move(fn)));
     }
 
-    template <typename TestClass>
-    static void register_test_class(const char *prefix) {
-        // this pointer is leaked for now, it shouldn't hurt
-        TestClass *ptr = new TestClass();
-        ::prefix = std::string() + prefix + "::";
-        ptr->define_tests();
-        ::prefix = "";
+    void add_test(std::unique_ptr<TestCaseBase> &&test) {
+        auto &m = modules.back();
+        m.tests.emplace_back(std::move(test));
+    }
+
+    template <typename TC, typename... Args>
+    void add_test(Args&&... args) {
+        add_test(std::make_unique<TC>(std::forward<Args>(args)...));
     }
 }
 
@@ -124,37 +164,37 @@ int main(int argc, char *argv[]) {
     using Timer = triegraph::Timer<>;
     triegraph::Logger::disable();
 
-    bool measure_resources = test_module_name.starts_with("slow");
-    std::cerr << "TEST MODULE " << test_module_name << std::endl;
-    for (const auto &test : tests) {
-        std::cerr << "  TEST " << test.first << " ";
+    for (const auto &mod : test::modules) {
+        bool measure_resources = mod.name.starts_with("test/benchmark");
+        std::cerr << "TEST MODULE " << mod.name << std::endl;
+        for (const auto &test : mod.tests) {
+            std::cerr << "  TEST " << test->name << " ";
 
-        if (!measure_resources) {
-            test.second();
-            std::cerr << "[OK]" << std::endl;
-        } else {
-            using Res = std::pair<
-                typename Timer::duration_rep,
-                triegraph::Memory>;
-            auto res = process_executor(std::function<Res()>([test_fn=test.second] {
-                auto start_time = Timer::now();
-                auto start_mem = triegraph::Memory::current();
-                test_fn();
-                auto end_mem = triegraph::Memory::current();
-                auto end_time = Timer::now();
-                return std::make_pair(end_time - start_time, end_mem - start_mem);
-            }));
-            if (res.first == ResType::NORMAL) {
-                std::cerr << "[OK]"
-                    << " " << triegraph::to_human_time(res.second.first, false)
-                    << " " << triegraph::to_human_mem(res.second.second.vmhwm, false) << '\n'
-                    << std::flush;
+            if (!measure_resources) {
+                test->prepare();
+                test->run();
+                std::cerr << "[OK]" << std::endl;
+            } else {
+                using Res = std::pair<
+                    typename Timer::duration_rep,
+                    triegraph::Memory>;
+                test->prepare();
+                auto res = process_executor(std::function<Res()>([testp=test.get()] {
+                    auto start_time = Timer::now();
+                    auto start_mem = triegraph::Memory::current();
+                    testp->run();
+                    auto end_mem = triegraph::Memory::current();
+                    auto end_time = Timer::now();
+                    return std::make_pair(end_time - start_time, end_mem - start_mem);
+                }));
+                if (res.first == ResType::NORMAL) {
+                    std::cerr << "[OK]"
+                        << " " << triegraph::to_human_time(res.second.first, false)
+                        << " " << triegraph::to_human_mem(res.second.second.vmhwm, false) << '\n'
+                        << std::flush;
+                }
             }
         }
-        // std::cerr
-        //     << " " << triegraph::to_human_time(resources.time_ms)
-        //     << " " << triegraph::to_human_mem(resources.mem.vmsize)
-        //     << std::endl;;
     }
 
     return 0;
