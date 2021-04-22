@@ -198,7 +198,7 @@ class TrieData:
 def parse_args(args):
     p = argparse.ArgumentParser(description='Display TrieGraph size estimates')
     p.add_argument('-n', '--graph-locations', type=parse_human, required=True)
-    p.add_argument('--no-reverse-complement', action='store_false', default=True, required=False, dest='reverse_complement')
+    p.add_argument('--reverse-complement', action=argparse.BooleanOptionalAction, default=True)
     p.add_argument('--ff', type=float, default=2.0, required=False)
     p.add_argument('--rel-trie-depth', type=int, default=0, required=False)
     p.add_argument('--allow-inner', action='store_true')
