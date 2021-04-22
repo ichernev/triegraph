@@ -366,7 +366,11 @@ struct RgfaGraph {
             from_fasta(io, builder);
         }
 
-        return builder.build();
+        auto res = builder.build();
+        if (res.num_nodes() == 0) {
+            throw "empty-graph";
+        }
+        return res;
     }
 
     static void from_gfa(std::istream &io, Builder &builder) {
