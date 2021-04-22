@@ -9,9 +9,16 @@ TEST_TARGETS = $(patsubst %.cpp,$(OUTPUT)/%,$(TEST_SRCS))
 # BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
 DEPS := $(SRCS:%.cpp=$(OUTPUT)/%.d) $(TEST_SRCS:%.cpp=$(OUTPUT)/%.d)
 
+FORCE :=
+DEBUG := 0
+ifeq ($(DEBUG), 1)
+  OPTIMIZE := -g
+else
+  OPTIMIZE := -O2
+endif
 SHORT := -Wfatal-errors
-CPPFLAGS := -MMD $(SHORT) -std=c++20 -Isrc -Wall -O2
-CPPFLAGS_TEST := $(CPPFLAGS) -Itest
+CPPFLAGS := -MMD $(SHORT) -std=c++20 -Isrc -Wall $(OPTIMIZE)
+CPPFLAGS_TEST := $(CPPFLAGS) -Itest -I../hash_test/sparsepp
 
 TCOLORS := awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /TEST MODULE/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
 
@@ -40,12 +47,14 @@ run-tests: $(TEST_TARGETS)
 build:
 	@for pcs in $(ONLY); do \
 		xpcs=$${pcs%.cpp}; \
-		xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
+		[ -n "$(PREFIX)" ] && xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
 		if [ -d "$$xpcs" ]; then \
 			find $$xpcs/ -name '*.cpp' | while read t; do \
+				[ -n "$(FORCE)" ] && rm ./$(OUTPUT)/$${t%.cpp}; \
 				make ./$(OUTPUT)/$${t%.cpp}; \
 			done; \
 		else \
+			[ -n "$(FORCE)" ] && rm ./$(OUTPUT)/$$xpcs; \
 			make ./$(OUTPUT)/$$xpcs; \
 		fi; \
 	done
@@ -55,7 +64,7 @@ build:
 run:
 	@for pcs in $(ONLY); do \
 		xpcs=$${pcs%.cpp}; \
-		xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
+		[ -n "$(PREFIX)" ] && xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
 		if [ -d "$$xpcs" ]; then \
 			find $$xpcs/ -name '*.cpp' | while read t; do \
 				./$(OUTPUT)/$${t%.cpp} 2>&1 | $(TCOLORS); \
