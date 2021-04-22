@@ -1,4 +1,8 @@
 import sys
+import argparse
+# from collections import OrderedDict
+
+OrderedDict = dict
 
 def log4(n):
     if n == 1:
@@ -12,7 +16,7 @@ def log2(n):
         return 0
     return 1 + log2((n+1)//2)
 
-def human(n):
+def human(n, hcoef):
     orig_n = n
     coef = 1
     while not(n < 1000):
@@ -26,7 +30,7 @@ def human(n):
             x = x[0:-1]
         return x
 
-    hcoef = {1: '', 1000: 'k', 1000000: 'm', 1000000000: 'b'}
+    # hcoef = {1: '', 1000: 'k', 1000000: 'm', 1000000000: 'b'}
     b = hcoef[coef]
     if n >= 100:
         return f'{n}{b}'
@@ -36,6 +40,16 @@ def human(n):
     else:
         a = trim(f'{orig_n/coef:.2f}')
         return f'{a}{b}'
+
+def human_mem(n):
+    return human(n, {1: 'b', 1000: 'kb', 1000000: 'mb', 1000000000: 'gb'})
+
+def human_mem_bits(n):
+    return human_mem(n // 8)
+
+def human_cnt(n):
+    return human(n, {1: '', 1000: 'k', 1000000: 'm', 1000000000: 'b'})
+
 
 def parse_human(quant):
     if quant.endswith('b') or quant.endswith('B'):
@@ -56,6 +70,173 @@ def xbytes(bits):
     elif bits <= 64:
         return 8
     raise Exception("WTF MAN")
+
+
+class Vec:
+    def __init__(self, elems, bits=None):
+        self.elems = elems
+        self.bits = bits or xbytes(log2(elems))
+
+    def size(self):
+        return self.elems * self.bits // 8
+
+    def detail(self):
+        return OrderedDict(
+            name=self.__class__.__name__,
+            size=human_mem_bits(self.elems * self.bits),
+            elems=human_cnt(self.elems),
+            bits=self.bits,
+        )
+
+class SortedVec:
+    def __init__(self, elems, bits=None, beacon_every=16, diff_bits=8, overflow_coef=0.05):
+        self.elems = elems
+        self.bits = bits or xbytes(log2(elems))
+        self.beacon_every = beacon_every
+        self.diff_bits = diff_bits
+
+        self.num_beacons = self.elems // self.beacon_every
+        self.beacon_bits = self.num_beacons * self.bits
+        self.diff_bits = self.elems * self.diff_bits
+        self.overflow_coef = overflow_coef
+
+    def size(self):
+        return int((self.beacon_bits + self.diff_bits) *
+                   (1 + self.overflow_coef)) // 8
+
+    def detail(self):
+        return OrderedDict(
+            name=self.__class__.__name__,
+            size=human_mem(self.size()),
+            elems=human_cnt(self.elems),
+            num_beacons=human_cnt(self.num_beacons),
+            beacon_mem=human_mem_bits(self.beacon_bits),
+            diff_mem=human_mem_bits(self.diff_bits))
+
+class DMMap:
+    def __init__(self, keys, vals, bits=None, sorted_vector=True):
+        self.keys = keys
+        self.vals = vals
+        self.bits = bits or xbytes(max(self.keys, self.vals))
+        self.sorted_vector = sorted_vector
+
+        self.vec_class = SortedVec if self.sorted_vector else Vec
+        self.begin = self.vec_class(self.keys, self.bits)
+        self.elems = Vec(self.vals, self.bits)
+
+    def size(self):
+        return self.begin.size() + self.elems.size()
+
+    def detail(self):
+        return OrderedDict(
+            name=self.__class__.__name__,
+            size=human_mem(self.size()),
+            begin=self.begin.detail(),
+            elems=self.elems.detail(),
+        )
+
+class TieredBitset:
+    def __init__(self, kmers, allow_inner=False):
+        if allow_inner == True:
+            self.kmers = kmers
+        else:
+            # rough estimate on number of kmers (1 + (1/4)^n...)
+            self.kmers = kmers + kmers // 4 + kmers // 16
+
+    def size(self):
+        return self.kmers // 8
+
+    def detail(self):
+        return OrderedDict(
+            name=self.__class__.__name__,
+            size=human_mem(self.size()),
+            elems=human_cnt(self.kmers),
+        )
+
+class Pairs:
+    def __init__(self, pairs, bits=None):
+        self.pairs = pairs
+        self.bits = bits or log2(pairs)
+
+    def size(self):
+        return self.bits * 2 * self.pairs // 8
+
+    def detail(self):
+        return OrderedDict(
+            name=self.__class__.__name__,
+            size=human_mem(self.size()),
+            pairs=human_cnt(self.pairs),
+            bits=self.bits)
+
+class TrieData:
+    def __init__(self, kmers, locs, pairs, bits=None, allow_inner=False):
+        self.kmers = kmers
+        self.locs = locs
+        self.pairs = pairs
+        self.bits = bits or log2(max(self.kmers, self.locs, self.pairs))
+
+        self.t2g = DMMap(self.kmers, self.pairs, self.bits)
+        self.g2t = DMMap(self.locs, self.pairs, self.bits)
+        self.trie = TieredBitset(self.kmers, allow_inner)
+
+    def size(self):
+        return self.t2g.size() + self.g2t.size() + self.trie.size()
+
+    def detail(self):
+        return OrderedDict(
+            name=self.__class__.__name__,
+            size=human_mem(self.size()),
+            kmers=human_cnt(self.kmers),
+            locs=human_cnt(self.locs),
+            pairs=human_cnt(self.pairs),
+            t2g=self.t2g.detail(),
+            g2t=self.g2t.detail(),
+            trie=self.trie.detail(),
+        )
+
+
+def parse_args(args):
+    p = argparse.ArgumentParser(description='Display TrieGraph size estimates')
+    p.add_argument('-n', '--graph-locations', type=parse_human, required=True)
+    p.add_argument('--ff', type=float, default=2.0, required=False)
+    p.add_argument('--rel-trie-depth', type=int, default=0, required=False)
+    p.add_argument('--allow-inner', action='store_true')
+    # TODO: Add support for reading any option stored in JSON config, then pass
+    # relevant part of config down the DataStructure
+    # p.add_argument('--config', type=str, required=False)
+
+
+    return p.parse_args(args)
+
+
+def mainx(args):
+    opts = parse_args(args)
+    n = opts.graph_locations
+    ff = opts.ff
+    print(opts)
+
+    # print(f'n           {n}')
+    # print(f'ff          {ff:.1f}')
+    npairs = int(ff * n)
+    # print(f'num pairs   {human_cnt(npairs)}')
+    k = log4(npairs) + opts.rel_trie_depth
+    # print(f'k = log4(npairs) {k}')
+    # print(f'num kmers   {human_cnt(4 ** k)}')
+
+    if opts.allow_inner:
+        nkmers = sum([4 ** k for k in range(1, k+1)])
+    else:
+        nkmers = 4 ** k
+
+    bits = log2(max(nkmers, n, npairs))
+
+    pairs = Pairs(npairs, bits)
+    td = TrieData(nkmers, n, npairs, bits, opts.allow_inner)
+
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4, width=100, sort_dicts=False, compact=True)
+    pp.pprint(pairs.detail())
+    pp.pprint(td.detail())
 
 def main(args):
     n = parse_human(args[0])
@@ -110,4 +291,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    mainx(sys.argv[1:])
