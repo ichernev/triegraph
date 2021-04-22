@@ -10,6 +10,7 @@
 #include "util/human.h"
 #include "util/timer.h"
 #include "util/memory.h"
+#include "util/cmdline.h"
 
 // std::string test_module_name;
 // std::string prefix;
@@ -45,12 +46,19 @@ namespace {
         if (pid == 0) {
             // in child
             close(fd[0]); // close read end
-            auto res = f(std::forward<Args>(args)...);
-            // auto data = res.data();
-            if (write(fd[1], &res, sizeof(res)) != sizeof(res)) {
-                std::cerr << "write() failed" << std::endl;
-
+            try {
+                auto res = f(std::forward<Args>(args)...);
+                if (write(fd[1], &res, sizeof(res)) != sizeof(res)) {
+                    std::cerr << "write() failed" << std::endl;
+                }
+            } catch (const char *err) {
+                std::cerr << "child ex: " << err << std::endl;
+                exit(1);
+            } catch (...) {
+                std::cerr << "child unknown ex" << std::endl;
+                exit(1);
             }
+            // auto data = res.data();
             close(fd[1]);
             exit(0);
         } else {
@@ -62,7 +70,8 @@ namespace {
                 return {ResType::ERROR, {}};
             }
             if (!(info.si_code == CLD_EXITED && info.si_status == 0)) {
-                std::cerr << "child exited abnormally" << std::endl;
+                // std::cerr << "child exited abnormally" << std::endl;
+                // std::cerr << info.si_code << " " << CLD_DUMPED << " " << info.si_status << std::endl;
                 return {ResType::CHILD_FAIL, {}};
             }
             R res;
@@ -157,28 +166,52 @@ namespace test {
     void add_test(Args&&... args) {
         add_test(std::make_unique<TC>(std::forward<Args>(args)...));
     }
+
+    bool guard(std::function<void()> fn) {
+        try {
+            fn();
+            return true;
+        } catch (const char *err) {
+            std::cerr << "Exception: " << err << std::endl;
+            return false;
+        } catch (...) {
+            std::cerr << "Other Exception." << std::endl;
+            return false;
+        }
+    }
 }
 
 
 int main(int argc, char *argv[]) {
+    auto cmdline = triegraph::CmdLine(argc, argv);
     using Timer = triegraph::Timer<>;
-    triegraph::Logger::disable();
+    if (!cmdline.get<bool>("leave-logger"))
+        triegraph::Logger::disable();
 
-    for (const auto &mod : test::modules) {
-        bool measure_resources = mod.name.starts_with("test/benchmark");
+    for (auto &mod : test::modules) {
+        bool measure_resources = cmdline.get<bool>("measure") ?
+            true : cmdline.get<bool>("no-measure") ?
+                false :
+                mod.name.starts_with("test/benchmark");
         std::cerr << "TEST MODULE " << mod.name << std::endl;
-        for (const auto &test : mod.tests) {
-            std::cerr << "  TEST " << test->name << " ";
+        for (auto &test : mod.tests) {
+            std::cerr << "  TEST " << test->name << " " << std::flush;
 
             if (!measure_resources) {
-                test->prepare();
-                test->run();
-                std::cerr << "[OK]" << std::endl;
+                bool res = test::guard([testp=test.get()] {
+                    testp->prepare();
+                    testp->run();
+                });
+                std::cerr << (res ? "[OK]" : "[FAIL]") << std::endl;
             } else {
                 using Res = std::pair<
                     typename Timer::duration_rep,
                     triegraph::Memory>;
-                test->prepare();
+                if (!test::guard([testp=test.get()] { testp->prepare(); })) {
+                    std::cerr << "[FAIL]" << std::endl;
+                    test.reset(nullptr);
+                    continue;
+                }
                 auto res = process_executor(std::function<Res()>([testp=test.get()] {
                     auto start_time = Timer::now();
                     auto start_mem = triegraph::Memory::current();
@@ -192,8 +225,12 @@ int main(int argc, char *argv[]) {
                         << " " << triegraph::to_human_time(res.second.first, false)
                         << " " << triegraph::to_human_mem(res.second.second.vmhwm, false) << '\n'
                         << std::flush;
+                } else {
+                    std::cerr << "[FAIL] " << res.first << std::endl;
                 }
             }
+            // free consumed memory
+            test.reset(nullptr);
         }
     }
 
