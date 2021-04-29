@@ -1,5 +1,5 @@
-#ifndef __TRIEGRAPH_BUILDER_BT_H__
-#define __TRIEGRAPH_BUILDER_BT_H__
+#ifndef __TRIE_BUILDER_BT_H__
+#define __TRIE_BUILDER_BT_H__
 
 #include "util/logger.h"
 
@@ -9,41 +9,44 @@
 
 namespace triegraph {
 
-template <typename Graph_, typename LetterLocData_, typename Kmer_>
-struct TrieGraphBTBuilder {
+template <typename Graph_, typename LetterLocData_, typename Kmer_, typename VectorPairs_>
+struct TrieBuilderBT {
     using Graph = Graph_;
     using LetterLocData = LetterLocData_;
     using Kmer = Kmer_;
+    using VectorPairs = VectorPairs_;
     using Str = Graph::Str;
     using NodeLoc = Graph::NodeLoc;
     using LetterLoc = LetterLocData::LetterLoc;
     using NodePos = LetterLocData::NodePos;
     using NodeLen = NodePos::NodeLen;
+    using Self = TrieBuilderBT;
 
     const Graph &graph;
     const LetterLocData &lloc;
-    std::vector<std::pair<Kmer, LetterLoc>> pairs;
+    VectorPairs &pairs;
     Kmer kmer;
 
-    TrieGraphBTBuilder(const Graph &graph, const LetterLocData &lloc)
-        : graph(graph), lloc(lloc) {}
+    TrieBuilderBT(const Graph &graph, const LetterLocData &lloc, VectorPairs &pairs)
+        : graph(graph), lloc(lloc), pairs(pairs) {}
 
-    TrieGraphBTBuilder(const TrieGraphBTBuilder &) = delete;
-    TrieGraphBTBuilder &operator= (const TrieGraphBTBuilder &) = delete;
-    TrieGraphBTBuilder(TrieGraphBTBuilder &&) = delete;
-    TrieGraphBTBuilder &operator= (TrieGraphBTBuilder &&) = delete;
+    TrieBuilderBT(const Self &) = delete;
+    Self &operator= (const Self &) = delete;
+    TrieBuilderBT(Self &&) = delete;
+    Self &operator= (Self &&) = delete;
 
-    decltype(pairs) &&get_pairs(
-            std::ranges::input_range auto&& starts,
-            u32 /* unused */) && {
+    struct Settings { static Settings from_config(auto &&) { return {}; } } settings_;
+    Self &set_settings(Settings &&s) { settings_ = std::move(s); return *this; }
+    const Settings &settings() const { return settings_; }
+
+
+    void compute_pairs(std::ranges::input_range auto&& starts) {
         auto scope = Logger::get().begin_scoped("back track builder");
         kmer = Kmer::empty();
         for (const auto &start_np : starts) {
             assert(kmer.size() == 0);
             _back_track(start_np);
         }
-
-        return std::move(pairs);
     }
 
     void _back_track(NodePos np) {
@@ -84,4 +87,4 @@ struct TrieGraphBTBuilder {
 
 } /* namespace triegraph */
 
-#endif /* __TRIEGRAPH_BUILDER_BT_H__ */
+#endif /* __TRIE_BUILDER_BT_H__ */

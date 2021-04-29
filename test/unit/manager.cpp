@@ -1,6 +1,7 @@
 #include "manager.h"
 #include "util/util.h"
 #include "alphabet/dna_letter.h"
+#include "util/vector_pairs.h"
 
 // #include <iostream>
 #include "testlib/test.h"
@@ -16,6 +17,8 @@ struct Cfg {
     using LetterLoc = u32;
     using KmerHolder = u64;
     static constexpr bool triedata_allow_inner = false;
+    static constexpr VectorPairsImpl vector_pairs_impl = VectorPairsImpl::SIMPLE;
+    static constexpr bool trie_pairs_raw = false;
     static constexpr int LetterLocIdxShift = -1;
     static constexpr u32 TDMapType = 0u;
     static constexpr u64 KmerLen = 0;

@@ -1,5 +1,5 @@
-#ifndef __TRIEGRAPH_BUILDER_PBFS_H__
-#define __TRIEGRAPH_BUILDER_PBFS_H__
+#ifndef __TRIE_BUILDER_PBFS_H__
+#define __TRIE_BUILDER_PBFS_H__
 
 #include "util/logger.h"
 
@@ -8,38 +8,53 @@
 
 namespace triegraph {
 
-template <typename Graph_, typename LetterLocData_, typename Kmer_>
-struct TrieGraphBuilderPBFS {
+template <typename Graph_, typename LetterLocData_, typename Kmer_, typename VectorPairs_>
+struct TrieBuilderPBFS {
     using Graph = Graph_;
     using LetterLocData = LetterLocData_;
     using Kmer = Kmer_;
+    using VectorPairs = VectorPairs_;
     using NodePos = LetterLocData::NodePos;
     using LetterLoc = LetterLocData::LetterLoc;
+    using Self = TrieBuilderPBFS;
 
     const Graph &graph;
     const LetterLocData &lloc;
-    std::vector<std::pair<Kmer, LetterLoc>> pairs;
+    VectorPairs &pairs;
 
-    TrieGraphBuilderPBFS(const Graph &graph, const LetterLocData &lloc)
-        : graph(graph), lloc(lloc) {}
+    TrieBuilderPBFS(const Graph &graph, const LetterLocData &lloc, VectorPairs &pairs)
+        : graph(graph), lloc(lloc), pairs(pairs) {}
 
-    TrieGraphBuilderPBFS(const TrieGraphBuilderPBFS &) = delete;
-    TrieGraphBuilderPBFS(TrieGraphBuilderPBFS &&) = delete;
-    TrieGraphBuilderPBFS &operator= (const TrieGraphBuilderPBFS &) = delete;
-    TrieGraphBuilderPBFS &operator= (TrieGraphBuilderPBFS &&) = delete;
+    TrieBuilderPBFS(const Self &) = delete;
+    TrieBuilderPBFS(Self &&) = delete;
+    Self &operator= (const Self &) = delete;
+    Self &operator= (Self &&) = delete;
 
-    decltype(pairs) &&get_pairs(std::ranges::input_range auto&& starts,
-            u32 cut_early_threshold) && {
+    struct Settings {
+        static constexpr u32 default_cut_early_threashold = 128u;
+        u32 cut_early_threshold = default_cut_early_threashold;
+
+        static Settings from_config(const auto &cfg) {
+            return {
+                .cut_early_threshold = cfg.template get_or<u32>(
+                        "trie-builder-pbfs-cut-early-threshold", default_cut_early_threashold)
+            };
+        }
+    } settings_;
+
+    Self &set_settings(Settings &&s) { settings_ = std::move(s); return *this; }
+    const Settings &settings() const { return settings_; }
+
+    void compute_pairs(std::ranges::input_range auto&& starts) {
         auto scope = Logger::get().begin_scoped("pbfs builder");
         for (const auto &start: starts) {
-            _bfs(start, cut_early_threshold);
+            _bfs(start, settings_.cut_early_threshold);
         }
         Logger::get().log(
                 "short", stats.short_kmer,
                 "next", stats.short_next,
                 "fast_split", stats.fast_split,
                 "normal", stats.normal);
-        return std::move(pairs);
     }
 
     struct Stats {

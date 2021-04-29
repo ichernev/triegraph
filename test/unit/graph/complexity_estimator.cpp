@@ -5,7 +5,7 @@
 
 using namespace triegraph;
 
-using TG = Manager<dna::DnaConfig<0>>;
+using TG = Manager<dna::DnaConfig<0, false, true>>;
 
 int m = test::define_module(__FILE__, [] {
 

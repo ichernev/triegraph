@@ -15,7 +15,7 @@
 #include <random>
 
 using namespace triegraph;
-// using TG = Manager<dna::DnaConfig<0>>;
+// using TG = Manager<dna::DnaConfig<0, false, true>>;
 
 using SMM = SimpleMultimap<u32, u32>;
 using HMM = HybridMultimap<u32, u32, u32,

@@ -4,20 +4,21 @@
 #include <ranges>
 
 #include "testlib/test.h"
+#include "testlib/triegraph/builder.h"
 
 using namespace triegraph;
 
 namespace {
 
-using M4 = Manager<dna::DnaConfig<0>>;
-using Str = M4::Str;
-using EditEdge = M4::EditEdge;
-using NodePos = M4::NodePos;
-using DnaLetters = M4::Letters;
-using Kmer = M4::Kmer;
+using TG = Manager<dna::DnaConfig<0>>;
+using Str = TG::Str;
+using EditEdge = TG::EditEdge;
+using NodePos = TG::NodePos;
+using DnaLetters = TG::Letters;
+using Kmer = TG::Kmer;
 
-M4::Graph build_graph() {
-    return M4::Graph::Builder({ .add_reverse_complement = false })
+TG::Graph build_graph() {
+    return TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(Str("ac"), "s1")
         .add_node(Str("gg"), "s2")
         .add_node(Str("acg"), "s3")
@@ -42,14 +43,10 @@ M4::Graph build_graph() {
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("next_edit_edges_fwd", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
 
-    auto h = tg.next_edit_edges(M4::Handle(2, 1));
-    auto expected = std::vector<M4::EditEdge> {
+    auto h = tg.next_edit_edges(TG::Handle(2, 1));
+    auto expected = std::vector<TG::EditEdge> {
         EditEdge { NodePos { 2, 2 }, EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos { 2, 2 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 2, 2 }, EditEdge::SUB,   DnaLetters::G },
@@ -67,14 +64,15 @@ test::define_test("next_edit_edges_fwd", [] {
 });
 
 test::define_test("next_edit_edges_split", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.next_edit_edges(M4::Handle(0, 1));
-    auto expected = std::vector<M4::EditEdge> {
+    auto h = tg.next_edit_edges(TG::Handle(0, 1));
+    auto expected = std::vector<TG::EditEdge> {
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos { 2, 0 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::G },
@@ -98,15 +96,16 @@ test::define_test("next_edit_edges_split", [] {
 });
 
 test::define_test("next_edit_edges_trie_inner", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.next_edit_edges(M4::Handle(Kmer::from_str("cg")));
+    auto h = tg.next_edit_edges(TG::Handle(Kmer::from_str("cg")));
 
-    auto expected = std::vector<M4::EditEdge> {
+    auto expected = std::vector<TG::EditEdge> {
         EditEdge { Kmer::from_str("cga"), EditEdge::MATCH, DnaLetters::A },
         EditEdge { Kmer::from_str("cga"), EditEdge::SUB, DnaLetters::C },
         EditEdge { Kmer::from_str("cga"), EditEdge::SUB, DnaLetters::G },
@@ -130,15 +129,16 @@ test::define_test("next_edit_edges_trie_inner", [] {
 });
 
 test::define_test("next_edit_edges_trie_edge", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.next_edit_edges(M4::Handle(Kmer::from_str("cga")));
+    auto h = tg.next_edit_edges(TG::Handle(Kmer::from_str("cga")));
 
-    auto expected = std::vector<M4::EditEdge> {
+    auto expected = std::vector<TG::EditEdge> {
         EditEdge { Kmer::from_str("cgac"), EditEdge::SUB, DnaLetters::A },
         EditEdge { Kmer::from_str("cgac"), EditEdge::MATCH, DnaLetters::C },
         EditEdge { Kmer::from_str("cgac"), EditEdge::SUB, DnaLetters::G },
@@ -156,20 +156,21 @@ test::define_test("next_edit_edges_trie_edge", [] {
 });
 
 test::define_test("next_edit_edges_trie_to_graph", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.next_edit_edges(M4::Handle(Kmer::from_str("acgg")));
+    auto h = tg.next_edit_edges(TG::Handle(Kmer::from_str("acgg")));
 
     // auto er = tg.data.trie_data.trie2graph.equal_range(Kmer::from_str("acgg"));
     // for (auto it = er.first; it != er.second; ++it) {
     //     std::cerr << it->second << std::endl;
     // }
 
-    auto expected = std::vector<M4::EditEdge> {
+    auto expected = std::vector<TG::EditEdge> {
         EditEdge { NodePos { 3, 1 }, EditEdge::MATCH, DnaLetters::A },
         EditEdge { NodePos { 3, 1 }, EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos { 3, 1 }, EditEdge::SUB,   DnaLetters::G },
@@ -188,13 +189,14 @@ test::define_test("next_edit_edges_trie_to_graph", [] {
 });
 
 test::define_test("prev_handles_linear", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.prev_graph_handles(M4::Handle(0, 1));
+    auto h = tg.prev_graph_handles(TG::Handle(0, 1));
     // auto hh = h.begin();
     // std::cerr << hh.single.h << std::endl;
     // std::cerr << hh.single.has_more() << std::endl;
@@ -204,109 +206,115 @@ test::define_test("prev_handles_linear", [] {
     // for (const auto &x: h) {
     //     std::cerr << "HHH " << std::endl;
     // }
-    auto expected = std::vector<M4::Handle> { { 0, 0 } };
+    auto expected = std::vector<TG::Handle> { { 0, 0 } };
     assert(std::ranges::equal(h, expected));
 
-    // auto itv = _collect_it(tg.prev_graph_handles_it(M4::Handle(0, 1)));
+    // auto itv = _collect_it(tg.prev_graph_handles_it(TG::Handle(0, 1)));
 
-    assert(std::ranges::equal(tg.prev_graph_handles(M4::Handle(0, 1)), expected));
+    assert(std::ranges::equal(tg.prev_graph_handles(TG::Handle(0, 1)), expected));
 });
 
 test::define_test("prev_handles_split", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.prev_graph_handles(M4::Handle(3, 0));
-    auto expected = std::vector<M4::Handle> { { 2, 2 }, { 1, 1 } };
-    // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    auto h = tg.prev_graph_handles(TG::Handle(3, 0));
+    auto expected = std::vector<TG::Handle> { { 2, 2 }, { 1, 1 } };
+    // std::ranges::copy(h, std::ostream_iterator<TG::Handle>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
 
     // auto itv = _collect_it();
-    // std::ranges::copy(itv, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    assert(std::ranges::equal(tg.prev_graph_handles(M4::Handle(3, 0)), expected));
+    // std::ranges::copy(itv, std::ostream_iterator<TG::Handle>(std::cerr, "\n"));
+    assert(std::ranges::equal(tg.prev_graph_handles(TG::Handle(3, 0)), expected));
 });
 
 test::define_test("prev_handles_graph_to_trie", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.prev_trie_handles(M4::Handle(3, 0));
-    auto expected = std::vector<M4::Handle> {
-        M4::Kmer::from_str("acgg"),
-        M4::Kmer::from_str("cacg"),
+    auto h = tg.prev_trie_handles(TG::Handle(3, 0));
+    auto expected = std::vector<TG::Handle> {
+        TG::Kmer::from_str("acgg"),
+        TG::Kmer::from_str("cacg"),
     };
     // std::cerr << "expected" << std::endl;
     // std::copy(expected.begin(), expected.end(),
-    //         std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    //         std::ostream_iterator<TG::Handle>(std::cerr, "\n"));
     // std::cerr << "actual" << std::endl;
-    // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
-    // std::cerr << M4::Handle(M4::Kmer::from_str("acgg")).is_trie() << std::endl;
-    // std::cerr << M4::Handle(M4::Kmer::from_str("cacg")).is_trie() << std::endl;
-    // std::cerr << (M4::Kmer::from_str("acgg").data & M4::Kmer::ON_MASK) << std::endl;
+    // std::ranges::copy(h, std::ostream_iterator<TG::Handle>(std::cerr, "\n"));
+    // std::cerr << TG::Handle(TG::Kmer::from_str("acgg")).is_trie() << std::endl;
+    // std::cerr << TG::Handle(TG::Kmer::from_str("cacg")).is_trie() << std::endl;
+    // std::cerr << (TG::Kmer::from_str("acgg").data & TG::Kmer::ON_MASK) << std::endl;
     assert(test::equal_sorted(h, expected));
 });
 
 test::define_test("prev_handles_trie", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto h = tg.prev_trie_handles(M4::Kmer::from_str("acac"));
-    auto expected = std::vector<M4::Handle> { M4::Kmer::from_str("aca") };
-    // std::ranges::copy(h, std::ostream_iterator<M4::Handle>(std::cerr, "\n"));
+    auto h = tg.prev_trie_handles(TG::Kmer::from_str("acac"));
+    auto expected = std::vector<TG::Handle> { TG::Kmer::from_str("aca") };
+    // std::ranges::copy(h, std::ostream_iterator<TG::Handle>(std::cerr, "\n"));
     assert(test::equal_sorted(h, expected));
 });
 
 test::define_test("up_handle_trie", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    auto handle = tg.up_trie_handle(M4::Kmer::from_str("acac"));
-    assert(handle.is_trie() && handle.kmer == M4::Kmer::from_str("aca"));
+    auto handle = tg.up_trie_handle(TG::Kmer::from_str("acac"));
+    assert(handle.is_trie() && handle.kmer == TG::Kmer::from_str("aca"));
 });
 
 test::define_test("next_match_many", [] {
-    auto graph = M4::Graph::Builder({ .add_reverse_complement = false })
-        .add_node(M4::Str("acgtacgtacgt"), "s1")
-        .add_node(M4::Str("ttt"), "s2")
+    auto graph = TG::Graph::Builder({ .add_reverse_complement = false })
+        .add_node(TG::Str("acgtacgtacgt"), "s1")
+        .add_node(TG::Str("ttt"), "s2")
         .add_edge("s1", "s2")
         .build();
 
-    auto tg = M4::triegraph_from_graph(
-            std::move(graph),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(std::move(graph), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         std::move(graph),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    assert(tg.next_match_many(M4::Handle(0, 0), M4::Str("acgtacgtacgt")) == 12);
-    assert(tg.next_match_many(M4::Handle(0, 11), M4::Str("ttt")) == 1);
-    assert(tg.next_match_many(M4::Handle(0, 12), M4::Str("ttt")) == 0);
-    assert(tg.next_match_many(M4::Handle(), M4::Str("acg")) == 0); // invalid
-    assert(tg.next_match_many(M4::Kmer::from_str("acg"), M4::Str("acg")) == 0); // trie
+    assert(tg.next_match_many(TG::Handle(0, 0), TG::Str("acgtacgtacgt")) == 12);
+    assert(tg.next_match_many(TG::Handle(0, 11), TG::Str("ttt")) == 1);
+    assert(tg.next_match_many(TG::Handle(0, 12), TG::Str("ttt")) == 0);
+    assert(tg.next_match_many(TG::Handle(), TG::Str("acg")) == 0); // invalid
+    assert(tg.next_match_many(TG::Kmer::from_str("acg"), TG::Str("acg")) == 0); // trie
 });
 
 test::define_test("exact_short_match", [] {
-    auto tg = M4::triegraph_from_graph(
-            build_graph(),
-            M4::Settings {
-                .add_reverse_complement = false,
-                .trie_depth = 4 });
+    auto tg = test::tg_from_graph<TG>(build_graph(), 4);
+    // auto tg = TG::triegraph_from_graph(
+    //         build_graph(),
+    //         TG::Settings {
+    //             .add_reverse_complement = false,
+    //             .trie_depth = 4 });
 
-    assert(tg.exact_short_match(M4::Str("aca")) == M4::Handle(M4::Kmer::from_str("aca")));
-    assert(tg.exact_short_match(M4::Str("acac")) == M4::Handle(M4::Kmer::from_str("acac")));
-    assert(tg.exact_short_match(M4::Str("ttt")) == M4::Handle::invalid());
-    assert(tg.exact_short_match(M4::Str("acacg")) == M4::Handle::invalid());
+    assert(tg.exact_short_match(TG::Str("aca")) == TG::Handle(TG::Kmer::from_str("aca")));
+    assert(tg.exact_short_match(TG::Str("acac")) == TG::Handle(TG::Kmer::from_str("acac")));
+    assert(tg.exact_short_match(TG::Str("ttt")) == TG::Handle::invalid());
+    assert(tg.exact_short_match(TG::Str("acacg")) == TG::Handle::invalid());
 });
 
 });

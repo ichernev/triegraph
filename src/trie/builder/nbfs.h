@@ -1,5 +1,5 @@
-#ifndef __TRIEGRAPH_BUILDER_NBFS_H__
-#define __TRIEGRAPH_BUILDER_NBFS_H__
+#ifndef __TRIE_BUILDER_NBFS_H__
+#define __TRIE_BUILDER_NBFS_H__
 
 #include <graph/top_order.h>
 #include <util/util.h>
@@ -21,8 +21,8 @@ namespace triegraph {
 template <typename Graph_,
          typename LetterLocData_,
          typename Kmer_,
-         typename KmerPerNodeLen_ = Kmer_::Holder>
-struct TrieGraphBuilderNBFS {
+         typename VectorPairs_>
+struct TrieBuilderNBFS {
     using Graph = Graph_;
     using LetterLocData = LetterLocData_;
     using NodeLoc = Graph::NodeLoc;
@@ -30,29 +30,35 @@ struct TrieGraphBuilderNBFS {
     using NodeLen = LetterLocData::NodeLen;
     using LetterLoc = LetterLocData::LetterLoc;
     using Kmer = Kmer_;
-    using KmerPerNodeLen = KmerPerNodeLen_;
+    using VectorPairs = VectorPairs_;
+    using KmerPerNodeLen = Kmer::Holder;
     using Str = Graph::Str;
     using TopOrder = triegraph::TopOrder<Graph>;
-    using pairs_t = std::vector<std::pair<Kmer, LetterLoc>>;
+    using Self = TrieBuilderNBFS;
 
     const Graph &graph;
     const LetterLocData &lloc;
+    VectorPairs &pairs;
 
     TopOrder top_ord;
     std::priority_queue<NodeLoc, std::vector<NodeLoc>, typename TopOrder::Comparator> q;
     std::vector<bool> in_q;
-    pairs_t pairs;
 
-    TrieGraphBuilderNBFS(const Graph &graph, const LetterLocData &lloc)
+    TrieBuilderNBFS(const Graph &graph, const LetterLocData &lloc, VectorPairs &pairs)
         : graph(graph),
           lloc(lloc),
+          pairs(pairs),
           top_ord(typename TopOrder::Builder(graph).build()),
           q(top_ord.comp()),
           in_q(graph.num_nodes(), false),
           kd(graph.num_nodes())
     {}
 
-    pairs_t get_pairs(std::ranges::input_range auto&& /*ignored*/, u32 /*ignored*/) && {
+    struct Settings { static Settings from_config(auto &&) { return {}; } } settings_;
+    Self &set_settings(Settings &&s) { settings_ = s; return *this; }
+    const Settings &settings() const { return settings_; }
+
+    void compute_pairs(std::ranges::input_range auto&& /* starts */) {
         auto scope = Logger::get().begin_scoped("node_bfs builder");
 
         auto starts = ConnectedComponents(graph).compute_starting_points();
@@ -64,8 +70,6 @@ struct TrieGraphBuilderNBFS {
         }
 
         _bfs();
-
-        return std::move(pairs);
     }
 
 private:
@@ -220,4 +224,4 @@ private:
 
 } /* namespace triegraph */
 
-#endif /* __TRIEGRAPH_BUILDER_NBFS_H__ */
+#endif /* __TRIE_BUILDER_NBFS_H__ */

@@ -4,7 +4,7 @@
 #include "testlib/test.h"
 
 using namespace triegraph;
-using TG = Manager<dna::DnaConfig<0>>;
+using TG = Manager<dna::DnaConfig<0, false, true>>;
 
 struct TrieDataBuilderTester : test::TestCaseBase {
     std::string graph_file;
@@ -22,51 +22,64 @@ struct TrieDataBuilderTester : test::TestCaseBase {
           expected_hash(expected_hash)
     {}
 
-    static std::size_t hash_pairs(const TG::vec_pairs &pairs) {
+    static std::size_t hash_pairs(const TG::VectorPairs &pairs) {
         std::size_t res = 0;
-        for (const auto &p : pairs) {
-            res ^= std::hash<TG::Kmer>{}(p.first);
+        for (const auto &p : pairs.fwd_pairs()) {
+            res ^= std::hash<TG::Kmer/*::Holder*/>{}(p.first);
             res ^= std::hash<TG::LetterLoc>{}(p.second);
         }
         return res;
     }
 
-    static typename TG::vec_pairs get_pairs(
-            const TG::Graph &graph, TG::Settings s, TG::Algo algo) {
-        s.algo = algo;
-        if (algo == TG::Algo::BFS) {
-            return TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
-                    graph, s, TG::Settings::NoSkip {});
-        } else if (algo == TG::Algo::BACK_TRACK) {
-            return TG::pairs_from_graph<TG::TrieGraphBuilderBT>(
-                    graph, s, TG::Settings::NoSkip {});
-        } else if (algo == TG::Algo::POINT_BFS) {
-            return TG::pairs_from_graph<TG::TrieGraphBuilderPBFS>(
-                    graph, s, TG::Settings::NoSkip {});
-        } else if (algo == TG::Algo::NODE_BFS) {
-            return TG::pairs_from_graph<TG::TrieGraphBuilderNBFS>(
-                    graph, s, TG::Settings::NoSkip {});
-        }
-        assert(0);
-        return {};
-    }
-
     static std::size_t test_algo(std::string gfa_file, TG::Algo algo) {
         auto graph = TG::Graph::from_file(gfa_file, {});
         auto lloc = TG::LetterLocData(graph);
-        auto s = TG::Settings {
-            .trie_depth = log4_ceil(lloc.num_locations),
-            // .trie_depth = (td_abs == 0 ?
-            //     triegraph::log4_ceil(lloc.num_locations) + td_rel :
-            //     td_abs)
-        };
-        std::vector<std::size_t> hashes;
-        auto pairs = get_pairs(graph, s, algo);
-        TG::prep_pairs(pairs);
+
+        // force PBFS not to cut early
+        auto cfg = MapCfg { "trie-builder-pbfs-cut-early-threshold", "50000000" };
+        auto pairs = graph_to_pairs(
+                graph, lloc,
+                KmerSettings::from_seed_config(lloc.num_locations, cfg),
+                cfg, algo);
+        pairs.sort_by_fwd().unique();
         return hash_pairs(pairs);
     }
 
+    static TG::VectorPairs graph_to_pairs(
+            const TG::Graph &graph,
+            const TG::LetterLocData &lloc,
+            TG::KmerSettings &&kmer_settings,
+            const auto &cfg,
+            TG::Algo algo) {
+        switch (algo) {
+            case TG::Algo::LOCATION_BFS:
+                return TG::graph_to_pairs<TG::TrieBuilderLBFS>(
+                        graph, lloc, std::move(kmer_settings),
+                        TG::TrieBuilderLBFS::Settings::from_config(cfg),
+                        lloc);
+            case TG::Algo::BACK_TRACK:
+                return TG::graph_to_pairs<TG::TrieBuilderBT>(
+                        graph, lloc, std::move(kmer_settings),
+                        TG::TrieBuilderBT::Settings::from_config(cfg),
+                        lloc);
+            case TG::Algo::POINT_BFS:
+                return TG::graph_to_pairs<TG::TrieBuilderPBFS>(
+                        graph, lloc, std::move(kmer_settings),
+                        TG::TrieBuilderPBFS::Settings::from_config(cfg),
+                        lloc);
+            case TG::Algo::NODE_BFS:
+                return TG::graph_to_pairs<TG::TrieBuilderNBFS>(
+                        graph, lloc, std::move(kmer_settings),
+                        TG::TrieBuilderNBFS::Settings::from_config(cfg),
+                        lloc);
+            default:
+                throw "Unknown algorithm";
+        }
+    }
+
+
     virtual void run() {
+        // std::cerr << test_algo(graph_file, algo) << std::endl;;
         assert(test_algo(graph_file, algo) == expected_hash);
     }
 

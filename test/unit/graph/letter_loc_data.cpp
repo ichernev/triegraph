@@ -6,18 +6,17 @@
 
 #include "testlib/test.h"
 
-struct LLNoIdx : public triegraph::dna::DnaConfig<0> {
+struct LLNoIdx : public triegraph::dna::DnaConfig<0, false, true> {
     static constexpr int LetterLocIdxShift = -1;
 };
 
-struct LLWithIdx : public triegraph::dna::DnaConfig<0> {
+struct LLWithIdx : public triegraph::dna::DnaConfig<0, false, true> {
     static constexpr int LetterLocIdxShift = 2;
 };
 
 using TG = triegraph::Manager<LLNoIdx>;
 
 static TG::Graph build_graph() {
-    TG::init();
     return TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("acgt"), "s1")
         .add_node(TG::Str("a"), "s2")

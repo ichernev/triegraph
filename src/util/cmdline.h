@@ -7,8 +7,55 @@
 
 namespace triegraph {
 
-struct CmdLine {
+struct MapCfg {
     std::map<std::string, std::string> flags;
+
+    MapCfg() {}
+    MapCfg(std::initializer_list<std::string> items) {
+        auto bp = items.begin();
+        for (size_t i = 0; i < items.size(); i += 2) {
+            flags[bp[i]] = bp[i+1];
+        }
+    }
+
+    template <typename T=std::string>
+    T get(const std::string &key) const {
+        if constexpr (std::is_same_v<T, bool>) {
+            return flags.contains(key);
+        }
+        if (!flags.contains(key)) { throw "unknown key"; }
+
+        if constexpr (std::is_same_v<T, std::string>) {
+            return val_for_key(key);
+        }
+        std::istringstream is(val_for_key(key));
+        T val_x;
+        is >> val_x;
+        return val_x;
+    }
+
+    template <typename T=std::string>
+    T get_or(const std::string &key, T dfl) const {
+        if constexpr (std::is_same_v<T, bool>) {
+            return flags.contains(key);
+        }
+        if (!flags.contains(key)) { return dfl; }
+
+        if constexpr (std::is_same_v<T, std::string>) {
+            return val_for_key(key);
+        }
+        std::istringstream is(val_for_key(key));
+        T val_x;
+        is >> val_x;
+        return val_x;
+    }
+
+    const std::string &val_for_key(const std::string &key) const {
+        return flags.find(key)->second;
+    }
+};
+
+struct CmdLine : public MapCfg {
     std::vector<std::string> positional;
 
     CmdLine(int argc, char *argv[]) {
@@ -36,38 +83,6 @@ struct CmdLine {
                 }
             }
         }
-    }
-
-    template <typename T=std::string>
-    T get(std::string key) {
-        if constexpr (std::is_same_v<T, bool>) {
-            return flags.contains(key);
-        }
-        if (!flags.contains(key)) { throw "unknown key"; }
-
-        if constexpr (std::is_same_v<T, std::string>) {
-            return flags[key];
-        }
-        std::istringstream is(flags[key]);
-        T val_x;
-        is >> val_x;
-        return val_x;
-    }
-
-    template <typename T=std::string>
-    T get_or(std::string key, T dfl) {
-        if constexpr (std::is_same_v<T, bool>) {
-            return flags.contains(key);
-        }
-        if (!flags.contains(key)) { return dfl; }
-
-        if constexpr (std::is_same_v<T, std::string>) {
-            return flags[key];
-        }
-        std::istringstream is(flags[key]);
-        T val_x;
-        is >> val_x;
-        return val_x;
     }
 
     void debug() {

@@ -61,7 +61,10 @@ int main() {
     using Kmer = triegraph::Kmer<triegraph::dna::DnaLetter, u32, 15>;
     using DKmer = triegraph::DKmer<triegraph::dna::DnaLetter, u32>;
 
-    DKmer::setK(15);
+    DKmer::set_settings({
+        .trie_depth = Kmer::K,
+        .on_mask = Kmer::ON_MASK,
+    });
 
     {
         auto t = Timer("dkmer-ins"); test_insertions<DKmer>(10 * 1000 * 1000);
@@ -70,7 +73,7 @@ int main() {
         auto t = Timer("dkmer-decomp"); test_decompress<DKmer>(100 * 1000 * 1000, DKmer::NUM_COMPRESSED);
     }
     {
-        auto t = Timer("dkmer-comp-decomp"); test_compress_decompress<DKmer>(100 * 1000 * 1000, DKmer:NUM_COMPRESSED);
+        auto t = Timer("dkmer-comp-decomp"); test_compress_decompress<DKmer>(100 * 1000 * 1000, DKmer::NUM_COMPRESSED);
     }
     {
         auto t = Timer("kmer-ins"); test_insertions<Kmer>(10 * 1000 * 1000);

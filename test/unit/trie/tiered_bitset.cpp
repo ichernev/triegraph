@@ -2,6 +2,7 @@
 #include "trie/trie_data.h"
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
+#include "trie/kmer_settings.h"
 #include "alphabet/letter.h"
 #include "alphabet/dna_letter.h"
 
@@ -37,7 +38,7 @@ int m = test::define_module(__FILE__, [] {
 
 test::define_test("no_inner_trie_presense", [] {
     using TB = Helper<4, 3, triegraph::dna::DnaLetter>::TB;
-    TB::Kmer::setK(3);
+    TB::Kmer::set_settings(triegraph::KmerSettings::from_depth<u32>(3));
 
     auto kmers = std::vector<TB::Kmer> {
         TB::Kmer::from_str("aac"),
@@ -68,7 +69,7 @@ test::define_test("no_inner_trie_presense", [] {
 
 test::define_test("with_inner_trie_presense", [] {
     using TB = Helper<4, 3, triegraph::dna::DnaLetter, true>::TB;
-    TB::Kmer::setK(3);
+    TB::Kmer::set_settings(triegraph::KmerSettings::from_depth<u32>(3));
 
     auto kmers = std::vector<TB::Kmer> {
         TB::Kmer::from_str("aac"),

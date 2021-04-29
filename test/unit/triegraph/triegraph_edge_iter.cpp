@@ -6,6 +6,7 @@
 #include <ranges>
 
 #include "testlib/test.h"
+#include "testlib/triegraph/builder.h"
 
 using namespace triegraph;
 
@@ -25,7 +26,7 @@ void func(std::forward_iterator auto it) {}
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("graph_fwd", [] {
-    TG::init({ .trie_depth = 15 });
+    TG::kmer_set_depth(15);
     EditEdgeIterView h = EditEdgeIter::make_graph_fwd(DnaLetters::C, NodePos { 4, 2 });
     std::vector<EditEdge> expected = {
         EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::A },
@@ -45,7 +46,7 @@ test::define_test("graph_fwd", [] {
 });
 
 test::define_test("graph_split", [] {
-    TG::init({ .trie_depth = 15 });
+    TG::kmer_set_depth(15);
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("c"), "s2")
@@ -134,7 +135,7 @@ test::define_test("graph_split", [] {
 });
 
 test::define_test("trie_inner", [] {
-    TG::init({ .trie_depth = 15 });
+    TG::kmer_set_depth(15);
     EditEdgeIterView h = EditEdgeIter::make_trie_inner(
             Kmer::from_str("acgt"),
             (1 << 1) | (1 << 2));
@@ -162,16 +163,16 @@ test::define_test("trie_inner", [] {
 });
 test::define_test("trie_to_graph", [] {
 // static void test_trie_to_graph() {
-    using TG2 = Manager<dna::DnaConfig<0>>;
+    // using TG2 = Manager<dna::DnaConfig<0, false, true>>;
     // TG2::init({ .trie_depth = 2 });
 
-    using Kmer = TG2::Kmer;
-    using EditEdge = TG2::EditEdge;
-    using NodePos = TG2::NodePos;
+    using Kmer = TG::Kmer;
+    using EditEdge = TG::EditEdge;
+    using NodePos = TG::NodePos;
     using DnaLetters = dna::DnaLetters;
-    using DnaStr = TG2::Str;
+    using DnaStr = TG::Str;
 
-    auto g = TG2::Graph::Builder({ .add_reverse_complement = false })
+    auto g = TG::Graph::Builder({ .add_reverse_complement = false })
         .add_node(DnaStr("ac"), "s1")
         .add_node(DnaStr("gg"), "s2")
         .add_node(DnaStr("acg"), "s3")
@@ -192,12 +193,10 @@ test::define_test("trie_to_graph", [] {
       ******************/
 
     // build a trie, so we can test trie-to-graph iter
-    auto tg = TG2::triegraph_from_graph(
-            std::move(g),
-            { .add_reverse_complement = false, .trie_depth = 2 });
+    auto tg = test::tg_from_graph<TG>(std::move(g), 2);
 
-    typename TG2::TrieGraph::edit_edge_iter_view h =
-        TG2::TrieGraph::edit_edge_iterator::make_trie_to_graph(
+    typename TG::TrieGraph::edit_edge_iter_view h =
+        TG::TrieGraph::edit_edge_iterator::make_trie_to_graph(
                 Kmer::from_str("ac"), tg.data);
 
     std::vector<EditEdge> expected = {

@@ -5,12 +5,12 @@
 
 using namespace triegraph;
 
-using TG = Manager<dna::DnaConfig<0>>;
+using TG = Manager<dna::DnaConfig<0, false, true>>;
 
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("linear", [] {
-    TG::init({ .trie_depth = 15 });
+    TG::kmer_set_depth(15);
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("acg"), "s1")
         .build();
@@ -23,7 +23,7 @@ test::define_test("linear", [] {
 });
 
 test::define_test("split", [] {
-    TG::init({ .trie_depth = 15 });
+    TG::kmer_set_depth(15);
     auto g = TG::Graph::Builder()
         .add_node(TG::Str("a"), "s1")
         .add_node(TG::Str("c"), "s2")

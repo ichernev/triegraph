@@ -1,5 +1,5 @@
-#ifndef __TRIEGRAPH_BUILDER_H__
-#define __TRIEGRAPH_BUILDER_H__
+#ifndef __TRIE_BUILDER_LBFS_H__
+#define __TRIE_BUILDER_LBFS_H__
 
 #include "graph/connected_components.h"
 #include "util/compressed_vector.h"
@@ -21,21 +21,24 @@
 
 namespace triegraph {
 
-template <typename Graph_, typename LetterLocData_, typename Kmer_>
-struct TrieGraphBuilder {
+template <typename Graph_, typename LetterLocData_, typename Kmer_, typename VectorPairs_>
+struct TrieBuilderLBFS {
     using Graph = Graph_;
     using LetterLocData = LetterLocData_;
     using Kmer = Kmer_;
+    using VectorPairs = VectorPairs_;
     using Str = Graph::Str;
     using NodeLoc = Graph::NodeLoc;
     using LetterLoc = LetterLocData::LetterLoc;
     using NodePos = LetterLocData::NodePos;
     using kmer_len_type = u32; // how many kmers per location
 
-    using pairs_t = std::vector<std::pair<Kmer, LetterLoc>>;
+    using Self = TrieBuilderLBFS;
+    // using pairs_t = std::vector<std::pair<Kmer, LetterLoc>>;
 
     const Graph &graph;
     const LetterLocData &lloc;
+    VectorPairs &pairs;
 
     struct Stats {
         u32 qpush;
@@ -76,53 +79,61 @@ struct TrieGraphBuilder {
         }
     } stats;
 
-    TrieGraphBuilder(const Graph &graph, const LetterLocData &lloc)
-        : graph(graph), lloc(lloc) {
+    TrieBuilderLBFS(const Graph &graph, const LetterLocData &lloc, VectorPairs &pairs)
+        : graph(graph), lloc(lloc), pairs(pairs) {
     }
 
-    TrieGraphBuilder(const TrieGraphBuilder &) = delete;
-    TrieGraphBuilder &operator= (const TrieGraphBuilder &) = delete;
-    TrieGraphBuilder(TrieGraphBuilder &&) = delete;
-    TrieGraphBuilder &operator= (TrieGraphBuilder &&) = delete;
+    TrieBuilderLBFS(const Self &) = delete;
+    TrieBuilderLBFS(Self &&) = delete;
+    Self &operator= (const Self &) = delete;
+    Self &operator= (Self &&) = delete;
 
-    pairs_t get_pairs(std::ranges::input_range auto&& /* ignored */, u32 /* ignored */) {
+    struct Settings {
+        static constexpr u32 default_set_cutoff = 500u;
+        u32 set_cutoff = default_set_cutoff;
+
+        static Settings from_config(const auto &cfg) {
+            return {
+                .set_cutoff = cfg.template get_or<u32>(
+                        "trie-builder-lbfs-set-cutoff", default_set_cutoff)
+            };
+        }
+    } settings_;
+
+    Self &set_settings(Settings &&s) { settings_ = std::move(s); return *this; }
+    const Settings &settings() const { return settings_; }
+
+    void compute_pairs(std::ranges::input_range auto&& /* starts */) {
         auto &log = Logger::get();
         auto scope = log.begin_scoped("bfs builder");
 
         log.begin("starting points");
         auto starts = ConnectedComponents<Graph>(graph).compute_starting_points();
-        log.end();
-
-        log.begin("bfs");
+        log.end().begin("bfs");
         auto kmer_data = _bfs_trie(std::move(starts));
-        log.end();
-
-        // std::cerr << stats << std::endl;
-
-        log.begin("converting to pairs");
-        return _make_pairs(std::move(kmer_data));
+        log.end().begin("converting to pairs");
+        _fill_pairs(std::move(kmer_data));
     }
 
     struct KmerBuildData {
-        static constexpr u32 SET_CUTOFF = 500;
         std::vector<compressed_vector<Kmer>> kmers;
-        // std::vector<std::vector<Kmer>> kmers;
         std::vector<std::unordered_set<Kmer>> kmers_set;
-
         std::vector<kmer_len_type> done_idx;
 
+        const u32 set_cutoff;
         Stats &stats;
 
-        KmerBuildData(LetterLoc num, Stats &stats) : stats(stats) {
-            // one more for fictional position to store kmers that match to end
-            kmers.resize(num + 1);
-            kmers_set.resize(num + 1);
-            done_idx.resize(num + 1);
-        }
+        KmerBuildData(LetterLoc num, u32 set_cutoff, Stats &stats)
+                : kmers(num+1),
+                  kmers_set(num+1),
+                  done_idx(num+1),
+                  set_cutoff(set_cutoff),
+                  stats(stats)
+        {}
 
         bool exists(LetterLoc pos, Kmer kmer) const {
             auto &pkmers = kmers[pos];
-            if (pkmers.size() >= SET_CUTOFF) {
+            if (pkmers.size() >= set_cutoff) {
                 ++stats.qsearch;
                 return kmers_set[pos].contains(kmer);
             } else {
@@ -135,10 +146,10 @@ struct TrieGraphBuilder {
             auto &pkmers = kmers[pos];
             pkmers.emplace_back(kmer);
 
-            if (pkmers.size() == SET_CUTOFF) {
+            if (pkmers.size() == set_cutoff) {
                 ++stats.nsets;
                 kmers_set[pos].insert(pkmers.begin(), pkmers.end());
-            } else if (pkmers.size() > SET_CUTOFF) {
+            } else if (pkmers.size() > set_cutoff) {
                 kmers_set[pos].insert(kmer);
             }
             return pkmers.size();
@@ -151,7 +162,7 @@ struct TrieGraphBuilder {
 
     KmerBuildData _bfs_trie(const std::vector<NodeLoc> &starts) {
         // std::cerr << "==== bfs_trie" << std::endl;
-        KmerBuildData kb(lloc.num_locations, stats);
+        KmerBuildData kb(lloc.num_locations, settings_.set_cutoff, stats);
 
         std::queue<NodePos> q;
 
@@ -247,8 +258,7 @@ struct TrieGraphBuilder {
         std::cerr << "num locations " << lloc.num_locations << std::endl;
     }
 
-    pairs_t _make_pairs(KmerBuildData kb) {
-        pairs_t pairs;
+    void _fill_pairs(KmerBuildData kb) {
         u64 total = 0;
         assert(kb.kmers.size() == 1 + lloc.num_locations);
         for (LetterLoc i = 0; i <= lloc.num_locations; ++i) {
@@ -268,11 +278,9 @@ struct TrieGraphBuilder {
             auto scope = Logger::get().begin_scoped("freeing aux");
             auto _ = std::move(kb);
         }
-
-        return pairs;
     }
 };
 
 } /* namespace triegraph */
 
-#endif /* __TRIEGRAPH_BUILDER_H__ */
+#endif /* __TRIE_BUILDER_LBFS_H__ */

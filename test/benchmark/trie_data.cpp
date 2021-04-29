@@ -13,7 +13,7 @@ struct TrieDataTester : public test::TestCaseBase {
     std::string graph_file;
 
     TG::LetterLocData lloc;
-    TG::vec_pairs pairs;
+    TG::VectorPairs pairs;
     int td_rel;
     // TrieData td;
     // TrieData::Stats stats;
@@ -27,21 +27,24 @@ struct TrieDataTester : public test::TestCaseBase {
     virtual void prepare() {
         auto graph = TG::Graph::from_file(graph_file, {});
         auto lloc = TG::LetterLocData(graph);
-        auto s = TG::Settings {
-            .trie_depth = log4_ceil(lloc.num_locations) + td_rel,
-            // .trie_depth = (td_abs == 0 ?
-            //     triegraph::log4_ceil(lloc.num_locations) + td_rel :
-            //     td_abs)
-        };
-        auto pairs = TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
-                graph, s, TG::Settings::NoSkip {});
+        // auto s = TG::Settings {
+        //     .trie_depth = log4_ceil(lloc.num_locations) + td_rel,
+        //     // .trie_depth = (td_abs == 0 ?
+        //     //     triegraph::log4_ceil(lloc.num_locations) + td_rel :
+        //     //     td_abs)
+        // };
+        auto pairs = TG::graph_to_pairs<TG::TrieBuilderNBFS>(
+                graph, lloc,
+                TG::KmerSettings::from_seed_config(lloc.num_locations, MapCfg {
+                    "trie-depth-rel", std::to_string(td_rel)}),
+                {}, lloc);
         // TG::prep_pairs(pairs);
         this->pairs = std::move(pairs);
         this->lloc = std::move(lloc);
     }
 
     virtual void run() {
-        TG::vec_pairs xpairs;
+        TG::VectorPairs xpairs;
         std::swap(xpairs, this->pairs);
         auto td = TrieData(std::move(xpairs), this->lloc);
         (void) td;
@@ -50,8 +53,11 @@ struct TrieDataTester : public test::TestCaseBase {
     static void define_tests(std::string pref) {
         std::vector<std::pair<std::string, std::string>> graphs = {
             { "pasgal", "data/pasgal-MHC1.gfa" },
-            { "hg22", "data/hg_22_nn.gfa" },
-            { "hg22_linear", "data/HG_22_linear.gfa" },
+            // { "hg22", "data/hg_22_nn.gfa" },
+            // { "hg22_linear", "data/HG_22_linear.gfa" },
+            // { "hg01", "tmp/hg_01_nn.gfa" },
+            // { "hgc12", "tmp/hg_c12.gfa" },
+            // { "hgc123", "tmp/hg_c123.gfa" },
         };
         for (const auto &g : graphs) {
             for (int td_rel = 0; td_rel <= 2; ++td_rel) {
@@ -67,6 +73,7 @@ struct TrieDataTester : public test::TestCaseBase {
 using TrieDataSMM = TrieData<
     TG::Kmer,
     TG::LetterLocData,
+    TG::VectorPairs,
     TG::triedata_allow_inner,
     SimpleMultimap<
         typename TG::KmerHolder,
@@ -79,6 +86,7 @@ using HMMMap = std::unordered_map<u32, std::pair<u32, u32>>;
 using TrieDataHMM = TrieData<
     TG::Kmer,
     TG::LetterLocData,
+    TG::VectorPairs,
     TG::triedata_allow_inner,
     HybridMultimap<
         typename TG::KmerHolder,
@@ -94,6 +102,7 @@ using HMMSPP = spp::sparse_hash_map<u32, std::pair<u32, u32>>;
 using TrieDataHMM_SPP = TrieData<
     TG::Kmer,
     TG::LetterLocData,
+    TG::VectorPairs,
     TG::triedata_allow_inner,
     HybridMultimap<
         typename TG::KmerHolder,
@@ -109,6 +118,7 @@ using TrieDataHMM_SPP = TrieData<
 using TrieDataDMM_SV = TrieData<
     TG::Kmer,
     TG::LetterLocData,
+    TG::VectorPairs,
     TG::triedata_allow_inner,
     DenseMultimap<
         typename TG::KmerHolder,

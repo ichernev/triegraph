@@ -2,6 +2,7 @@
 #define __KMER_H__
 
 #include "util/util.h"
+#include "trie/kmer_settings.h"
 #include <type_traits> /* for is_unsigned_v */
 #include <functional>  /* for hash */
 #include <iostream>
@@ -66,6 +67,21 @@ struct Kmer {
     static_assert(K <= MAX_K, "can not support big k, increase holder size");
 
     Holder data;
+
+    static void set_settings(KmerSettings settings) {
+        if (settings.trie_depth != Kmer::K) {
+            throw "set_k: K doesn't match template arg";
+        }
+        if (settings.on_mask != Kmer::ON_MASK) {
+            throw "set_k: on_mask doesn't match template arg";
+        }
+    }
+
+    static constexpr KmerSettings settings() {
+        return { .trie_depth = K, .on_mask = ON_MASK };
+    }
+
+
     // receive just the "clean" data, without the len
     // operator Holder() const { return data & _kmer_mask(K - get_len()); }
 

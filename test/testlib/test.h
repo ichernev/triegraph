@@ -1,3 +1,6 @@
+#ifndef __TESTLIB_TEST_H__
+#define __TESTLIB_TEST_H__
+
 #include <assert.h>
 #include <functional>
 #include <iostream>
@@ -5,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <vector>
+#include <cstring>
 
 #include "util/logger.h"
 #include "util/human.h"
@@ -145,6 +149,16 @@ namespace test {
         return std::ranges::equal(sorted(range1), range2);
     }
 
+    bool throws_ccp(std::function<void()> f, const char *expected) {
+        try {
+            f();
+        } catch (const char *got) {
+            assert(std::strcmp(got, expected) == 0);
+            return true;
+        }
+        return false;
+    }
+
     static int define_module(const char *filename, std::function<void()> &&fn) {
         modules.emplace_back(filename);
         fn();
@@ -236,3 +250,5 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+#endif /* __TESTLIB_TEST_H__ */

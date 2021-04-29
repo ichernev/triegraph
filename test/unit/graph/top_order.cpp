@@ -4,7 +4,7 @@
 
 #include "testlib/test.h"
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
+using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
 
 int m = test::define_module(__FILE__, [] {
 

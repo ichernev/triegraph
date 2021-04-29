@@ -8,34 +8,72 @@
 
 using namespace std::literals;
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
 using Logger = triegraph::Logger;
 
-typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s,
-        decltype(TG::Settings::algo) algo) {
-    s.algo = algo;
-    if (algo == TG::Algo::BFS) {
-        return TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
-                graph, s, TG::Settings::NoSkip {});
-    } else if (algo == TG::Algo::BACK_TRACK) {
-        return TG::pairs_from_graph<TG::TrieGraphBuilderBT>(
-                graph, s, TG::Settings::NoSkip {});
-    } else if (algo == TG::Algo::POINT_BFS) {
-        return TG::pairs_from_graph<TG::TrieGraphBuilderPBFS>(
-                graph, s, TG::Settings::NoSkip {});
-    } else if (algo == TG::Algo::NODE_BFS) {
-        return TG::pairs_from_graph<TG::TrieGraphBuilderNBFS>(
-                graph, s, TG::Settings::NoSkip {});
+template <typename TG>
+static TG::VectorPairs graph_to_pairs(
+        const typename TG::Graph &graph,
+        const typename TG::LetterLocData &lloc,
+        typename TG::KmerSettings &&kmer_settings,
+        const auto &cfg,
+        typename TG::Algo algo) {
+    switch (algo) {
+        case TG::Algo::LOCATION_BFS:
+            return TG::template graph_to_pairs<typename TG::TrieBuilderLBFS>(
+                    graph, lloc, std::move(kmer_settings),
+                    TG::TrieBuilderLBFS::Settings::from_config(cfg),
+                    lloc);
+        case TG::Algo::BACK_TRACK:
+            return TG::template graph_to_pairs<typename TG::TrieBuilderBT>(
+                    graph, lloc, std::move(kmer_settings),
+                    TG::TrieBuilderBT::Settings::from_config(cfg),
+                    lloc);
+        case TG::Algo::POINT_BFS:
+            return TG::template graph_to_pairs<typename TG::TrieBuilderPBFS>(
+                    graph, lloc, std::move(kmer_settings),
+                    TG::TrieBuilderPBFS::Settings::from_config(cfg),
+                    lloc);
+        case TG::Algo::NODE_BFS:
+            return TG::template graph_to_pairs<typename TG::TrieBuilderNBFS>(
+                    graph, lloc, std::move(kmer_settings),
+                    TG::TrieBuilderNBFS::Settings::from_config(cfg),
+                    lloc);
+        default:
+            throw "Unknown algorithm";
     }
-    assert(0);
-    return {};
 }
+// typename TG::vec_pairs get_pairs(const TG::Graph &graph, TG::Settings s,
+//         decltype(TG::Settings::algo) algo) {
+//     s.algo = algo;
+//     if (algo == TG::Algo::BFS) {
+//         return TG::pairs_from_graph<TG::TrieGraphBuilderBFS>(
+//                 graph, s, TG::Settings::NoSkip {});
+//     } else if (algo == TG::Algo::BACK_TRACK) {
+//         return TG::pairs_from_graph<TG::TrieGraphBuilderBT>(
+//                 graph, s, TG::Settings::NoSkip {});
+//     } else if (algo == TG::Algo::POINT_BFS) {
+//         return TG::pairs_from_graph<TG::TrieGraphBuilderPBFS>(
+//                 graph, s, TG::Settings::NoSkip {});
+//     } else if (algo == TG::Algo::NODE_BFS) {
+//         return TG::pairs_from_graph<TG::TrieGraphBuilderNBFS>(
+//                 graph, s, TG::Settings::NoSkip {});
+//     }
+//     assert(0);
+//     return {};
+// }
 
-typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &lloc,
-        TG::Settings s, decltype(TG::Settings::algo) algo, bool do_sanity_check) {
-    auto pairs = get_pairs(graph, s, algo);
-    TG::prep_pairs(pairs);
-    auto res = TG::TrieData(pairs, lloc);
+template <typename TG>
+typename TG::TrieData get_td(
+        const typename TG::Graph &graph,
+        const typename TG::LetterLocData &lloc,
+        auto &&cfg,
+        typename TG::Algo algo) {
+    auto ks = triegraph::KmerSettings::from_seed_config<typename TG::KmerHolder>(
+            lloc.num_locations, cfg);
+    auto pairs = graph_to_pairs<TG>(graph, lloc, std::move(ks), cfg, algo);
+    pairs.sort_by_fwd().unique();
+    // TG::prep_pairs(pairs);
+    auto res = TG::pairs_to_triedata(std::move(pairs), lloc);
 
     auto stats = res.stats();
     std::cerr << stats << std::endl;
@@ -47,28 +85,35 @@ typename TG::TrieData get_td(const TG::Graph &graph, const TG::LetterLocData &ll
     return res;
 }
 
-void print_pairs(const TG::Graph &graph, const TG::LetterLocData &lloc,
-        TG::vec_pairs pairs) {
-    TG::prep_pairs(pairs);
+template <typename TG>
+void print_pairs(
+        const typename TG::Graph &graph,
+        const typename TG::LetterLocData &lloc,
+        typename TG::VectorPairs pairs) {
+    pairs.sort_by_fwd().unique();
+    // TG::prep_pairs(pairs);
 
     auto st = Logger::get().begin_scoped("printing");
-    for (const auto &p : pairs) {
-        TG::NodePos np = lloc.expand(p.second);
+    for (const auto &p : pairs.fwd_pairs()) {
+        typename TG::NodePos np = lloc.expand(p.second);
         const auto &node = graph.node(np.node);
         std::cout << p << " " << np.node << "(" << node.seg_id << "):"
             << np.pos << "/" << node.seg.size() << std::endl;
     }
 }
 
-std::vector<TG::NodeLoc> shortest_path(const TG::Graph &graph,
-        TG::NodeLoc start, TG::NodeLoc finish) {
+template <typename TG>
+std::vector<typename TG::NodeLoc> shortest_path(
+        const typename TG::Graph &graph,
+        typename TG::NodeLoc start,
+        typename TG::NodeLoc finish) {
     // node, previous-id
-    std::vector<std::pair<TG::NodeLoc, TG::NodeLoc>> q;
-    std::unordered_set<TG::NodeLoc> vis;
+    std::vector<std::pair<typename TG::NodeLoc, typename TG::NodeLoc>> q;
+    std::unordered_set<typename TG::NodeLoc> vis;
 
     q.emplace_back(start, TG::Graph::INV_SIZE);
     vis.emplace(start);
-    TG::NodeLoc qp;
+    typename TG::NodeLoc qp;
     for (qp = 0; qp < q.size(); ++qp) {
         auto [node, prev_id] = q[qp];
 
@@ -87,7 +132,7 @@ std::vector<TG::NodeLoc> shortest_path(const TG::Graph &graph,
         return {};
 
     // restore path
-    std::vector<TG::NodeLoc> res;
+    std::vector<typename TG::NodeLoc> res;
     while (qp != TG::Graph::INV_SIZE) {
         // std::cerr << "qp " << qp << std::endl;
         res.emplace_back(q[qp].first);
@@ -104,41 +149,46 @@ int main(int argc, char *argv[]) {
     auto cmd = cmdline.positional[0];
     auto graph_file = cmdline.positional[1];
     auto algo = cmdline.positional[2];
-    auto td_rel = cmdline.get_or<triegraph::i32>("trie-depth-rel", 0);
-    auto td_abs = cmdline.get_or<triegraph::u32>("trie-depth", 0);
+    // auto td_rel = cmdline.get_or<triegraph::i32>("trie-depth-rel", 0);
+    // auto td_abs = cmdline.get_or<triegraph::u32>("trie-depth", 0);
 
     try {
         if (cmd == "pairs"s || cmd == "print-pairs"s ||
                 cmd == "td"s || cmd == "ce-test"s ||
                 cmd == "print-top-order"s) {
 
+            using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
             auto algo_v = TG::algo_from_name(algo);
             assert(algo_v != TG::Algo::UNKNOWN);
 
             auto graph = TG::Graph::from_file(graph_file, {});
             auto lloc = TG::LetterLocData(graph);
-            TG::Settings s {
-                .trie_depth = (td_abs == 0 ?
-                    triegraph::log4_ceil(lloc.num_locations) + td_rel :
-                    td_abs)
-            };
+            // TG::Settings s {
+            //     .trie_depth = (td_abs == 0 ?
+            //         triegraph::log4_ceil(lloc.num_locations) + td_rel :
+            //         td_abs)
+            // };
             // TG::init(s);
 
             if (cmd == "pairs"s || cmd == "print-pairs"s ||
                     cmd == "ce-test"s) {
-                auto pairs = get_pairs(graph, s, algo_v);
+                // auto pairs = get_pairs(graph, s, algo_v);
+                auto pairs = graph_to_pairs<TG>(graph, lloc,
+                        triegraph::KmerSettings::from_seed_config<TG::KmerHolder>(lloc.num_locations, cmdline),
+                        cmdline, algo_v);
 
                 if (cmd == "print-pairs"s)
-                    print_pairs(graph, lloc, std::move(pairs));
+                    print_pairs<TG>(graph, lloc, std::move(pairs));
                 else if (cmd == "ce-test"s) {
-                    TG::prep_pairs(pairs);
-                    std::ranges::sort(pairs, [](const auto &a, const auto &b) {
-                            return a.second < b.second;
-                    });
+                    pairs.sort_by_rev().unique();
+                    // TG::prep_pairs(pairs);
+                    // std::ranges::sort(pairs, [](const auto &a, const auto &b) {
+                    //         return a.second < b.second;
+                    // });
                     auto ce = TG::ComplexityEstimator(
                             graph,
                             TG::TopOrder::Builder(graph).build(),
-                            s.trie_depth,
+                            TG::Kmer::K,
                             4, // backedge_init
                             2).compute(); // backedge_max_trav
 
@@ -158,7 +208,8 @@ int main(int argc, char *argv[]) {
                     for (TG::NodeLoc i = 0; i < graph.num_nodes(); ++i) {
                         auto np_beg = lloc.compress(TG::NodePos(i, 0));
                         auto er_beg = std::ranges::equal_range(
-                                pairs, std::make_pair(TG::Kmer::empty(), np_beg),
+                                pairs.fwd_pairs(),
+                                std::make_pair(TG::Kmer::empty(), np_beg),
                                 [](const auto &a, const auto &b) {
                                     return a.second < b.second;
                                 });
@@ -171,7 +222,8 @@ int main(int argc, char *argv[]) {
                     }
                 }
             } else if (cmd == "td"s) {
-                auto td = get_td(graph, lloc, s, algo_v, cmdline.get<bool>("--sanity-check"));
+                using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
+                auto td = get_td<TGX>(graph, lloc, cmdline, TGX::algo_from_name(algo));
             } else if (cmd == "print-top-order"s) {
                 // auto starts = ConnectedComponents<TG::Graph>(graph).compute_starting_points();
                 // auto top_ord = TG::TopOrder::Builder(graph).build(starts);
@@ -184,7 +236,7 @@ int main(int argc, char *argv[]) {
                         std::cout << "E " << graph.node(edge.from).seg_id << " " << graph.node(edge.to).seg_id
                             << " EST:" << top_ord.idx[edge.to] - top_ord.idx[edge.from]
                             << std::endl;
-                        auto sp = shortest_path(graph, edge.to, edge.from);
+                        auto sp = shortest_path<TG>(graph, edge.to, edge.from);
                         std::cout << " shortest len: " << sp.size() << std::endl;
                         if (sp.size() < 50) {
                             for (const auto node_id : sp) {

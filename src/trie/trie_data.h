@@ -7,6 +7,7 @@
 #include "util/simple_multimap.h"
 #include "util/sorted_vector.h"
 #include "util/logger.h"
+#include "trie/kmer_codec.h"
 
 #include <type_traits>
 #include <utility>
@@ -20,30 +21,6 @@
 #include <assert.h>
 
 namespace triegraph {
-
-template <typename A, typename B>
-struct PairSwitchComp {
-    bool operator() (const std::pair<A, B> &a, const std::pair<A, B> &b) const {
-        return a.second == b.second ? a.first < b.first : a.second < b.second;
-    }
-};
-
-template <typename Kmer, typename KmerComp = Kmer::Holder, bool allow_inner = false>
-struct CodecKmer {
-    using ext_type = Kmer;
-    using int_type = KmerComp;
-
-    static int_type to_int(const ext_type &kmer) { return kmer.compress_leaf(); }
-    static ext_type to_ext(const int_type &krepr) { return Kmer::from_compressed_leaf(krepr); }
-};
-template <typename Kmer, typename KmerComp>
-struct CodecKmer<Kmer, KmerComp, true> {
-    using ext_type = Kmer;
-    using int_type = KmerComp;
-
-    static int_type to_int(const ext_type &kmer) { return kmer.compress(); }
-    static ext_type to_ext(const int_type &krepr) { return Kmer::from_compressed(krepr); }
-};
 
 template <typename Kmer_, bool allow_inner = false>
 struct TieredBitset {
@@ -118,6 +95,7 @@ struct TieredBitset {
 
 template <typename Kmer_,
          typename LetterLocData_,
+         typename VectorPairs_,
          bool allow_inner,
          typename T2GMap,
          typename G2TMap>
@@ -126,38 +104,41 @@ struct TrieData {
     using KHolder = Kmer::Holder;
     using LetterLocData = LetterLocData_;
     using LetterLoc = LetterLocData::LetterLoc;
+    using VectorPairs = VectorPairs_;
 
-    using KmerCodec = CodecKmer<Kmer, typename Kmer::Holder, allow_inner>;
+    using KmerCodec = triegraph::KmerCodec<Kmer, typename Kmer::Holder, allow_inner>;
 
-    TrieData(std::vector<std::pair<Kmer, LetterLoc>> pairs,
+    TrieData(VectorPairs pairs,
             const LetterLocData &letter_loc) {
         auto &log = Logger::get();
 
         auto scope = log.begin_scoped("trie data");
 
         log.begin("sort pairs t2g");
-        std::ranges::sort(pairs);
+        pairs.sort_by_fwd();
+        // std::ranges::sort(pairs);
         log.end(); log.begin("build t2g");
         trie2graph = {
-                pairs | std::ranges::views::transform(
+                pairs.fwd_pairs()/* | std::ranges::views::transform(
                     [](const auto &p) {
                         return std::make_pair(
                                 KmerCodec::to_int(p.first),
                                 p.second);
                     }
-                )};
+                )*/};
 
         log.end(); log.begin("sort pairs g2t");
-        std::ranges::sort(pairs, PairSwitchComp<Kmer, LetterLoc> {});
+        pairs.sort_by_rev();
+        // std::ranges::sort(pairs, PairSwitchComp<Kmer, LetterLoc> {});
         log.end(); log.begin("build g2t");
         graph2trie = {
-                pairs | std::ranges::views::transform(
+                pairs.rev_pairs() /* | std::ranges::views::transform(
                     [](const auto &p) {
                         return std::make_pair(
                                 p.second,
                                 KmerCodec::to_int(p.first));
                     }
-                )};
+                )*/};
 
         log.end();
         log.begin("build inner");
@@ -238,6 +219,11 @@ struct TrieData {
               num_locs(std::ranges::distance(td.graph2trie.keys())),
               num_pairs(td.trie2graph.size())
         {}
+
+        Stats(const Stats &) = delete;
+        Stats(Stats &&) = default;
+        Stats& operator= (const Stats &) = delete;
+        Stats& operator= (Stats &&) = default;
 
         friend std::ostream &operator<< (std::ostream &os, const Stats &s) {
             return os

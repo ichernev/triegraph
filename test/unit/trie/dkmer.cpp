@@ -20,7 +20,7 @@ using DnaKmer = DKmer<DnaLetter, u32>;
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("push", [] {
-    DnaKmer::setK(15);
+    DnaKmer::set_settings({ .trie_depth = 15 });
     DnaKmer kmer = DnaKmer::empty();
 
     assert(!kmer.is_complete());
@@ -37,7 +37,7 @@ test::define_test("push", [] {
 });
 
 test::define_test("pop", [] {
-    DnaKmer::setK(15);
+    DnaKmer::set_settings({ .trie_depth = 15 });
     auto kmer = DnaKmer::empty();
     for (DnaKmer::klen_type i = 0; i < DnaKmer::K; ++i) {
         kmer.push(DnaLetters::A);
@@ -53,7 +53,7 @@ test::define_test("pop", [] {
 });
 
 test::define_test("iter", [] {
-    DnaKmer::setK(15);
+    DnaKmer::set_settings({ .trie_depth = 15 });
     std::vector<DnaLetter> seq;
     for (DnaKmer::klen_type i = 0; i < DnaKmer::K; ++i) {
         seq.push_back(rand() % DnaLetter::num_options);
@@ -85,7 +85,7 @@ test::define_test("iter", [] {
 });
 
 test::define_test("concept", [] {
-    DnaKmer::setK(15);
+    DnaKmer::set_settings({ .trie_depth = 15 });
     auto kmer = DnaKmer::empty();
     auto func = [](std::random_access_iterator auto x) {};
     func(kmer.begin());
@@ -95,7 +95,7 @@ test::define_test("on_mask", [] {
     // basically same as test_iter test, but also check for on_mask
     u64 on_mask = u64(1) << 63;
     using DnaKmer_u = DKmer<DnaLetter, u64>;
-    DnaKmer_u::setK(31, on_mask);
+    DnaKmer_u::set_settings({ .trie_depth = 31, .on_mask = on_mask });
 
     std::vector<DnaLetter> seq;
     for (DnaKmer_u::klen_type i = 0; i < DnaKmer_u::K; ++i) {
@@ -130,7 +130,7 @@ test::define_test("on_mask", [] {
 test::define_test("map_friendly", [] {
     u64 on_mask = u64(1) << 63;
     using DnaKmer_u = DKmer<DnaLetter, u64>;
-    DnaKmer_u::setK(31, on_mask);
+    DnaKmer_u::set_settings({ .trie_depth = 31, .on_mask = on_mask });
 
     std::unordered_multimap<DnaKmer, u32> a1;
     // std::unordered_multimap<u32, DnaKmer> b1;
@@ -147,20 +147,20 @@ test::define_test("map_friendly", [] {
 
 test::define_test("to_from_str", [] {
     using Kmer4 = DKmer<DnaLetter, u64>;
-    Kmer4::setK(4);
+    Kmer4::set_settings({ .trie_depth = 4 });
 
     assert(DnaKmer::from_str("acgt").to_str() == "acgt");
     assert(Kmer4::from_str("acgta").to_str() == "cgta");
 });
 
 test::define_test("cmp", [] {
-    DnaKmer::setK(15);
+    DnaKmer::set_settings({ .trie_depth = 15 });
     assert(DnaKmer::from_str("acgt") < DnaKmer::from_str("actt"));
     assert(DnaKmer::from_str("acgt") == DnaKmer::from_str("acgt"));
 });
 
 test::define_test("indexing", [] {
-    DnaKmer::setK(15);
+    DnaKmer::set_settings({ .trie_depth = 15 });
     auto k = DnaKmer::from_str("acgt");
     assert(k[0] == 0);
     assert(k[1] == 1);
@@ -172,7 +172,7 @@ test::define_test("static_arrays", [] {
     {
         using Letter = triegraph::Letter<u8, 4>;
         using Kmer = triegraph::DKmer<Letter, u32>;
-        Kmer::setK(4, u32(1) << 31);
+        Kmer::set_settings({ .trie_depth = 4, .on_mask = u32(1) << 31 });
 
         // std::ranges::copy(Kmer::beg, std::ostream_iterator<u32>(std::cerr, " ")); std::cerr << std::endl;
         assert(std::ranges::equal(std::vector<u32> {0, 1, 5, 21, 85}, std::span(Kmer::beg.begin(), 5)));
@@ -182,7 +182,7 @@ test::define_test("static_arrays", [] {
     {
         using Letter = triegraph::Letter<u8, 2>;
         using Kmer = triegraph::DKmer<Letter, u32>;
-        Kmer::setK(3, u32(1) << 31);
+        Kmer::set_settings({ .trie_depth = 3, .on_mask = u32(1) << 31 });
 
         // std::ranges::copy(Kmer::beg, std::ostream_iterator<u32>(std::cerr, " ")); std::cerr << std::endl;
         assert(std::ranges::equal(std::vector<u32> {0, 1, 3, 7}, std::span(Kmer::beg.begin(), 4)));
@@ -193,7 +193,7 @@ test::define_test("static_arrays", [] {
 test::define_test("compressed_2x2", [] {
     using Letter = triegraph::Letter<u8, 2>;
     using Kmer = triegraph::DKmer<Letter, u32>;
-    Kmer::setK(2, u32(1) << 31);
+    Kmer::set_settings({ .trie_depth = 2, .on_mask = u32(1) << 31 });
 
     auto fc = [](int i) { return Kmer::from_compressed(i); };
 
@@ -220,7 +220,7 @@ test::define_test("compressed_2x2", [] {
 test::define_test("compressed_4x2", [] {
     using Letter = triegraph::Letter<u8, 4>;
     using Kmer = triegraph::DKmer<Letter, u32>;
-    Kmer::setK(2, u32(1) << 31);
+    Kmer::set_settings({ .trie_depth = 2, .on_mask = u32(1) << 31 });
 
     auto fc = [](int i) { return Kmer::from_compressed(i); };
 

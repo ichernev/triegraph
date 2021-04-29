@@ -2,6 +2,8 @@
 #define __DKMER_H__
 
 #include "util/util.h"
+#include "trie/kmer_settings.h"
+
 #include <type_traits> /* for is_unsigned_v */
 #include <functional>  /* for hash */
 #include <iostream>
@@ -41,6 +43,7 @@ struct DKmer {
     using value_type = Letter;
     using Self = DKmer;
 
+    static constexpr klen_type MAX_K = (sizeof(Holder) * BITS_PER_BYTE - 1) / Letter::bits;
     static inline klen_type K;
     static inline Holder ON_MASK;
     static inline Holder KMER_MASK, EMPTY;
@@ -51,13 +54,16 @@ struct DKmer {
     static Holder _kmer_mask(klen_type anti_len) {
         return (Holder(1) << (K - anti_len) * Letter::bits) - 1;
     }
-    static void setK(klen_type k, Holder on_mask = 0) {
-        Self::K = k;
-        Self::ON_MASK = on_mask;
+    static void set_settings(KmerSettings settings) {
+        // std::cerr << "setting trie_depth " << settings.trie_depth << '\n'
+        //     << "on_mask " << std::hex << settings.on_mask << std::dec << std::endl;
+        Self::K = settings.trie_depth;
+        Self::ON_MASK = settings.on_mask;
+        // std::cerr << "SETTING " << Self::K << " " << std::hex << Self::ON_MASK << std::dec << std::endl;
         Holder h1 = 1;
         klen_type max_k = (sizeof(Holder) * BITS_PER_BYTE - 1) / Letter::bits -
             // make space for on_mask if bits is 1 (num_options == 2)
-            (on_mask && Letter::bits == 1 ? 1 : 0);
+            (settings.on_mask && Letter::bits == 1 ? 1 : 0);
         if (K > max_k) throw "K is too high";
         Self::KMER_MASK = _kmer_mask(0);
         Self::L1_MASK = h1 << max_k * Letter::bits;
@@ -76,6 +82,10 @@ struct DKmer {
         }
         Self::NUM_COMPRESSED = beg[K+1];
         Self::NUM_LEAFS = lvl_size[K];
+    }
+
+    static KmerSettings settings() {
+        return { .trie_depth = Self::K, .on_mask = Self::ON_MASK };
     }
 
     Holder data;

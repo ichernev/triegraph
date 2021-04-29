@@ -2,13 +2,14 @@
 #define __DNA_CONFIG_H__
 
 #include "util/util.h"
+#include "util/vector_pairs.h"
 #include "alphabet/dna_letter.h"
 
 namespace triegraph::dna {
 
 using namespace triegraph;
 
-template<u64 trie_depth = 15>
+template<u64 trie_depth = 15, bool allow_inner = false, bool pairs_raw = false>
 struct DnaConfig {
     using Letter = DnaLetter;
     using Letters = DnaLetters;
@@ -18,7 +19,9 @@ struct DnaConfig {
     using EdgeLoc = u32;
     using LetterLoc = u32;
     using KmerHolder = u32;
-    static constexpr bool triedata_allow_inner = false;
+    static constexpr bool triedata_allow_inner = allow_inner;
+    static constexpr VectorPairsImpl vector_pairs_impl = VectorPairsImpl::SIMPLE;
+    static constexpr bool trie_pairs_raw = pairs_raw;
     static constexpr u32 TDMapType = 1u; /* use DMM */
     static constexpr int LetterLocIdxShift = 4;
     static constexpr u64 KmerLen = trie_depth;

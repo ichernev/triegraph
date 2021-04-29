@@ -5,7 +5,7 @@
 
 #include "testlib/test.h"
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
+using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
 using ComplexityComponent = triegraph::ComplexityComponent<
     TG::Graph, TG::NodePos>;
 using ComplexityComponentWalker = triegraph::ComplexityComponentWalker<
