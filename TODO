@@ -7,6 +7,8 @@ Tasks
 
 + slow tests for (triedata) multimap
 + put TrieGraphData stats (from main.cpp, cc_dual.cpp) in TrieGraphData class
++ support ACGT simple/multi .fasta format
+- support full-letter .fasta -> variant graph
 - use doxygen throughout
 - improve building
     - support start from filename, graph, and finish at pairs/td/tgd
@@ -15,7 +17,12 @@ Tasks
     - support various configuration options for each component
     - support reading config from Config-like object (CmdLine)
 - improve SortedVector speed with TrieData builder
+    + added +/-1 cache : speedup up-to 2x for +2 trie-depth-rel
+    - backward traverse if closer to upper beacon
+    - use smaller-than-char type (better cache hits)
 - run on bigger (600M+ locations) graphs
+    + run on 200M+ (hg01) graph
+    - figure out what would fit on 32G
 - implement save/load for TrieData
 - implement 0-overhead pairs->TrieData
     - using file system
@@ -33,16 +40,83 @@ Tasks
 - implement bit-compact vector
     - figure out interface to make it compatible with all existing code
     - use for pairs, TrieData
-- cleanup tests
-    - test only component under test
-    - move more complicated tests to slow/
-    - impl test script
-    - add timing to slow tests
-    - enable level cutoff in Logger, use in slow/
++ cleanup tests
+    + test only component under test
+    + move more complicated tests to slow/
+    + impl test script
+    + add timing to slow tests
+    x enable level cutoff in Logger, use in slow/
 
 https://github.com/maickrau/GraphAligner/blob/master/src/GfaGraph.cpp
 https://github.com/maickrau/GraphAligner/blob/master/src/GraphAlignerGAFAlignment.h
 
+
+Take 1:
+
+  TEST HMM_SPP::pasgal [OK] 10.1s 289mb
+  TEST HMM_SPP::hg22 [OK] 56.4s 2.33gb
+  TEST HMM_SPP::hg22_linear [OK] 53.1s 2.09gb
+  TEST DMM_SV::pasgal [OK] 6.16s 64.6mb
+  TEST DMM_SV::hg22 [OK] 30.3s 733mb
+  TEST DMM_SV::hg22_linear [OK] 28.1s 613mb
+
+Take 2:
+  TEST default::pasgal::+0 [OK] 5.54s 192mb
+  TEST default::pasgal::+1 [OK] 6.08s 434mb
+  TEST default::pasgal::+2 [OK] 7.36s 1.22gb
+  TEST default::hg22::+0 [OK] 27.4s 1.15gb
+  TEST default::hg22::+1 [OK] 28.3s 1.93gb
+  TEST default::hg22::+2 [OK] 32.1s 5.12gb
+  TEST default::hg22_linear::+0 [OK] 25.1s 1.07gb
+  TEST default::hg22_linear::+1 [OK] 27.2s 1.86gb
+  TEST default::hg22_linear::+2 [OK] 30.9s 5.01gb
+  TEST HMM_SPP::pasgal::+0 [OK] 10.3s 232mb
+  TEST HMM_SPP::pasgal::+1 [OK] 12.0s 326mb
+  TEST HMM_SPP::pasgal::+2 [OK] 13.4s 375mb
+  TEST HMM_SPP::hg22::+0 [OK] 57.0s 2.29gb
+  TEST HMM_SPP::hg22::+1 [OK] 64.3s 2.60gb
+  TEST HMM_SPP::hg22::+2 [OK] 70.0s 2.73gb
+  TEST HMM_SPP::hg22_linear::+0 [OK] 55.8s 2.09gb
+  TEST HMM_SPP::hg22_linear::+1 [OK] 61.7s 2.43gb
+  TEST HMM_SPP::hg22_linear::+2 [OK] 66.3s 2.53gb
+  TEST DMM_SV::pasgal::+0 [OK] 6.40s 126mb
+  TEST DMM_SV::pasgal::+1 [OK] 9.26s 198mb
+  TEST DMM_SV::pasgal::+2 [OK] 18.0s 401mb
+  TEST DMM_SV::hg22::+0 [OK] 31.1s 733mb
+  TEST DMM_SV::hg22::+1 [OK] 40.2s 929mb
+  TEST DMM_SV::hg22::+2 [OK] 74.8s 1.89gb
+  TEST DMM_SV::hg22_linear::+0 [OK] 30.2s 678mb
+  TEST DMM_SV::hg22_linear::+1 [OK] 38.7s 875mb
+  TEST DMM_SV::hg22_linear::+2 [OK] 73.3s 1.83gb
+
+Take 3 (SortedVector with +/- 1 cache)
+
+  TEST HMM_SPP::pasgal::+0 [OK] 10.0s 290mb
+  TEST HMM_SPP::pasgal::+1 [OK] 11.6s 376mb
+  TEST HMM_SPP::pasgal::+2 [OK] 14.7s 415mb
+  TEST HMM_SPP::hg22::+0 [OK] 62.8s 2.33gb
+  TEST HMM_SPP::hg22::+1 [OK] 66.2s 2.64gb
+  TEST HMM_SPP::hg22::+2 [OK] 69.5s 2.77gb
+  TEST HMM_SPP::hg22_linear::+0 [OK] 57.5s 2.09gb
+  TEST HMM_SPP::hg22_linear::+1 [OK] 63.8s 2.44gb
+  TEST HMM_SPP::hg22_linear::+2 [OK] 69.1s 2.53gb
+  TEST DMM_SV::pasgal::+0 [OK] 6.24s 126mb
+  TEST DMM_SV::pasgal::+1 [OK] 7.03s 198mb
+  TEST DMM_SV::pasgal::+2 [OK] 10.5s 401mb
+  TEST DMM_SV::hg22::+0 [OK] 29.1s 733mb
+  TEST DMM_SV::hg22::+1 [OK] 32.8s 929mb
+  TEST DMM_SV::hg22::+2 [OK] 44.9s 1.84gb
+  TEST DMM_SV::hg22_linear::+0 [OK] 27.2s 613mb
+  TEST DMM_SV::hg22_linear::+1 [OK] 30.3s 875mb
+  TEST DMM_SV::hg22_linear::+2 [OK] 43.3s 1.83gb
+
+Bigger (hg01 : 233m locations)
+  TEST default::hg01::+0 [OK] 190s 6.55gb
+  TEST default::hg01::+1 [OK] 196s 9.74gb
+  TEST HMM_SPP::hg01::+0 [OK] 353s 13.3gb
+  TEST HMM_SPP::hg01::+1 [OK] 383s 15.0gb
+  TEST DMM_SV::hg01::+0  [OK] 200s 4.48gb
+  TEST DMM_SV::hg01::+1  [OK] 216s 5.41gb
 
 # with K=16
 graph nodes:               959062
