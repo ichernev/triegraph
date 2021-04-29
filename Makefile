@@ -50,12 +50,12 @@ build:
 		[ -n "$(PREFIX)" ] && xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
 		if [ -d "$$xpcs" ]; then \
 			find $$xpcs/ -name '*.cpp' | while read t; do \
-				[ -n "$(FORCE)" ] && rm ./$(OUTPUT)/$${t%.cpp}; \
-				make ./$(OUTPUT)/$${t%.cpp}; \
+				[ -n "$(FORCE)" ] && rm -f ./$(OUTPUT)/$${t%.cpp}; \
+				make --no-print-directory ./$(OUTPUT)/$${t%.cpp}; \
 			done; \
 		else \
 			[ -n "$(FORCE)" ] && rm ./$(OUTPUT)/$$xpcs; \
-			make ./$(OUTPUT)/$$xpcs; \
+			make --no-print-directory ./$(OUTPUT)/$$xpcs; \
 		fi; \
 	done
 
