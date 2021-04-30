@@ -8,133 +8,297 @@ namespace triegraph {
 
 enum struct VectorPairsImpl : u32 { EMPTY, SIMPLE, DUAL };
 
-template <typename T1, typename T2, VectorPairsImpl impl_choice>
-struct VectorPairs {
-
-    using Self = VectorPairs;
-
+template <typename T1, typename T2>
+struct VectorPairsBase {
     using fwd_pair = std::pair<T1, T2>;
     using rev_pair = std::pair<T2, T1>;
     using fwd_vec = std::vector<fwd_pair>;
     using rev_vec = std::vector<rev_pair>;
-
     using value_type = fwd_pair; // for back_inserter
+};
 
-    struct Empty {
-        size_t size() const { return 0; }
-        void reserve(size_t capacity) { }
+template <typename T1, typename T2, VectorPairsImpl impl_choice>
+struct VectorPairs : public VectorPairsBase<T1, T2> {
+    using Base = VectorPairsBase<T1, T2>;
+    using Self = VectorPairs;
 
-        template <typename Tx1, typename Tx2>
-        void emplace_back(Tx1 &&a, Tx2 &&b) {}
-        void push_back(const fwd_pair &) {}
+    size_t size() const { return 0; }
+    void reserve(size_t capacity) { }
 
-        void sort_by_fwd() {}
-        void sort_by_rev() {}
-        void unique() {}
+    template <typename Tx1, typename Tx2>
+    void emplace_back(Tx1 &&a, Tx2 &&b) {}
+    void push_back(const Base::fwd_pair &) {}
 
-        void write_to_disk() {}
-        // FSStreamer stream_from_disk() {}
-        void sort_on_disk() {}
+    Self &sort_by_fwd() { return *this; }
+    Self &sort_by_rev() { return *this; }
+    Self &unique() { return *this; }
 
-        using const_fwd_view = iter_pair<
-            typename fwd_vec::const_iterator,
-            typename fwd_vec::const_iterator>;
-        const_fwd_view fwd_pairs() const {
-            return {
-                typename const_fwd_view::iterator(nullptr),
-                typename const_fwd_view::sentinel(nullptr)
-            };
-        }
-        using const_rev_view = iter_pair<
-            typename rev_vec::const_iterator,
-            typename rev_vec::const_iterator>;
-        const_rev_view rev_pairs() const {
-            return {
-                typename const_rev_view::iterator(nullptr),
-                typename const_rev_view::sentinel(nullptr)
-            };
-        }
-    };
+    // void write_to_disk() {}
+    // // FSStreamer stream_from_disk() {}
+    // void sort_on_disk() {}
 
-    struct Simple {
-        fwd_vec vec;
+    using const_fwd_view = iter_pair<
+        typename Base::fwd_vec::const_iterator,
+        typename Base::fwd_vec::const_iterator>;
+    const_fwd_view fwd_pairs() const {
+        return {
+            typename const_fwd_view::iterator(nullptr),
+            typename const_fwd_view::sentinel(nullptr)
+        };
+    }
+    using const_rev_view = iter_pair<
+        typename Base::rev_vec::const_iterator,
+        typename Base::rev_vec::const_iterator>;
+    const_rev_view rev_pairs() const {
+        return {
+            typename const_rev_view::iterator(nullptr),
+            typename const_rev_view::sentinel(nullptr)
+        };
+    }
+};
 
-        size_t size() const { return vec.size(); }
-        void reserve(size_t cap) { vec.reserve(cap); }
+template <typename T1, typename T2>
+struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1, T2> {
+    using Self = VectorPairs;
+    using Base = VectorPairsBase<T1, T2>;
+    Base::fwd_vec vec;
 
-        template <typename Tx1, typename Tx2>
-        void emplace_back(Tx1 &&a, Tx2 &&b) {
-            vec.emplace_back(std::forward<Tx1>(a), std::forward<Tx2>(b));
-        }
-        void push_back(const fwd_pair &p) { vec.push_back(p); }
-        void push_back(fwd_pair &&p) { vec.push_back(std::move(p)); }
-
-        void sort_by_fwd() {
-            std::ranges::sort(vec);
-        }
-
-        void sort_by_rev() {
-            std::ranges::sort(vec, [](const auto &a, const auto &b) {
-                return a.second != b.second ? a.second < b.second : a.first < b.first;
-            });
-        }
-
-        void unique() {
-            auto ur = std::ranges::unique(vec);
-            vec.resize(ur.begin() - vec.begin());
-        }
-
-
-        using const_fwd_view = iter_pair<
-            typename fwd_vec::const_iterator,
-            typename fwd_vec::const_iterator>;
-        const_fwd_view fwd_pairs() const {
-            return {vec.begin(), vec.end()};
-        }
-
-        auto rev_pairs() const {
-            return fwd_pairs() | std::ranges::views::transform([](const auto &a) {
-                    return std::pair<T2, T1>(a.second, a.first);
-            });
-        }
-        // I can't make it compile...
-        // using const_rev_view = std::result_of<
-        //     decltype(&Simple::rev_pairs)(const Simple *)>;
-    };
-
-    struct Dual {
-        std::vector<T1> vec1;
-        std::vector<T2> vec2;
-    };
-
-    using Impl = choose_type_t<u32(impl_choice), Empty, Simple, Dual>;
-    Impl impl;
-
-    // struct FSStreamer {
-    //     auto fwd_pairs();
-    //     auto rev_pairs();
-    // };
-
-    size_t size() const { return impl.size(); }
-    void reserve(size_t cap) { impl.reserve(cap); }
+    size_t size() const { return vec.size(); }
+    void reserve(size_t cap) { vec.reserve(cap); }
 
     template <typename Tx1, typename Tx2>
     void emplace_back(Tx1 &&a, Tx2 &&b) {
-        impl.emplace_back(std::forward<Tx1>(a), std::forward<Tx2>(b));
+        vec.emplace_back(std::forward<Tx1>(a), std::forward<Tx2>(b));
     }
-    void push_back(const fwd_pair &p) { impl.push_back(p); }
-    void push_back(fwd_pair &&p) { impl.push_back(std::move(p)); }
+    void push_back(const Base::fwd_pair &p) { vec.push_back(p); }
+    void push_back(Base::fwd_pair &&p) { vec.push_back(std::move(p)); }
 
-    Self &sort_by_fwd() { impl.sort_by_fwd(); return *this; }
-    Self &sort_by_rev() { impl.sort_by_rev(); return *this; }
-    Self &unique() { impl.unique(); return *this; }
+    Self &sort_by_fwd() {
+        std::ranges::sort(vec);
+        return *this;
+    }
 
-    // void write_to_disk() {}
-    // FSStreamer stream_from_disk() {}
-    // void sort_on_disk() {}
+    Self &sort_by_rev() {
+        std::ranges::sort(vec, [](const auto &a, const auto &b) {
+            return a.second != b.second ? a.second < b.second : a.first < b.first;
+        });
+        return *this;
+    }
 
-    auto fwd_pairs() const { return impl.fwd_pairs(); }
-    auto rev_pairs() const { return impl.rev_pairs(); }
+    Self &unique() {
+        auto ur = std::ranges::unique(vec);
+        vec.resize(ur.begin() - vec.begin());
+        return *this;
+    }
+
+    using const_fwd_view = iter_pair<
+        typename Base::fwd_vec::const_iterator,
+        typename Base::fwd_vec::const_iterator>;
+    const_fwd_view fwd_pairs() const {
+        return {vec.begin(), vec.end()};
+    }
+
+    auto rev_pairs() const {
+        return fwd_pairs() | std::ranges::views::transform([](const auto &a) {
+                return std::pair<T2, T1>(a.second, a.first);
+        });
+    }
+    // I can't make it compile...
+    // using const_rev_view = std::result_of<
+    //     decltype(&Simple::rev_pairs)(const Simple *)>;
+};
+
+namespace impl {
+
+
+    template <typename T1, typename T2>
+    struct RefPair;
+
+    template <typename A, typename B>
+    std::strong_ordering _cmp(A &&a, B &&b) {
+        if (const auto cmp = a.first <=> b.first; cmp != 0)
+            return cmp;
+        return a.second <=> b.second;
+    }
+    template <typename A, typename B>
+    bool _eq(A &&a, B &&b) { return a.first == b.first && a.second == b.second; }
+    template <typename A, typename B>
+    void _copy(A &&a, B &&b) { a.first = b.first; a.second = b.second; }
+    template <typename A, typename B>
+    void _swap(A &&a, B &&b) { std::swap(a.first, b.first); std::swap(a.second, b.second); }
+
+    template <typename T1, typename T2>
+    struct Pair {
+        T1 first;
+        T2 second;
+        using RefPair = impl::RefPair<T1, T2>;
+
+        Pair(const T1 &first, const T2 &second) : first(first), second(second) {}
+        Pair(const Pair &) = default;
+        Pair(RefPair &&other) { _copy(*this, other); }
+
+        friend std::strong_ordering operator<=> (const Pair &a, const Pair &b) {
+            return _cmp(a, b);
+        }
+        friend std::strong_ordering operator<=> (const Pair &a, const RefPair &b) {
+            return _cmp(a, b);
+        }
+        friend bool operator== (const Pair &a, const Pair &b) { return _eq(a, b); }
+        friend bool operator== (const Pair &a, const RefPair &b) { return _eq(a, b); }
+        friend void swap(Pair &a, Pair &b) { _swap(a, b); }
+    };
+
+    template <typename T1, typename T2>
+    struct RefPair {
+        T1& first;
+        T2& second;
+        using Pair = impl::Pair<T1, T2>;
+
+        RefPair(T1& a, T2& b) : first(a), second(b) {}
+        RefPair &operator= (RefPair &&other) { _copy(*this, other); return *this; }
+        RefPair &operator= (Pair &&other) { _copy(*this, other); return *this; }
+        friend std::strong_ordering operator<=> (const RefPair &a, const Pair &b) {
+            return _cmp(a, b);
+        }
+        friend std::strong_ordering operator<=> (const RefPair &a, const RefPair &b) {
+            return _cmp(a, b);
+        }
+        friend bool operator== (const RefPair &a, const Pair &b) { return _eq(a, b); }
+        friend bool operator== (const RefPair &a, const RefPair &b) { return _eq(a, b); }
+        friend void swap(RefPair a, RefPair b) { _swap(a, b); }
+
+        operator Pair() const { return Pair(first, second); }
+    };
+
+    template <typename T1, typename T2, bool is_const = false>
+    struct PairIter {
+        using v1_iter = std::conditional_t<
+            is_const,
+            typename std::vector<T1>::const_iterator,
+            typename std::vector<T1>::iterator>;
+        using v2_iter = std::conditional_t<
+            is_const,
+            typename std::vector<T2>::const_iterator,
+            typename std::vector<T2>::iterator>;
+
+        using Self = PairIter;
+
+        v1_iter beg1;
+        v2_iter beg2;
+
+        v1_iter it1_;
+
+        PairIter(v1_iter beg1 = {}, v2_iter beg2 = {}, v1_iter it = {})
+            : beg1(beg1),
+              beg2(beg2),
+              it1_(it)
+        {}
+        PairIter(const Self &) = default;
+        PairIter(Self &&) = default;
+        Self &operator= (const Self &) = default;
+        Self &operator= (Self &&) = default;
+
+        std::size_t idx() const { return it1_ - beg1; }
+
+        v1_iter &it1() { return it1_; }
+        v1_iter it1() const { return it1_; }
+        v2_iter it2() const { return beg2 + idx(); }
+
+        using iterator_category = std::random_access_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = Pair<T1, T2>;
+        using _ref_type = RefPair<T1, T2>;
+        using reference_type = std::conditional_t<is_const, value_type, _ref_type>;
+
+        reference_type operator* () const { return reference_type(*it1(), *it2()); }
+        Self &operator++ () { ++it1_; return *this; }
+        Self &operator-- () { --it1_; return *this; }
+        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+        Self operator-- (int) { Self tmp = *this; --(*this); return tmp; }
+        bool operator== (const Self &other) const { return it1_ == other.it1_; }
+        std::strong_ordering operator<=> (const Self &other) const { return it1_ <=> other.it1_; }
+
+        Self &operator+= (difference_type i) { it1_ += i; return *this; }
+        Self &operator-= (difference_type i) { it1_ -= i; return *this; }
+        Self operator+ (difference_type i) const { Self tmp = *this; tmp += i; return tmp; }
+        Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
+        friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
+
+        reference_type operator[] (difference_type i) const { return reference_type(*(it1()+i), *(it2()+i)); }
+        difference_type operator- (const Self &other) const { return it1_ - other.it1_; }
+    };
+
+
+} /* namespace impl */
+
+
+template <typename T1, typename T2>
+struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T2> {
+    using Self = VectorPairs;
+    using Base = VectorPairsBase<T1, T2>;
+    using fwd_pair = impl::Pair<T1, T2>;
+    using rev_pair = impl::Pair<T2, T1>;
+    using fwd_vec = std::vector<fwd_pair>;
+    using rev_vec = std::vector<rev_pair>;
+    using value_type = fwd_pair; // for back_inserter
+
+    std::vector<T1> vec1;
+    std::vector<T2> vec2;
+
+    size_t size() const { return vec1.size(); }
+    void reserve(size_t cap) { vec1.reserve(cap); vec2.reserve(cap); }
+
+    template <typename Tx1, typename Tx2>
+    void emplace_back(Tx1 &&a, Tx2 &&b) {
+        vec1.emplace_back(std::forward<Tx1>(a));
+        vec2.emplace_back(std::forward<Tx2>(b));
+    }
+    void push_back(const Base::fwd_pair &p) {
+        vec1.push_back(p.first);
+        vec2.push_back(p.second);
+    }
+
+    Self &sort_by_fwd() {
+        using PI = impl::PairIter<T1, T2>;
+        std::sort(
+                PI(vec1.begin(), vec2.begin(), vec1.begin()),
+                PI(vec1.begin(), vec2.begin(), vec1.end()));
+        return *this;
+    }
+    Self &sort_by_rev() {
+        using PI = impl::PairIter<T2, T1>;
+        std::sort(
+                PI(vec2.begin(), vec1.begin(), vec2.begin()),
+                PI(vec2.begin(), vec1.begin(), vec2.end()));
+        return *this;
+    }
+    Self &unique() {
+        using PI = impl::PairIter<T1, T2>;
+        auto beg = PI(vec1.begin(), vec2.begin(), vec1.begin()),
+             end = PI(vec1.begin(), vec2.begin(), vec1.end());
+        auto ue = std::unique(beg, end);
+        vec1.resize(ue - beg);
+        vec2.resize(ue - beg);
+        return *this;
+    }
+
+    auto fwd_pairs() const {
+        using PI = impl::PairIter<T1, T2, true>;
+        return iter_pair<PI, PI> {
+            PI(vec1.begin(), vec2.begin(), vec1.begin()),
+            PI(vec1.begin(), vec2.begin(), vec1.end())
+        };
+    }
+    auto rev_pairs() const {
+        using PI = impl::PairIter<T2, T1, true>;
+        return iter_pair<PI, PI> {
+            PI(vec2.begin(), vec1.begin(), vec2.begin()),
+            PI(vec2.begin(), vec1.begin(), vec2.end())
+        };
+    }
+
+    std::vector<T1> take_v1() { std::vector<T1> res; std::swap(res, vec1); return res; }
+    std::vector<T2> take_v2() { std::vector<T2> res; std::swap(res, vec2); return res; }
 };
 
 } /* namespace triegraph */
