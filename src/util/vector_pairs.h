@@ -8,18 +8,19 @@ namespace triegraph {
 
 enum struct VectorPairsImpl : u32 { EMPTY, SIMPLE, DUAL };
 
-template <typename T1, typename T2>
+template <typename T1, typename T2, VectorPairsImpl impl_choice>
 struct VectorPairsBase {
     using fwd_pair = std::pair<T1, T2>;
     using rev_pair = std::pair<T2, T1>;
     using fwd_vec = std::vector<fwd_pair>;
     using rev_vec = std::vector<rev_pair>;
     using value_type = fwd_pair; // for back_inserter
+    static constexpr VectorPairsImpl impl = impl_choice;
 };
 
 template <typename T1, typename T2, VectorPairsImpl impl_choice>
-struct VectorPairs : public VectorPairsBase<T1, T2> {
-    using Base = VectorPairsBase<T1, T2>;
+struct VectorPairs : public VectorPairsBase<T1, T2, impl_choice> {
+    using Base = VectorPairsBase<T1, T2, impl_choice>;
     using Self = VectorPairs;
 
     size_t size() const { return 0; }
@@ -58,9 +59,9 @@ struct VectorPairs : public VectorPairsBase<T1, T2> {
 };
 
 template <typename T1, typename T2>
-struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1, T2> {
+struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE> {
     using Self = VectorPairs;
-    using Base = VectorPairsBase<T1, T2>;
+    using Base = VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE>;
     Base::fwd_vec vec;
 
     size_t size() const { return vec.size(); }
@@ -206,9 +207,10 @@ namespace impl {
 
         using iterator_category = std::random_access_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using value_type = Pair<T1, T2>;
-        using _ref_type = RefPair<T1, T2>;
-        using reference_type = std::conditional_t<is_const, value_type, _ref_type>;
+        using value_type = std::conditional_t<is_const,
+              std::pair<T1, T2>, Pair<T1, T2>>;
+        using reference_type = std::conditional_t<is_const,
+              std::pair<T1, T2>, RefPair<T1, T2>>;
 
         reference_type operator* () const { return reference_type(*it1(), *it2()); }
         Self &operator++ () { ++it1_; return *this; }
@@ -233,14 +235,9 @@ namespace impl {
 
 
 template <typename T1, typename T2>
-struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T2> {
+struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T2, VectorPairsImpl::DUAL> {
     using Self = VectorPairs;
-    using Base = VectorPairsBase<T1, T2>;
-    using fwd_pair = impl::Pair<T1, T2>;
-    using rev_pair = impl::Pair<T2, T1>;
-    using fwd_vec = std::vector<fwd_pair>;
-    using rev_vec = std::vector<rev_pair>;
-    using value_type = fwd_pair; // for back_inserter
+    using Base = VectorPairsBase<T1, T2, VectorPairsImpl::DUAL>;
 
     std::vector<T1> vec1;
     std::vector<T2> vec2;
@@ -253,7 +250,11 @@ struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T
         vec1.emplace_back(std::forward<Tx1>(a));
         vec2.emplace_back(std::forward<Tx2>(b));
     }
-    void push_back(const Base::fwd_pair &p) {
+    void push_back(const impl::Pair<T1, T2> &p) {
+        vec1.push_back(p.first);
+        vec2.push_back(p.second);
+    }
+    void push_back(const std::pair<T1, T2> &p) {
         vec1.push_back(p.first);
         vec2.push_back(p.second);
     }
