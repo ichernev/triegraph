@@ -9,6 +9,7 @@ namespace triegraph {
 
 template <typename Beacon, typename Diff = u8>
 struct SortedVector {
+    using value_type = Beacon;
 
     SortedVector(u32 beacon_interval = 32, u32 bits_per_diff = sizeof(Diff) * 8)
         : beacon_interval(beacon_interval),
@@ -96,6 +97,28 @@ struct SortedVector {
     //         assert(input[i] == operator[](i));
     //     }
     // }
+
+    static SortedVector from_elem_seq(std::ranges::sized_range auto &&range) {
+        SortedVector res;
+        auto beg = range.begin();
+        auto end = range.end();
+
+        value_type max = *(--end) + 1; ++end;
+        // std::cerr << "max is " << max << std::endl;
+        res.reserve(max);
+
+        value_type pos = 0;
+        res.push_back(pos);
+        -- max;
+        for (value_type id = 0; id < max; ++id) {
+            while (beg != end && *beg == id) {
+                ++ beg;
+                ++ pos;
+            }
+            res.push_back(pos);
+        }
+        return res;
+    }
 
 private:
     u32 beacon_interval;
