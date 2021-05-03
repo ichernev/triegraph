@@ -131,10 +131,28 @@ using TrieDataDMM_SV = TrieData<
         typename TG::KmerHolder,
         SortedVector<u32>>>;
 
+using TrieDataDMM_SV0 = TrieData<
+    TG::Kmer,
+    TG::LetterLocData,
+    TG::VectorPairs,
+    TG::triedata_allow_inner,
+    DenseMultimap<
+        typename TG::KmerHolder,
+        typename TG::LetterLoc,
+        typename TG::LetterLoc,
+        SortedVector<u32>>,
+    DenseMultimap<
+        typename TG::LetterLoc,
+        typename TG::LetterLoc,
+        typename TG::KmerHolder,
+        SortedVector<u32>>,
+    true>;
+
 int m = test::define_module(__FILE__, [] {
     // TrieDataTester<TG::TrieData>::define_tests("default");
     // TrieDataTester<TrieDataSMM>::define_tests("SMM");
     // TrieDataTester<TrieDataHMM>::define_tests("HMM");
     TrieDataTester<TrieDataHMM_SPP>::define_tests("HMM_SPP");
     TrieDataTester<TrieDataDMM_SV>::define_tests("DMM_SV");
+    TrieDataTester<TrieDataDMM_SV0>::define_tests("DMM_SV0");
 });
