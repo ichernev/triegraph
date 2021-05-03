@@ -319,12 +319,17 @@ decr_l2:
     bool operator== (const Kmer &other) const { return data == other.data; }
     bool operator== (u64 other) const { return is_complete() && (data & KMER_MASK) == other; }
     bool operator!= (u64 other) const { return !(*this == other); }
-    bool operator< (const Kmer &other) const {
-        if (size() < other.size())
-            return true;
-        if (size() == other.size() && (data & _kmer_mask(K-size())) < (other.data & _kmer_mask(K-size())))
-            return true;
-        return false;
+    // bool operator< (const Kmer &other) const {
+    //     if (size() < other.size())
+    //         return true;
+    //     if (size() == other.size() && (data & _kmer_mask(K-size())) < (other.data & _kmer_mask(K-size())))
+    //         return true;
+    //     return false;
+    // }
+    std::strong_ordering operator<=> (const Kmer &other) const {
+        if (auto cmp = size() <=> other.size(); cmp != 0)
+            return cmp;
+        return (data & _kmer_mask(K-size())) <=> (other.data & _kmer_mask(K-size()));
     }
 
     // friend struct std::hash<Kmer> {
