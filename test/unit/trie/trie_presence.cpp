@@ -1,5 +1,5 @@
 #include "util/util.h"
-#include "trie/trie_data.h"
+#include "trie/trie_presence.h"
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
 #include "trie/kmer_settings.h"
@@ -23,7 +23,7 @@ struct Helper {
     using Letter = Letter_;
     // using Kmer = triegraph::Kmer<Letter, u32, K>;
     using Kmer = triegraph::DKmer<Letter, u32>;
-    using TB = triegraph::TieredBitset<Kmer, allow_inner>;
+    using TB = triegraph::TriePresence<Kmer, allow_inner>;
 
     // struct Initializator {
     //     Initializator() {

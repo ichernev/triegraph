@@ -1,13 +1,15 @@
-#ifndef __TRIE_DATA_OPT_H__
-#define __TRIE_DATA_OPT_H__
+#ifndef __TRIE_DATA_H__
+#define __TRIE_DATA_H__
 
-#include "util/util.h"
-#include "util/pow_histogram.h"
+#include "trie/kmer_codec.h"
+#include "trie/trie_presence.h"
 #include "util/dense_multimap.h"
+#include "util/logger.h"
+#include "util/logger.h"
+#include "util/pow_histogram.h"
 #include "util/simple_multimap.h"
 #include "util/sorted_vector.h"
-#include "util/logger.h"
-#include "trie/kmer_codec.h"
+#include "util/util.h"
 
 #include <type_traits>
 #include <utility>
@@ -21,77 +23,6 @@
 #include <assert.h>
 
 namespace triegraph {
-
-template <typename Kmer_, bool allow_inner = false>
-struct TieredBitset {
-    using Kmer = Kmer_;
-    using Letter = Kmer::Letter;
-    using KHolder = Kmer::Holder;
-    static constexpr u64 K = Kmer::K;
-    static constexpr u64 num_options = Kmer::Letter::num_options;
-    std::vector<bool> present;
-
-    TieredBitset() {}
-    TieredBitset(std::ranges::input_range auto&& c)
-        : present(Kmer::NUM_COMPRESSED - Kmer::NUM_LEAFS)
-    {
-        auto &log = Logger::get();
-
-        log.begin("bitset leafs");
-        for (auto kmer : c) {
-            // auto kh = KHolder(kmer);
-            if constexpr (!allow_inner) {
-                // put 1 on last row
-                kmer.pop();
-                present[kmer.compress()] = 1;
-            } else {
-                auto lvl = kmer.size();
-                if (lvl < Kmer::K) {
-                    present[kmer.compress()] = 1;
-                } else {
-                    kmer.pop();
-                    present[kmer.compress()] = 1;
-                }
-            }
-        }
-        log.end();
-        auto beg_it = Kmer::beg.rend() - Kmer::K;
-
-        // star
-        // ++ beg_it;
-        // std::cerr << "last level has " << (typename Kmer::TrieElems<Kmer::K-1>)::power << std::endl;
-        log.begin("pre-leaves");
-        for (u64 pos = present.size() - pow(Letter::num_options, Kmer::K-1) - 1;
-                pos < present.size(); --pos) {
-            // std::cerr << "looking at " << Kmer::from_compressed(pos) << std::endl;
-            if (pos < *beg_it) ++ beg_it;
-            if constexpr (allow_inner)
-                if (present[pos])
-                    continue;
-            auto in_lvl = pos - *beg_it;
-            for (u64 opt = 0; opt < num_options; ++opt) {
-                auto npos = *(beg_it - 1) + ((in_lvl << Letter::bits) | opt);
-                if (present[npos]) {
-                    // std::cerr << "marking " << Kmer::from_compressed(pos)
-                    //     << " due to " << Kmer::from_compressed(npos) << std::endl;
-                    present[pos] = 1;
-                    break;
-                }
-            }
-        }
-        log.end();
-    }
-
-    TieredBitset(const TieredBitset &) = delete;
-    TieredBitset(TieredBitset &&) = default;
-    TieredBitset &operator= (const TieredBitset &) = default;
-    TieredBitset &operator= (TieredBitset &&) = default;
-
-    bool contains(Kmer kmer) const {
-        return present[kmer.compress()];
-    }
-
-};
 
 template <typename Kmer_,
          typename LetterLocData_,
@@ -156,7 +87,7 @@ struct TrieData {
 
     T2GMap trie2graph;
     G2TMap graph2trie;
-    TieredBitset<Kmer, allow_inner> active_trie;
+    TriePresence<Kmer, allow_inner> active_trie;
 
     using t2g_values_view = iter_pair<
         typename T2GMap::const_value_iterator,
@@ -241,4 +172,4 @@ struct TrieData {
 
 } /* namespace triegraph */
 
-#endif /* __TRIE_DATA_OPT_H__ */
+#endif /* __TRIE_DATA_H__ */
