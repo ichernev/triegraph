@@ -20,7 +20,7 @@ struct DnaConfig {
     using LetterLoc = u32;
     using KmerHolder = u32;
     static constexpr bool triedata_allow_inner = allow_inner;
-    static constexpr VectorPairsImpl vector_pairs_impl = VectorPairsImpl::SIMPLE;
+    static constexpr VectorPairsImpl vector_pairs_impl = VectorPairsImpl::DUAL;
     static constexpr bool trie_pairs_raw = pairs_raw;
     static constexpr u32 TDMapType = 1u; /* use DMM */
     static constexpr int LetterLocIdxShift = 4;
