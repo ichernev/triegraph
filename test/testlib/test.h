@@ -146,7 +146,9 @@ namespace test {
     bool equal_sorted(
             std::ranges::input_range auto&& range1,
             std::ranges::input_range auto&& range2) {
-        return std::ranges::equal(sorted(range1), range2);
+        return std::ranges::equal(
+                sorted(std::forward<decltype(range1)>(range1)),
+                std::forward<decltype(range2)>(range2));
     }
 
     bool throws_ccp(std::function<void()> f, const char *expected) {
