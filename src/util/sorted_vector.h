@@ -120,6 +120,30 @@ struct SortedVector {
         return res;
     }
 
+    Beacon binary_search(Beacon elem) const {
+        if (size() == 0)
+            return 0;
+
+        Beacon end = (size() - 1) / beacon_interval;
+        if (beacons.at(end) <= elem) {
+            return _linear_search(end * beacon_interval, size(),
+                    elem - beacons[end]);
+        }
+        Beacon beg = 0;
+        while (beg + 1 < end) {
+            Beacon mid = beg + (end - beg) / 2;
+            if (beacons.at(mid) <= elem)
+                beg = mid;
+            else
+                end = mid;
+        }
+        return _linear_search(
+                beg * beacon_interval,
+                end * beacon_interval,
+                elem - beacons.at(beg));
+    }
+
+    // TODO: Add random-access iterator, for bsrch and equal (tests)
 private:
     u32 beacon_interval;
     u32 bits_per_diff;
@@ -134,6 +158,16 @@ private:
 
     Beacon sum; // used during build
     Diff diff_sentinel;
+
+    Beacon _linear_search(Beacon from_id, Beacon to_id, Beacon elem) const {
+        Beacon total = 0;
+        for (++from_id; from_id < to_id; ++from_id) {
+            total += get_diff(from_id);
+            if (total > elem)
+                return --from_id;
+        }
+        return --to_id;
+    }
 };
 
 } /* namespace triegraph */

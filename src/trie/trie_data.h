@@ -129,16 +129,8 @@ struct TrieData {
 
         log.end().begin("convert kmer_idx -> locs O(nlogn)");
         for (KHolder i = 0; i < kmer_idx.size(); ++i) {
-            // auto loc = locs_beg.binary_search(kmer_idx[i]);
-            auto loc2 = _bsrch(locs_beg, kmer_idx[i]);
-            // if (loc != loc2 || LetterLoc(loc) != LetterLoc(loc2)) {
-            //     std::cerr << "i = " << i << " "
-            //         << "kidx = " << kmer_idx[i] << " "
-            //         << loc << " " << loc2 << std::endl;
-            //     assert(0);
-            // }
-            // NOTE: kmer_idx and locs point to the same memory
-            locs[i] = LetterLoc(loc2);
+            auto loc = locs_beg.binary_search(kmer_idx[i]);
+            locs[i] = LetterLoc(loc);
         }
 
         log.end().begin("construct multi-maps O(1)");
@@ -153,18 +145,18 @@ struct TrieData {
         active_trie = { key_iter_pair(trie2graph.keys()) };
     }
 
-    auto _bsrch(const auto &arr, auto elem) {
-        size_t beg = 0;
-        size_t end = arr.size();
-        while (beg + 1 < end) {
-            size_t mid = (beg + end) / 2;
-            if (arr[mid] <= elem)
-                beg = mid;
-            else
-                end = mid;
-        }
-        return beg;
-    }
+    // auto _bsrch(const auto &arr, auto elem) {
+    //     size_t beg = 0;
+    //     size_t end = arr.size();
+    //     while (beg + 1 < end) {
+    //         size_t mid = (beg + end) / 2;
+    //         if (arr[mid] <= elem)
+    //             beg = mid;
+    //         else
+    //             end = mid;
+    //     }
+    //     return beg;
+    // }
 
     TrieData(const TrieData &) = delete;
     TrieData &operator= (const TrieData &) = delete;
