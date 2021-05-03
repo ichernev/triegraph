@@ -1,11 +1,15 @@
 #ifndef __SIMPLE_MULTIMAP_H__
 #define __SIMPLE_MULTIMAP_H__
 
+#include "util/multimaps.h"
+
 namespace triegraph {
 
 template <typename K, typename V,
          typename Map = std::unordered_multimap<K, V>>
 struct SimpleMultimap {
+    static constexpr auto impl = MultimapImpl::SIMPLE;
+
     Map map;
 
     SimpleMultimap() {}

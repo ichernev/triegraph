@@ -2,6 +2,7 @@
 #define __HYBRID_MULTIMAP_H__
 
 #include "util/util.h"
+#include "util/multimaps.h"
 
 #include <utility>
 #include <vector>
@@ -16,6 +17,8 @@ struct HybridMultimap {
     using Key = Key_;
     using Val = Val_;
     using ElemNum = ElemNum_;
+
+    static constexpr auto impl = MultimapImpl::HYBRID;
 
     Map map;
     std::vector<Val_> elems;

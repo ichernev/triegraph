@@ -1,6 +1,8 @@
 #ifndef __DENSE_MULTIMAP_H__
 #define __DENSE_MULTIMAP_H__
 
+#include "util/multimaps.h"
+
 #include <vector>
 #include <ranges>
 #include <assert.h>
@@ -8,11 +10,18 @@
 namespace triegraph {
 
 template <typename A, typename B, typename C,
-         typename StartsContainer = std::vector<B>>
+         typename StartsContainer_ = std::vector<B>>
 struct DenseMultimap {
+    using StartsContainer = StartsContainer_;
+
+    static constexpr auto impl = MultimapImpl::DENSE;
     // TODO(opt): compute sizes for sorted-vector from histograms
 
     DenseMultimap() {}
+    DenseMultimap(StartsContainer &&starts, std::vector<C> &&elems)
+        : starts(std::move(starts)),
+          elems(std::move(elems))
+    {}
     DenseMultimap(std::ranges::sized_range auto&& range) {
         // this->max_a = a_max;
         auto last = range.end(); --last;
