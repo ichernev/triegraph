@@ -24,7 +24,7 @@ struct SortedVector {
     SortedVector &operator= (SortedVector &&) = default;
 
     void reserve(u64 size) {
-        beacons.reserve(div_up(size, beacon_interval));
+        beacons.reserve((size - 1) / beacon_interval + 1);
         diffs.reserve(size);
     }
 
