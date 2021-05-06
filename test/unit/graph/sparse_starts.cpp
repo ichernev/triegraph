@@ -1,18 +1,15 @@
-#include "dna_config.h"
-#include "graph/sparse_starts.h"
-#include "manager.h"
-
 #include <iterator>
 
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
+using TG = test::Manager_RK;
 
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("iter_concept", [] {
     auto func = [](std::forward_iterator auto it) {};
-    func(triegraph::SparseStarts<TG::Graph, TG::NodePos>::const_iterator());
+    func(TG::SparseStarts::const_iterator());
 });
 
 test::define_test("small_linear", [] {
@@ -20,7 +17,7 @@ test::define_test("small_linear", [] {
         .add_node(TG::Str("acgtacgt"), "s1")
         .build();
 
-    auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
+    auto ss = TG::SparseStarts(g);
     auto starts = ss.compute_starts_every(2, {0});
 
     // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
@@ -40,7 +37,7 @@ test::define_test("small_split", [] {
         .add_edge("s3", "s4")
         .build();
 
-    auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
+    auto ss = TG::SparseStarts(g);
     auto starts = ss.compute_starts_every(2, {0});
 
     // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
@@ -59,7 +56,7 @@ test::define_test("small_split2", [] {
         .add_edge("s2", "s3")
         .build();
 
-    auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
+    auto ss = TG::SparseStarts(g);
     auto starts = ss.compute_starts_every(3, {0, 1});
 
     // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;
@@ -77,7 +74,7 @@ test::define_test("small_loop", [] {
         .add_edge("s3", "s3")
         .build();
 
-    auto ss = triegraph::SparseStarts<TG::Graph, TG::NodePos>(g);
+    auto ss = TG::SparseStarts(g);
     auto starts = ss.compute_starts_every(3, {0, 1});
 
     // std::ranges::copy(starts, std::ostream_iterator<TG::NodePos>(std::cerr, " ")); std::cerr << std::endl;

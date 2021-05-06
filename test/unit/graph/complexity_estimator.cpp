@@ -1,11 +1,7 @@
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
-#include "dna_config.h"
-#include "manager.h"
-
-using namespace triegraph;
-
-using TG = Manager<dna::DnaConfig<0, false, true>>;
+using TG = test::Manager_RK;
 
 int m = test::define_module(__FILE__, [] {
 
@@ -112,9 +108,9 @@ test::define_test("simple loop", [] {
     // std::ranges::copy(ce.get_starts(), std::ostream_iterator<TG::KmerHolder>(std::cerr, " ")); std::cerr << std::endl;
     // std::ranges::copy(ce.get_ends(), std::ostream_iterator<TG::KmerHolder>(std::cerr, " ")); std::cerr << std::endl;
     assert(std::ranges::equal(ce.get_starts(),
-                std::vector<TG::KmerHolder> { 1, pow(4, 3) + 1 }));
+                std::vector<TG::KmerHolder> { 1, triegraph::pow(4, 3) + 1 }));
     assert(std::ranges::equal(ce.get_ends(),
-                std::vector<TG::KmerHolder> { 1, pow(4, 3) }));
+                std::vector<TG::KmerHolder> { 1, triegraph::pow(4, 3) }));
 });
 
 

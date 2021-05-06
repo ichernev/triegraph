@@ -9,9 +9,10 @@
 
 namespace triegraph {
 
-template <typename A, typename B, typename C,
-         typename StartsContainer_ = std::vector<B>>
+template <typename A, typename C,
+         typename StartsContainer_ = std::vector<bigger_type_t<A, C>>>
 struct DenseMultimap {
+    using B = bigger_type_t<A, C>;
     using StartsContainer = StartsContainer_;
 
     static constexpr auto impl = MultimapImpl::DENSE;

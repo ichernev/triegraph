@@ -70,6 +70,12 @@ struct choose_type<0u, First, Rest...> { using type = First; };
 template <u32 n, typename First, typename... Rest>
 using choose_type_t = choose_type<n, First, Rest...>::type;
 
+template <typename A, typename B>
+struct bigger_type { using type = std::conditional_t<sizeof(A) >= sizeof(B), A, B>; };
+
+template <typename A, typename B>
+using bigger_type_t = bigger_type<A, B>::type;
+
 template <typename Ext, typename Int = Ext>
 struct CodecIdentity {
     using ext_type = Ext;

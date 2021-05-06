@@ -1,7 +1,5 @@
 #include "testlib/test.h"
 
-// #include "dna_config.h"
-// #include "manager.h"
 #include "util/dense_multimap.h"
 #include "util/hybrid_multimap.h"
 #include "util/simple_multimap.h"
@@ -15,13 +13,12 @@
 #include <random>
 
 using namespace triegraph;
-// using TG = Manager<dna::DnaConfig<0, false, true>>;
 
 using SMM = SimpleMultimap<u32, u32>;
 using HMM = HybridMultimap<u32, u32, u32,
       std::unordered_map<u32, std::pair<u32, u32>>>;
 template <typename SortedContainer>
-using DMM = DenseMultimap<u32, u32, u32, SortedContainer>;
+using DMM = DenseMultimap<u32, u32, SortedContainer>;
 using SimpleSorted = std::vector<u32>;
 using AdvSorted = SortedVector<u32>;
 

@@ -86,17 +86,21 @@ struct Manager : Cfg {
     using T2GSMM = SimpleMultimap<
         typename Cfg::KmerHolder,
         typename Cfg::LetterLoc>;
-    using T2GDMM = DenseMultimap<
-        typename Cfg::KmerHolder,
-        typename Cfg::LetterLoc,
-        typename Cfg::LetterLoc>;
     using G2TSMM = SimpleMultimap<
         typename Cfg::LetterLoc,
         typename Cfg::KmerHolder>;
+    using StartsContainer = std::conditional_t<
+        Cfg::triedata_sorted_vector,
+        SortedVector<typename Cfg::KmerHolder>,
+        std::vector<typename Cfg::KmerHolder>>;
+    using T2GDMM = DenseMultimap<
+        typename Cfg::KmerHolder,
+        typename Cfg::LetterLoc,
+        StartsContainer>;
     using G2TDMM = DenseMultimap<
         typename Cfg::LetterLoc,
-        typename Cfg::LetterLoc,
-        typename Cfg::KmerHolder>;
+        typename Cfg::KmerHolder,
+        StartsContainer>;
     using T2GMap = choose_type_t<Cfg::TDMapType, T2GSMM, T2GDMM>;
     using G2TMap = choose_type_t<Cfg::TDMapType, G2TSMM, G2TDMM>;
     // using VectorPairs = std::vector<std::pair<Kmer, typename LetterLocData::LetterLoc>>;
@@ -121,7 +125,8 @@ struct Manager : Cfg {
         LetterLocData,
         VectorPairs,
         Cfg::triedata_allow_inner,
-        T2GMap, G2TMap>;
+        T2GMap, G2TMap,
+        Cfg::triedata_zero_overhead>;
     using TrieGraphData = triegraph::TrieGraphData<
         Graph,
         LetterLocData,

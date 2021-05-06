@@ -1,11 +1,7 @@
+#include "testlib/dna.h"
 #include "testlib/test.h"
 #include "testlib/trie/builder/tester.h"
 
-#include "dna_config.h"
-#include "manager.h"
-
-using namespace triegraph;
-
-using TG = Manager<dna::DnaConfig<0, false, true>>;
+using TG = test::Manager_RK;
 int m = test::define_module(__FILE__,
     &test::TrieBuilderTester<TG, TG::TrieBuilderBT>::define_tests);

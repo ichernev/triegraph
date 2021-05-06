@@ -1,13 +1,7 @@
-#include "dna_config.h"
-#include "manager.h"
-#include "graph/complexity_component.h"
-
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
-
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
-using ComplexityComponent = triegraph::ComplexityComponent<
-    TG::Graph, TG::NodePos>;
+using TG = test::Manager_RK;
 
 static void test_cc(auto &cc,
         std::vector<TG::NodeLoc> inc,
@@ -20,7 +14,7 @@ static void test_cc(auto &cc,
     assert(std::ranges::equal(cc.internal, internal));
 }
 
-static void test_cc_iter(ComplexityComponent &cc, TG::Graph &graph, triegraph::u32 trie_depth,
+static void test_cc_iter(TG::ComplexityComponent &cc, TG::Graph &graph, triegraph::u32 trie_depth,
         std::vector<TG::NodePos> expected) {
     auto fn_range_check = [] (std::ranges::range auto const& r) {};
     fn_range_check(cc.starts_inside(graph, trie_depth));
@@ -48,19 +42,19 @@ test::define_test("all short", [] {
         .build();
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 0, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 0, 2).build();
         test_cc(cc, {}, {}, {0, 1, 2});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 1, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 1, 2).build();
         test_cc(cc, {}, {}, {0, 1, 2});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 2, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 2, 2).build();
         test_cc(cc, {}, {}, {0, 1, 2});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 0} });
     }
@@ -79,19 +73,19 @@ test::define_test("all short loop", [] {
         .build();
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 0, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 0, 2).build();
         test_cc(cc, {}, {}, {0, 1, 2});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 1, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 1, 2).build();
         test_cc(cc, {}, {}, {0, 1, 2});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 2, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 2, 2).build();
         test_cc(cc, {}, {}, {0, 1, 2});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 0} });
     }
@@ -109,13 +103,13 @@ test::define_test("incoming only", [] {
         .build();
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 1, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 1, 2).build();
         test_cc(cc, {0}, {}, {1, 2});
         test_cc_iter(cc, graph, 2, { {0, 1}, {0, 2}, {1, 0}, {2, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 2, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 2, 2).build();
         test_cc(cc, {0}, {}, {1, 2});
         test_cc_iter(cc, graph, 2, { {0, 1}, {0, 2}, {1, 0}, {2, 0} });
     }
@@ -133,13 +127,13 @@ test::define_test("outgoing only", [] {
         .build();
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 0, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 0, 2).build();
         test_cc(cc, {}, {2}, {0, 1});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 1, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 1, 2).build();
         test_cc(cc, {}, {2}, {0, 1});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0} });
     }
@@ -160,19 +154,19 @@ test::define_test("in/out shared", [] {
         .build();
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 0, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 0, 2).build();
         test_cc(cc, {2}, {2}, {0, 1, 3});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 1}, {2, 2}, {3, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 1, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 1, 2).build();
         test_cc(cc, {2}, {2}, {0, 1, 3});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 1}, {2, 2}, {3, 0} });
     }
 
     {
-        auto cc = ComplexityComponent::Builder(graph, 3, 2).build();
+        auto cc = TG::ComplexityComponent::Builder(graph, 3, 2).build();
         test_cc(cc, {2}, {2}, {0, 1, 3});
         test_cc_iter(cc, graph, 2, { {0, 0}, {1, 0}, {2, 1}, {2, 2}, {3, 0} });
     }
@@ -187,15 +181,15 @@ test::define_test("joining iterators", [] {
         .add_node(TG::Str("a"), "s2") /* components */
         .build();
 
-    auto cc1 = ComplexityComponent::Builder(graph, 0, 2).build();
-    auto cc2 = ComplexityComponent::Builder(graph, 1, 2).build();
+    auto cc1 = TG::ComplexityComponent::Builder(graph, 0, 2).build();
+    auto cc2 = TG::ComplexityComponent::Builder(graph, 1, 2).build();
 
     // auto vv = std::vector<TG::NodeLoc> {0, 1};
     // auto jv = vv
     //     | std::ranges::views::transform([&graph] (auto id) { return ComplexityComponent::Builder(graph, id, 2).build(); })
     //     | std::ranges::views::transform([&graph] (auto const& cc) { return cc.starts_inside(graph, 2); })
     //     | std::ranges::views::join;
-    auto vv = std::vector<ComplexityComponent> { std::move(cc1), std::move(cc2) };
+    auto vv = std::vector<TG::ComplexityComponent> { std::move(cc1), std::move(cc2) };
     auto jv = vv | std::ranges::views::transform([&graph] (auto const& cc) {
             return cc.starts_inside(graph, 2); })
         | std::ranges::views::join;

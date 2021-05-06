@@ -2,6 +2,7 @@
 #include "manager.h"
 #include "util/logger.h"
 #include "util/cmdline.h"
+#include "util/human.h"
 
 #include <assert.h>
 #include <string>
@@ -154,10 +155,12 @@ int main(int argc, char *argv[]) {
 
     try {
         if (cmd == "pairs"s || cmd == "print-pairs"s ||
-                cmd == "td"s || cmd == "ce-test"s ||
+                cmd == "td"s || cmd == "td0"s || cmd == "ce-test"s ||
                 cmd == "print-top-order"s) {
 
-            using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
+            using triegraph::dna::CfgFlags;
+            using TG = triegraph::Manager<triegraph::dna::DnaConfig<0,
+                  CfgFlags::VP_RAW_KMERS>>;
             auto algo_v = TG::algo_from_name(algo);
             assert(algo_v != TG::Algo::UNKNOWN);
 
@@ -224,6 +227,9 @@ int main(int argc, char *argv[]) {
             } else if (cmd == "td"s) {
                 using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
                 auto td = get_td<TGX>(graph, lloc, cmdline, TGX::algo_from_name(algo));
+            } else if (cmd == "td0"s) {
+                using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0, CfgFlags::VP_DUAL_IMPL | CfgFlags::TD_SORTED_VECTOR | CfgFlags::TD_ZERO_OVERHEAD>>;
+                auto td = get_td<TGX>(graph, lloc, cmdline, TGX::algo_from_name(algo));
             } else if (cmd == "print-top-order"s) {
                 // auto starts = ConnectedComponents<TG::Graph>(graph).compute_starting_points();
                 // auto top_ord = TG::TopOrder::Builder(graph).build(starts);
@@ -247,6 +253,19 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+        } else if (cmd == "graph-stat") {
+            using triegraph::to_human_number;
+            using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
+            // auto algo_v = TG::algo_from_name(algo);
+            // assert(algo_v != TG::Algo::UNKNOWN);
+
+            auto graph = TG::Graph::from_file(graph_file, {});
+            auto lloc = TG::LetterLocData(graph);
+
+            std::cerr << "num nodes: " << to_human_number(graph.num_nodes(), false) << '\n'
+                << "num edges: " << to_human_number(graph.num_edges(), false) << '\n'
+                << "num locs: " << to_human_number(lloc.num_locations, false) << '\n'
+                << std::flush;
         } else {
             for (int i = 0; i < argc; ++i) {
                 std::cerr << i << " '" <<  argv[i] << "'" << std::endl;

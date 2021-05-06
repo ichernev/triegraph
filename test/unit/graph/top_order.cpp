@@ -1,10 +1,9 @@
-#include "manager.h"
-#include "dna_config.h"
 #include "graph/top_order.h"
 
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
+using TG = test::Manager_RK;
 
 int m = test::define_module(__FILE__, [] {
 

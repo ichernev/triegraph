@@ -1,17 +1,9 @@
-#include "dna_config.h"
-#include "manager.h"
-#include "graph/complexity_component.h"
-#include "graph/complexity_component_walker.h"
-
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
 #include <random>
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
-using ComplexityComponent = triegraph::ComplexityComponent<
-    TG::Graph, TG::NodePos>;
-using ComplexityComponentWalker = triegraph::ComplexityComponentWalker<
-    ComplexityComponent>;
+using TG = test::Manager_RK;
 
 std::vector<TG::NodeLoc> _pick_random_cc_seeds(const TG::Graph &graph,
         triegraph::u32 trie_depth, TG::NodeLoc num_cc) {
@@ -57,7 +49,7 @@ test::define_test("pasgal + rand cc", [] {
     //     std::cerr << node_id << " " << graph.node(node_id).seg.size() << std::endl;
     // }
 
-    auto ccw = ComplexityComponentWalker::Builder(graph, trie_depth)
+    auto ccw = TG::ComplexityComponentWalker::Builder(graph, trie_depth)
         .build(cc_seeds);
 
     std::vector<TG::NodePos> all_starts;
@@ -142,7 +134,7 @@ test::define_test("hg_22 + rand cc", [] {
     //     std::cerr << node_id << " " << graph.node(node_id).seg.size() << std::endl;
     // }
 
-    auto ccw = ComplexityComponentWalker::Builder(graph, trie_depth)
+    auto ccw = TG::ComplexityComponentWalker::Builder(graph, trie_depth)
         .build(cc_seeds);
 
     std::vector<TG::NodePos> all_starts;

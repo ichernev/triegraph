@@ -10,7 +10,11 @@ using namespace triegraph;
 //     static constexpr bool triedata_allow_inner = true;
 // };
 
-using TG = Manager<dna::DnaConfig<0, true>>;
+using triegraph::dna::CfgFlags;
+using TG = Manager<dna::DnaConfig<0,
+      CfgFlags::ALLOW_INNER_KMER |
+      CfgFlags::VP_DUAL_IMPL |
+      CfgFlags::TD_SORTED_VECTOR>>;
 
 // template <typename Builder, std::ranges::input_range R>
 // static TG::vec_pairs get_pairs_impl(
@@ -55,10 +59,10 @@ int main(int argc, char *argv[]) {
     auto backedge_init = cmdline.get_or<u32>("cc-backedge-init", 4u);
     auto backedge_max_trav = cmdline.get_or<u32>("cc-backedge-max-trav", 2u);
     auto cc_cutoff = cmdline.get_or<u32>("cc-cutoff", 512u);
-    auto pbfs_kmer_cutoff = cmdline.get_or<u32>("pbfs-kmer-cutoff", 256u);
+    // auto pbfs_kmer_cutoff = cmdline.get_or<u32>("pbfs-kmer-cutoff", 256u);
     auto gfa_file = cmdline.get<std::string>("graph");
-    auto td_rel = cmdline.get_or<i32>("trie-depth-rel", 0);
-    auto td_abs = cmdline.get_or<u32>("trie-depth", 0);
+    // auto td_rel = cmdline.get_or<i32>("trie-depth-rel", 0);
+    // auto td_abs = cmdline.get_or<u32>("trie-depth", 0);
 
     Logger::get().begin("reading graph");
     auto graph = TG::Graph::from_file(gfa_file, {});

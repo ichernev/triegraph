@@ -135,13 +135,11 @@ using TrieDataDMM_SV = TrieData<
     DenseMultimap<
         typename TG::KmerHolder,
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
-        SortedVector<u32>>,
+        SortedVector<bigger_type_t<TG::KmerHolder, TG::LetterLoc>>>,
     DenseMultimap<
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
         typename TG::KmerHolder,
-        SortedVector<u32>>>;
+        SortedVector<bigger_type_t<TG::KmerHolder, TG::LetterLoc>>>>;
 
 using TrieDataDMM_SV0 = TrieData<
     TG::Kmer,
@@ -151,13 +149,11 @@ using TrieDataDMM_SV0 = TrieData<
     DenseMultimap<
         typename TG::KmerHolder,
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
-        SortedVector<u32>>,
+        SortedVector<bigger_type_t<TG::KmerHolder, TG::LetterLoc>>>,
     DenseMultimap<
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
         typename TG::KmerHolder,
-        SortedVector<u32>>,
+        SortedVector<bigger_type_t<TG::KmerHolder, TG::LetterLoc>>>,
     true>;
 
 int m = test::define_module(__FILE__, [] {

@@ -11,7 +11,7 @@
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("no_inner", [] {
-    using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, false>>;
+    using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
     TG::kmer_set_depth(4);
 
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
@@ -40,7 +40,8 @@ test::define_test("no_inner", [] {
 });
 
 test::define_test("with_inner", [] {
-    using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, true, false>>;
+    using triegraph::dna::CfgFlags;
+    using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, CfgFlags::ALLOW_INNER_KMER>>;
     TG::kmer_set_depth(4);
 
     auto kmer_s = [](auto str) { return TG::Kmer::from_str(str); };

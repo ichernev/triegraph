@@ -1,22 +1,19 @@
+#include "testlib/dna.h"
 #include "testlib/test.h"
 #include "testlib/trie/builder/tester.h"
 
-#include "dna_config.h"
-#include "manager.h"
-
 using namespace triegraph;
 
-struct AICfg : public dna::DnaConfig<0, false, true> {
-    static constexpr bool triedata_allow_inner = true;
-};
+using triegraph::dna::CfgFlags;
+using TGX = Manager<dna::DnaConfig<0,
+      CfgFlags::ALLOW_INNER_KMER | CfgFlags::VP_RAW_KMERS>>;
 
-using TG = Manager<dna::DnaConfig<0, false, true>>;
+using TG = test::Manager_RK;
 int m = test::define_module(__FILE__, [] {
     test::TrieBuilderTester<TG, TG::TrieBuilderPBFS>::define_tests();
 
     test::define_test("cut_early", [] {
     // static void test_cut_early() {
-        using TGX = Manager<AICfg>;
         auto kmer_s = &TGX::Kmer::from_str;
         auto graph = TGX::Graph::Builder({ .add_reverse_complement = false })
             .add_node(TGX::Str("a"), "s00")

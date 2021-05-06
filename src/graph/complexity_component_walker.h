@@ -1,6 +1,10 @@
 #ifndef __COMPLEXITY_COMPONENT_WALKER_H__
 #define __COMPLEXITY_COMPONENT_WALKER_H__
 
+#include <vector>
+#include <iterator>
+#include <assert.h>
+
 namespace triegraph {
 
 template <typename ComplexityComponent_>

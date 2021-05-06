@@ -4,6 +4,7 @@
 #include "util/util.h"
 
 #include <vector>
+#include <unordered_set>
 
 namespace triegraph {
 

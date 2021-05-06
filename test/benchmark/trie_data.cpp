@@ -115,6 +115,10 @@ using TrieDataHMM_SPP = TrieData<
         typename TG::KmerHolder,
         HMMSPP>>;
 
+using SVT = typename triegraph::bigger_type_t<
+    typename TG::KmerHolder,
+    typename TG::LetterLoc
+>;
 using TrieDataDMM_SV = TrieData<
     TG::Kmer,
     TG::LetterLocData,
@@ -123,13 +127,11 @@ using TrieDataDMM_SV = TrieData<
     DenseMultimap<
         typename TG::KmerHolder,
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
-        SortedVector<u32>>,
+        SortedVector<SVT>>,
     DenseMultimap<
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
         typename TG::KmerHolder,
-        SortedVector<u32>>>;
+        SortedVector<SVT>>>;
 
 using TrieDataDMM_SV0 = TrieData<
     TG::Kmer,
@@ -139,20 +141,18 @@ using TrieDataDMM_SV0 = TrieData<
     DenseMultimap<
         typename TG::KmerHolder,
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
-        SortedVector<u32>>,
+        SortedVector<SVT>>,
     DenseMultimap<
         typename TG::LetterLoc,
-        typename TG::LetterLoc,
         typename TG::KmerHolder,
-        SortedVector<u32>>,
+        SortedVector<SVT>>,
     true>;
 
 int m = test::define_module(__FILE__, [] {
     // TrieDataTester<TG::TrieData>::define_tests("default");
     // TrieDataTester<TrieDataSMM>::define_tests("SMM");
     // TrieDataTester<TrieDataHMM>::define_tests("HMM");
-    TrieDataTester<TrieDataHMM_SPP>::define_tests("HMM_SPP");
+    // TrieDataTester<TrieDataHMM_SPP>::define_tests("HMM_SPP");
     TrieDataTester<TrieDataDMM_SV>::define_tests("DMM_SV");
     TrieDataTester<TrieDataDMM_SV0>::define_tests("DMM_SV0");
 });

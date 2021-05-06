@@ -1,24 +1,8 @@
+#include "testlib/dna.h"
 #include "testlib/test.h"
 #include "testlib/trie/builder/tester.h"
 
-#include "dna_config.h"
-#include "manager.h"
-
-using namespace triegraph;
-
-using TG = Manager<dna::DnaConfig<0, false, true>>;
-
-// static TG::VectorPairs graph_to_pairs(
-//         const TG::Graph &g,
-//         u32 trie_depth) {
-//     TG::kmer_set_depth(trie_depth);
-//     auto lloc = TG::LetterLocData(g);
-//     auto pairs = typename TG::VectorPairs();
-//     TG::TrieBuilderNBFS(g, lloc, pairs)
-//         .set_settings({})
-//         .compute_pairs(lloc);
-//     return pairs;
-// }
+using TG = test::Manager_RK;
 
 int m = test::define_module(__FILE__, [] {
     using Tester = test::TrieBuilderTester<TG, TG::TrieBuilderNBFS>;

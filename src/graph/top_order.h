@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <stack>
+#include <algorithm>
+#include <assert.h>
 
 namespace triegraph {
 

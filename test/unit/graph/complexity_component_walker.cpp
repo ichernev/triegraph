@@ -1,15 +1,7 @@
-#include "dna_config.h"
-#include "manager.h"
-#include "graph/complexity_component.h"
-#include "graph/complexity_component_walker.h"
-
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
-using TG = triegraph::Manager<triegraph::dna::DnaConfig<0, false, true>>;
-using ComplexityComponent = triegraph::ComplexityComponent<
-    TG::Graph, TG::NodePos>;
-using ComplexityComponentWalker = triegraph::ComplexityComponentWalker<
-    ComplexityComponent>;
+using TG = test::Manager_RK;
 
 int m = test::define_module(__FILE__, [] {
 
@@ -21,7 +13,7 @@ test::define_test("all in cc", [] {
         .add_node(TG::Str("a"), "s2") /* components */
         .build();
 
-    auto ccw = ComplexityComponentWalker::Builder(graph, 2)
+    auto ccw = TG::ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {0, 1});
 
     assert(test::equal_sorted(
@@ -41,7 +33,7 @@ test::define_test("none in cc", [] {
         .add_node(TG::Str("a"), "s2") /* components */
         .build();
 
-    auto ccw = ComplexityComponentWalker::Builder(graph, 2)
+    auto ccw = TG::ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {});
 
     assert(test::equal_sorted(
@@ -62,7 +54,7 @@ test::define_test("simple incoming", [] {
         .add_edge("s1", "s2")
         .build();
 
-    auto ccw = ComplexityComponentWalker::Builder(graph, 2)
+    auto ccw = TG::ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {1});
 
     // for (auto const &p : test::sorted(ccw.cc_starts(graph, 2))) {
@@ -87,7 +79,7 @@ test::define_test("shared incoming", [] {
         .add_edge("s1", "s3")
         .build();
 
-    auto ccw = ComplexityComponentWalker::Builder(graph, 2)
+    auto ccw = TG::ComplexityComponentWalker::Builder(graph, 2)
         .build(std::vector<TG::NodeLoc> {1, 2});
 
     // for (auto const &p : test::sorted(ccw.cc_starts(graph, 2))) {

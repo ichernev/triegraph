@@ -1,16 +1,14 @@
-#include "dna_config.h"
-#include "manager.h"
-
 #include <utility>
 #include <vector>
 
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
-struct LLNoIdx : public triegraph::dna::DnaConfig<0, false, true> {
+struct LLNoIdx : public test::DnaConfig_RK {
     static constexpr int LetterLocIdxShift = -1;
 };
 
-struct LLWithIdx : public triegraph::dna::DnaConfig<0, false, true> {
+struct LLWithIdx : public test::DnaConfig_RK {
     static constexpr int LetterLocIdxShift = 2;
 };
 

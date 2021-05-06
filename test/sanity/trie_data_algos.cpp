@@ -1,10 +1,8 @@
-#include "dna_config.h"
-#include "manager.h"
-
+#include "testlib/dna.h"
 #include "testlib/test.h"
 
 using namespace triegraph;
-using TG = Manager<dna::DnaConfig<0, false, true>>;
+using TG = test::Manager_RK;
 
 struct TrieDataBuilderTester : test::TestCaseBase {
     std::string graph_file;

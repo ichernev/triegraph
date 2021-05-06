@@ -11,7 +11,7 @@
 
 using namespace triegraph;
 
-using DM = DenseMultimap<u32, u32, u32>;
+using DM = DenseMultimap<u32, u32>;
 
 int m = test::define_module(__FILE__, [] {
 
