@@ -76,12 +76,12 @@ struct TrieDataTester : public test::TestCaseBase {
                 KmerSettings::from_seed_config(lloc.num_locations, MapCfg {}),
                 {},
                 lloc);
-        pairs.sort_by_fwd().unique();
         auto pairs_copy = TG::VectorPairs {};
         std::ranges::copy(pairs.fwd_pairs(), std::back_inserter(pairs_copy));
-        // std::cerr << "ready to make TD" << std::endl;
         auto td = TrieData(std::move(pairs), lloc);
-        // std::cerr << "begin sanity" << std::endl;
+        // Do sort+uniq after TrieData creation to make sure TD works with
+        // non-sorted, non-unique pairs
+        pairs_copy.sort_by_rev().unique();
         sanity_check(td, pairs_copy, lloc);
     }
 
