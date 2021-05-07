@@ -52,7 +52,7 @@ struct TrieData {
         auto scope = log.begin_scoped("TrieData init_single");
 
         log.begin("sort pairs t2g");
-        pairs.sort_by_fwd();
+        pairs.sort_by_fwd().unique();
         // std::ranges::sort(pairs);
         log.end(); log.begin("build t2g");
         trie2graph = {
