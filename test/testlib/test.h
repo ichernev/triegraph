@@ -167,7 +167,7 @@ namespace test {
         return 0;
     }
 
-    void define_test(const char *test_name, std::function<void()> &&fn) {
+    void define_test(const std::string &test_name, std::function<void()> &&fn) {
         auto &m = modules.back();
         m.tests.emplace_back(std::make_unique<TestCaseSimple>(
                     m.prefix + test_name, std::move(fn)));
