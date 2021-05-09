@@ -8,44 +8,49 @@ Tasks
 + slow tests for (triedata) multimap
 + put TrieGraphData stats (from main.cpp, cc_dual.cpp) in TrieGraphData class
 + support ACGT simple/multi .fasta format
-- support full-letter .fasta -> variant graph
-- use doxygen throughout
-- improve building
-    - support start from filename, graph, and finish at pairs/td/tgd
-    - start from all locations
-    - start from location iter
-    - support various configuration options for each component
-    - support reading config from Config-like object (CmdLine)
-- improve SortedVector speed with TrieData builder
-    + added +/-1 cache : speedup up-to 2x for +2 trie-depth-rel
-    - backward traverse if closer to upper beacon
-    - use smaller-than-char type (better cache hits)
-- run on bigger (600M+ locations) graphs
-    + run on 200M+ (hg01) graph
-    - figure out what would fit on 32G
-- implement save/load for TrieData
-- implement 0-overhead pairs->TrieData
-    - using file system
-        - pairs class
-        - writing to disk
-        - streaming from disk (iter), configurable buffer
-        - sorting on disk, configurable buffer
-    - using complex algo (split pairs in 2 vecs):
-        - sort pairs by lloc                      [nlogn]
-        - allocate lloc_begs, fill from lloc
-        - free lloc
-        - allocate kmer_idx, sort by kmer         [nlogn]
-        - allocate kmer_begs, fill from kmer_idx
-        - migrate kmer_idx -> lloc (one by one)   [nlogn]
-- implement bit-compact vector
-    - figure out interface to make it compatible with all existing code
-    - use for pairs, TrieData
++ implement 0-overhead pairs->TrieData (algo):
+    - sort pairs by lloc                      [nlogn]
+    - allocate lloc_begs, fill from lloc
+    - free lloc
+    - allocate kmer_idx, sort by kmer         [nlogn]
+    - allocate kmer_begs, fill from kmer_idx
+    - migrate kmer_idx -> lloc (one by one)   [nlogn]
 + cleanup tests
     + test only component under test
     + move more complicated tests to slow/
     + impl test script
     + add timing to slow tests
     x enable level cutoff in Logger, use in slow/
+- support full-letter .fasta -> variant graph
+- use doxygen throughout
+- improve building
+    + support reading settings from config-like object
+    + each step (read graph, graph->pairs, pairs->triedata,
+      triedata->triegraph) should have a generic interface (and be reusable)
+    + support various configuration options for each component, init-able from
+      config
+    - full-pipeline build from config only
+- SortedVector
+    + added +/-1 cache : speedup up-to 2x for +2 trie-depth-rel
+    + custom binary-search (uses beacons then linear over diff)
+    - backward traverse if closer to upper beacon, use cache as beacon
+    - random-access const_iterator
+    - support compact vector for both beacon and diffs
+    - auto-detect beacon-interval, diff-bits from input sequence
+- implement bit-compact vector
+    - figure out interface to make it compatible with all existing code
+    - use for pairs, TrieData
+    - support (fast) reading/writing form/to file (read whole mem chunk at once)
+- run on bigger (600M+ locations) graphs
+    + run on 200M+ (hg01) graph
+    - figure out what would fit on 32G/64G
+    - try fit 1/N of HG in 32G
+- experiment with larger vector.reserve, to avoid copying (should only consume VM not RSS)
+- implement save/load for TrieData
+? implement 0-overhead pairs->TrieData (using FS)
+    - writing pairs to disk
+    - sorting on disk, configurable buffer
+    - streaming from disk (iter), configurable buffer
 
 https://github.com/maickrau/GraphAligner/blob/master/src/GfaGraph.cpp
 https://github.com/maickrau/GraphAligner/blob/master/src/GraphAlignerGAFAlignment.h
