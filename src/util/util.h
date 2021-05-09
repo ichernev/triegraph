@@ -56,7 +56,7 @@ struct quot_rem {
 };
 
 template <typename T>
-quot_rem<u32> div(T a, T b) {
+quot_rem<T> div(T a, T b) {
     T quot = a / b;
     return { quot, a - b * quot };
 }
