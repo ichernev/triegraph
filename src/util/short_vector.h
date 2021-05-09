@@ -1,12 +1,12 @@
-#ifndef __COMPRESSED_VECTOR_H__
-#define __COMPRESSED_VECTOR_H__
+#ifndef __SHORT_VECTOR_H__
+#define __SHORT_VECTOR_H__
 
 #include <string.h>
 
 namespace triegraph {
 
 template <typename T>
-struct compressed_vector {
+struct ShortVector {
     static constexpr unsigned max_cap = sizeof(std::vector<T>)/sizeof(T);
     static constexpr unsigned real_cap = max_cap - sizeof(void*) / sizeof(T);
     using const_iterator = typename std::vector<T>::const_iterator;
@@ -19,8 +19,8 @@ struct compressed_vector {
         };
     };
 
-    compressed_vector() : len(0) {}
-    ~compressed_vector() {
+    ShortVector() : len(0) {}
+    ~ShortVector() {
         if (len > real_cap) {
             // std::cerr << "destroying vector" << std::endl;
             (&vec)->~vector();
@@ -30,7 +30,7 @@ struct compressed_vector {
 
     }
 
-    compressed_vector(compressed_vector &&other) {
+    ShortVector(ShortVector &&other) {
         if (other.is_fast()) {
             memcpy(raw, other.raw, sizeof(T) * real_cap);
             len = other.len;
@@ -39,7 +39,7 @@ struct compressed_vector {
         }
     }
 
-    compressed_vector &operator= (compressed_vector &&other) {
+    ShortVector &operator= (ShortVector &&other) {
         if (is_fast()) {
             if (other.is_fast()) {
                 memcpy(raw, other.raw, sizeof(T) * real_cap);
@@ -119,4 +119,4 @@ struct compressed_vector {
 
 } /* namespace triegraph */
 
-#endif /* __COMPRESSED_VECTOR_H__ */
+#endif /* __SHORT_VECTOR_H__ */

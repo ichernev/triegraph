@@ -2,7 +2,7 @@
 #define __TRIE_BUILDER_LBFS_H__
 
 #include "graph/connected_components.h"
-#include "util/compressed_vector.h"
+#include "util/short_vector.h"
 #include "util/util.h"
 #include "util/logger.h"
 
@@ -116,7 +116,7 @@ struct TrieBuilderLBFS {
     }
 
     struct KmerBuildData {
-        std::vector<compressed_vector<Kmer>> kmers;
+        std::vector<ShortVector<Kmer>> kmers;
         std::vector<std::unordered_set<Kmer>> kmers_set;
         std::vector<kmer_len_type> done_idx;
 

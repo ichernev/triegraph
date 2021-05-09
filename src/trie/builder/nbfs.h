@@ -4,6 +4,7 @@
 #include <graph/top_order.h>
 #include <util/util.h>
 #include <util/logger.h>
+#include <util/short_vector.h>
 
 #include <vector>
 #include <queue>
@@ -83,7 +84,7 @@ private:
     struct KmerBuildData {
 
         static constexpr u32 SET_CUTOFF = 500;
-        std::vector<compressed_vector<Kmer>> kmers;
+        std::vector<ShortVector<Kmer>> kmers;
         // std::vector<std::vector<Kmer>> kmers;
         std::vector<std::unordered_set<Kmer>> kmers_set;
         std::vector<KmerPerNodeLen> done_idx;
