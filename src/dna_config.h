@@ -12,18 +12,18 @@ using namespace triegraph;
 struct CfgFlags {
     /** enable using shorter-than-full kmers (only POINT_BFS supports them) */
     static constexpr u32 ALLOW_INNER_KMER = 1u << 0;
-    /** use Kmer/DKmer type in vector pairs instead of compressed/_leaf kmers.
+    /** use Kmer/DKmer type in VectorPairs instead of compressed/_leaf kmers.
      * Mostly useful during tests of Algo, where equality checks are performed
      * expecting Kmer type and not an integer */
     static constexpr u32 VP_RAW_KMERS     = 1u << 1;
-    /** Use SortedVector as a storage for TD instead of regular vector -- uses
-     * around 1/8-1/4 of the memory */
-    static constexpr u32 VP_DUAL_IMPL     = 1u << 2;
-    /** Build TrieData from VectorPairs without allocating more memory than
-     * necessary. Requires SortedVector, Dual Impl and DenseMMap (default) */
-    static constexpr u32 TD_SORTED_VECTOR = 1u << 3;
     /** Use 2 separate vectors in VectorPairs instead of a single vector of
      * pairs. Necessary for zero-overhead */
+    static constexpr u32 VP_DUAL_IMPL     = 1u << 2;
+    /** Use SortedVector as a storage for TD instead of regular vector -- uses
+     * around 1/8-1/4 of the memory */
+    static constexpr u32 TD_SORTED_VECTOR = 1u << 3;
+    /** Build TrieData from VectorPairs without allocating more memory than
+     * necessary. Requires SortedVector, Dual Impl and DenseMMap (default) */
     static constexpr u32 TD_ZERO_OVERHEAD = 1u << 4;
 };
 
