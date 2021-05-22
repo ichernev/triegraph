@@ -8,8 +8,10 @@ namespace triegraph {
 
 enum struct VectorPairsImpl : u32 { EMPTY, SIMPLE, DUAL };
 
-template <typename T1, typename T2, VectorPairsImpl impl_choice>
+template <typename T1_, typename T2_, VectorPairsImpl impl_choice>
 struct VectorPairsBase {
+    using T1 = T1_;
+    using T2 = T2_;
     using fwd_pair = std::pair<T1, T2>;
     using rev_pair = std::pair<T2, T1>;
     using fwd_vec = std::vector<fwd_pair>;
@@ -298,6 +300,8 @@ struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T
         };
     }
 
+    std::vector<T1> &get_v1() { return vec1; }
+    std::vector<T2> &get_v2() { return vec2; }
     std::vector<T1> take_v1() { std::vector<T1> res; std::swap(res, vec1); return res; }
     std::vector<T2> take_v2() { std::vector<T2> res; std::swap(res, vec2); return res; }
 };
