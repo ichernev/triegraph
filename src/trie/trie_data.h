@@ -108,7 +108,7 @@ struct TrieData {
         log.end();
 
         log.begin("build locs_beg O(n)");
-        auto locs_beg = G2TMap::StartsContainer::from_elem_seq(locs);
+        auto locs_beg = sorted_vector_from_elem_seq<typename G2TMap::StartsContainer>(locs);
         log.end();
 
         log.begin("prep kmer_idx O(n)");
@@ -123,7 +123,7 @@ struct TrieData {
         std::ranges::sort(kmer_idx, kmer_cmp);
 
         log.end().begin("prep kmer_beg O(n)");
-        auto kmer_beg = T2GMap::StartsContainer::from_elem_seq(
+        auto kmer_beg = sorted_vector_from_elem_seq<typename T2GMap::StartsContainer>(
                 kmer_idx | std::ranges::views::transform(
                     [&kmers](KHolder a) { return kmers[a]; }));
 

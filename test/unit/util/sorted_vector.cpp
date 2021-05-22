@@ -83,7 +83,19 @@ int m = test::define_module(__FILE__, [] {
 
     test::define_test("from_elem_seq", [] {
         auto inp = std::vector<u32> { 0, 0, 0, 1, 1, 5, 7 };
-        auto sv = SV<u32, u8>::from_elem_seq(inp);
+        auto sv = sorted_vector_from_elem_seq<SV<u32, u8>>(inp);
+        // std::cerr << sv.size() << std::endl;
+        assert(sv.size() == 8); // 7 + 1
+        auto exp = std::vector<u32> {0, 3, 5, 5, 5, 5, 6, 6};
+        for (u32 i = 0; i < sv.size(); ++i) {
+            // std::cerr << i << " " << sv[i] << std::endl;
+            assert(sv[i] == exp[i]);
+        }
+    });
+
+    test::define_test("vector from_elem_seq", [] {
+        auto inp = std::vector<u32> { 0, 0, 0, 1, 1, 5, 7 };
+        auto sv = sorted_vector_from_elem_seq<std::vector<u32>>(inp);
         // std::cerr << sv.size() << std::endl;
         assert(sv.size() == 8); // 7 + 1
         auto exp = std::vector<u32> {0, 3, 5, 5, 5, 5, 6, 6};

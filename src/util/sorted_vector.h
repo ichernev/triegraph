@@ -87,27 +87,26 @@ struct SortedVector {
     //     }
     // }
 
-    static SortedVector from_elem_seq(std::ranges::sized_range auto &&range) {
-        SortedVector res;
-        auto beg = range.begin();
-        auto end = range.end();
+    // static SortedVector from_elem_seq(std::ranges::sized_range auto &&range) {
+    //     SortedVector res;
+    //     auto beg = range.begin();
+    //     auto end = range.end();
 
-        value_type max = *(--end) + 1; ++end;
-        // std::cerr << "max is " << max << std::endl;
-        res.reserve(max);
+    //     value_type max = *(--end); ++end;
+    //     // std::cerr << "max is " << max << std::endl;
+    //     res.reserve(max + 1);
 
-        value_type pos = 0;
-        res.push_back(pos);
-        -- max;
-        for (value_type id = 0; id < max; ++id) {
-            while (beg != end && *beg == id) {
-                ++ beg;
-                ++ pos;
-            }
-            res.push_back(pos);
-        }
-        return res;
-    }
+    //     value_type pos = 0;
+    //     res.push_back(pos);
+    //     for (value_type id = 0; id < max; ++id) {
+    //         while (beg != end && *beg == id) {
+    //             ++ beg;
+    //             ++ pos;
+    //         }
+    //         res.push_back(pos);
+    //     }
+    //     return res;
+    // }
 
     Beacon binary_search(Beacon elem) const {
         if (size() == 0)
@@ -242,6 +241,29 @@ private:
         return --to_id;
     }
 };
+
+template <typename SortedVector>
+SortedVector sorted_vector_from_elem_seq(std::ranges::sized_range auto &&range) {
+    using value_type = SortedVector::value_type;
+    SortedVector res;
+    auto beg = range.begin();
+    auto end = range.end();
+
+    value_type max = *(--end); ++end;
+    // std::cerr << "max is " << max << std::endl;
+    res.reserve(max + 1);
+
+    value_type pos = 0;
+    res.push_back(pos);
+    for (value_type id = 0; id < max; ++id) {
+        while (beg != end && *beg == id) {
+            ++ beg;
+            ++ pos;
+        }
+        res.push_back(pos);
+    }
+    return res;
+}
 
 template <typename T>
 inline constexpr bool is_sorted_vector_v = false;
