@@ -28,11 +28,7 @@ int m = test::define_module(__FILE__, [] {
             // std::ranges::copy(sv.diffs, std::ostream_iterator<u32>(std::cerr, " ")); std::cerr << std::endl;
         }
 
-        assert(sv.size() == elems.size());
-        for (u32 i = 0; i < sv.size(); ++i) {
-            // std::cerr << i << " " << sv[i] << std::endl;
-            assert(sv[i] == elems[i]);
-        }
+        assert(std::ranges::equal(sv, elems));
     });
 
     test::define_test("small with overflow", [] {
@@ -51,13 +47,38 @@ int m = test::define_module(__FILE__, [] {
             // std::ranges::copy(sv.diffs, std::ostream_iterator<u32>(std::cerr, " ")); std::cerr << std::endl;
         }
 
-        // for (u32 i = 0; i < sv.size(); ++i) {
-        //     std::cerr << i << " " << sv[i] << std::endl;
-        // }
-        assert(sv.size() == elems.size());
-        for (u32 i = 0; i < sv.size(); ++i) {
-            assert(sv[i] == elems[i]);
-        }
+        assert(std::ranges::equal(sv, elems));
+    });
+
+    test::define_test("iter", [] {
+        auto func_rng = [](std::ranges::random_access_range auto&&) {};
+        func_rng(SV<u32, u8> {});
+
+        auto func_it = [](std::random_access_iterator auto &&) {};
+        func_it(SV<u32, u8>().begin());
+
+        auto sv = SV<u32, u8> {};
+        sv.reserve(6);
+        std::ranges::copy(std::vector<u32> {0, 1, 2, 3, 4, 5}, std::back_inserter(sv));
+
+        assert(*sv.begin() == 0);
+        assert(sv.begin()[0] == 0);
+        assert(sv.begin()[1] == 1);
+        assert(sv.begin()[2] == 2);
+        assert(sv.begin()[3] == 3);
+        assert(sv.begin()[4] == 4);
+        assert(sv.begin()[5] == 5);
+
+        assert(*(sv.end() - 1) == 5);
+        assert(sv.end()[-1] == 5);
+        assert(sv.end()[-2] == 4);
+        assert(sv.end()[-3] == 3);
+        assert(sv.end()[-4] == 2);
+        assert(sv.end()[-5] == 1);
+        assert(sv.end()[-6] == 0);
+
+        assert(sv.end() - sv.begin() == 6);
+        assert(sv.begin() + 6 == sv.end());
     });
 
     test::define_test("from_elem_seq", [] {

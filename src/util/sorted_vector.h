@@ -49,26 +49,12 @@ struct SortedVector {
     }
 
     Beacon operator[] (Beacon idx) const {
-        if (idx == _cache_idx) {
-            return _cache_val;
-        }
-        if (idx == _cache_idx + 1) {
-            ++ _cache_idx;
-            _cache_val += get_diff(idx);
-            return _cache_val;
-        }
-        if (idx == _cache_idx - 1) {
-            _cache_val -= get_diff(_cache_idx --);
-            return _cache_val;
-        }
         auto dr = div(idx, beacon_interval);
         Beacon res = beacons[dr.quot];
         Beacon base_idx = idx - dr.rem;
         for (u32 i = 1; i <= dr.rem; ++i) {
             res += get_diff(base_idx + i);
         }
-        _cache_idx = idx;
-        _cache_val = res;
         return res;
     }
 
@@ -76,6 +62,9 @@ struct SortedVector {
         return diffs[idx] != diff_sentinel ?
             diffs[idx] : of_diffs.find(idx)->second;
     }
+
+    // quicker than get_diff(idx) == 0
+    bool is_zero_diff(Beacon idx) const { return diffs[idx] == 0; }
 
     Beacon at(Beacon idx) const {
         if (idx >= size()) {
@@ -143,7 +132,93 @@ struct SortedVector {
                 elem - beacons.at(beg));
     }
 
-    // TODO: Add random-access iterator, for bsrch and equal (tests)
+    struct Iter {
+        using Parent = SortedVector;
+        using Self = Iter;
+
+        using iterator_category = std::random_access_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = Beacon;
+        using reference_type = value_type;
+
+        const Parent *parent;
+        Beacon id;
+        Beacon val;
+
+        Iter() {}
+        Iter(const Parent &parent, Beacon id)
+            : parent(&parent),
+              id(id),
+              val(_xid(id)) {}
+
+        Iter(const Iter &) = default;
+        Iter(Iter &&) = default;
+        Iter &operator= (const Iter &) = default;
+        Iter &operator= (Iter &&) = default;
+
+        // All this crap is because iterators can point to 1-after-end,
+        // so this iterator should seamlessly transition back onto the
+        // sequence.
+        Beacon _xget_diff(Beacon idx) const {
+            if (idx == this->parent->size())
+                return 0;
+            return this->parent->get_diff(idx);
+        }
+        Beacon _xid(Beacon id) const {
+            auto sz = this->parent->size();
+            if (id < sz)
+                return this->parent->operator[](id);
+            else if (sz)
+                return this->parent->operator[](sz-1);
+            else
+                return 0;
+        }
+        void _inc() { val += _xget_diff(++id); }
+        void _dec() { val -= _xget_diff(id--); }
+        void _add(difference_type d) {
+            if (0 < d && d <= 4)
+                while (d--) _inc();
+            else if (-4 <= d && d < 0)
+                while (d++) _dec();
+            else
+                val = _xid(id += d);
+        }
+
+        reference_type operator* () const { return val; }
+        Self &operator++ () { _inc(); return *this; }
+        Self &operator-- () { _dec(); return *this; }
+        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+        Self operator-- (int) { Self tmp = *this; --(*this); return tmp; }
+        bool operator== (const Self &other) const { return id == other.id; }
+        std::strong_ordering operator<=> (const Self &other) const { return id <=> other.id; }
+        Self &operator+= (difference_type i) { _add(+i); return *this; }
+        Self &operator-= (difference_type i) { _add(-i); return *this; }
+        Self operator+ (difference_type i) const { Self tmp = *this; tmp += i; return tmp; }
+        Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
+        friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
+
+        reference_type operator[] (difference_type i) const { return *(*this + i); }
+        difference_type operator- (const Self &other) const {
+            return difference_type(id) - other.id; }
+
+        void skip_empty() {
+            auto sz = this->parent->size();
+            if (sz == 0) return;
+            --sz;
+            while (id < sz) {
+                if (this->parent->is_zero_diff(id+1))
+                    ++id;
+                else
+                    break;
+            }
+            // id == size-1 is never empty, by construction.
+        }
+    };
+
+    using const_iterator = Iter;
+    const_iterator begin() const { return Iter(*this, 0); }
+    const_iterator end() const { return Iter(*this, size()); }
+
 private:
     u32 beacon_interval;
     u32 bits_per_diff;
@@ -152,8 +227,6 @@ private:
     std::vector<Diff> diffs;
     std::unordered_map<Beacon, Beacon> of_diffs;
 
-    mutable Beacon _cache_val;
-    mutable Beacon _cache_idx;
     // std::vector<Beacon> input;
 
     Beacon sum; // used during build
@@ -169,6 +242,12 @@ private:
         return --to_id;
     }
 };
+
+template <typename T>
+inline constexpr bool is_sorted_vector_v = false;
+
+template <typename Beacon, typename Diff>
+inline constexpr bool is_sorted_vector_v<SortedVector<Beacon, Diff>> = true;
 
 } /* namespace triegraph */
 
