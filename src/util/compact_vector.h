@@ -3,10 +3,10 @@
 
 #include "util/util.h"
 
+#include <cassert>
+#include <cstdlib> /* div */
 #include <type_traits>
 #include <vector>
-#include <cstdlib> /* div */
-#include <cassert>
 
 namespace triegraph {
 
@@ -246,7 +246,17 @@ struct CompactVector {
 template <typename T>
 void compact_vector_set_bits(CompactVector<T> &cv, u32 bits) { cv.set_bits(bits); }
 template <typename T>
-void compact_vector_set_bits(std::vector<T> &cv, u32 bits) { }
+void compact_vector_set_bits(std::vector<T> &v, u32 bits) {
+    if (bits > sizeof(T) * BITS_PER_BYTE)
+        throw "not-enough-bits-vector";
+}
+
+template <typename T>
+u32 compact_vector_get_bits(const CompactVector<T> &cv) { return cv.bits; }
+template <typename T>
+u32 compact_vector_get_bits(const std::vector<T> &v) {
+    return sizeof(T) * BITS_PER_BYTE;
+}
 
 } /* namespace triegraph */
 

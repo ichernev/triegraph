@@ -23,6 +23,7 @@
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
 #include "trie/trie_data.h"
+#include "util/compact_vector.h"
 #include "util/dense_multimap.h"
 #include "util/hybrid_multimap.h"
 #include "util/simple_multimap.h"
@@ -208,6 +209,7 @@ struct Manager : Cfg {
         // std::cerr << "FOOOOOO" << std::endl;
         Kmer::set_settings(kmer_settings);
         auto pairs = VectorPairs {};
+        _vp_set_bits(pairs, lloc);
         std::conditional_t<Cfg::trie_pairs_raw,
             VectorPairs &,
             VectorPairsInserter> pairs_inserter = make_pairs_inserter(pairs, pairs_variant {});
@@ -219,7 +221,31 @@ struct Manager : Cfg {
             .set_settings(std::move(tb_settings))
             .compute_pairs(std::forward<decltype(starts)>(starts));
         // std::cerr << "got pairs size " << pairs.size() << std::endl;
+        _vp_check_bits(pairs);
         return pairs;
+    }
+
+    static void _vp_set_bits(VectorPairs &pairs, const LetterLocData &lloc) {
+        if constexpr (VectorPairs::impl == VectorPairsImpl::DUAL) {
+            // TODO: Put this in CompactVectorSettings, and add cfg override
+            u32 kmer_bits = log2_ceil(TrieData::total_kmers());
+            u32 lloc_bits = log2_ceil(lloc.num_locations);
+            u32 bits = std::max(kmer_bits, lloc_bits) + 1;
+
+            compact_vector_set_bits(pairs.get_v1(), bits);
+            compact_vector_set_bits(pairs.get_v2(), bits);
+        }
+    }
+
+    static void _vp_check_bits(VectorPairs &pairs) {
+        if constexpr (VectorPairs::impl == VectorPairsImpl::DUAL) {
+            u32 pair_bits = log2_ceil(pairs.size());
+            if (pair_bits > compact_vector_get_bits(pairs.get_v1()) ||
+                    pair_bits > compact_vector_get_bits(pairs.get_v2())) {
+                // TODO: Support increasing #bits in CV
+                throw "not-enough-bits-for-pairs";
+            }
+        }
     }
 
     template <typename TrieBuilder, typename pairs_variant = PairsVariantRaw>

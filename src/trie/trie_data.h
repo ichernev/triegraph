@@ -3,9 +3,10 @@
 
 #include "trie/kmer_codec.h"
 #include "trie/trie_presence.h"
+#include "util/compact_vector.h"
 #include "util/logger.h"
-#include "util/pow_histogram.h"
 #include "util/multimaps.h"
+#include "util/pow_histogram.h"
 #include "util/util.h"
 #include "util/vector_pairs.h"
 
@@ -17,7 +18,6 @@
 #include <iterator>
 #include <ranges>
 #include <functional>
-#include <span>
 
 #include <assert.h>
 
@@ -104,6 +104,7 @@ struct TrieData {
                     pairs.get_v2());
 
             typename G2TMap::ElemsContainer elems;
+            compact_vector_set_bits(elems, compact_vector_get_bits(pairs.get_v1()));
             std::ranges::copy(pairs.get_v1(), std::back_inserter(elems));
 
             graph2trie = G2TMap(std::move(starts), std::move(elems));
@@ -153,7 +154,7 @@ struct TrieData {
 
         log.begin("prep kmer_idx O(n)");
         // reuse locs space for kmer_idx
-        auto kmer_idx = std::span(locs);
+        auto &kmer_idx = locs;
         std::iota(kmer_idx.begin(), kmer_idx.end(), KHolder {});
 
         log.end().begin("sort kmer_idx O(nlogn)");
