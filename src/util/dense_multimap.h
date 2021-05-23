@@ -2,6 +2,7 @@
 #define __DENSE_MULTIMAP_H__
 
 #include "util/multimaps.h"
+#include "util/sorted_vector.h"
 
 #include <vector>
 #include <ranges>
@@ -82,16 +83,8 @@ struct DenseMultimap {
         {
             adjust();
         }
-        reference operator* () const {
-            // std::cerr << "IN **" << a << " " << b << " " << p->elems[b] << std::endl;
-            return {a, p->elems.at(b)};
-        }
-        Self &operator++ () {
-            // std::cerr << "a = " << a << " " << p->bound(a) << std::endl;
-            if (++b == p->start(a+1))
-                adjust();
-            return *this;
-        }
+        reference operator* () const { return {a, p->elems.at(b)}; }
+        Self &operator++ () { if (++b == p->start(a+1)) adjust(); return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
         bool operator== (const Self &other) const { return b == other.b; }
         difference_type operator- (const Self &other) const { return b - other.b; }
@@ -104,6 +97,34 @@ struct DenseMultimap {
 
         const Parent *p;
         A a;
+        B b;
+    };
+
+    struct PairIterSV {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = std::pair<A, C>;
+        using reference = value_type;
+
+        using Self = PairIterSV;
+        using Parent = DenseMultimap;
+
+        PairIterSV() : it(), b() {}
+        PairIterSV(const Parent &p) : p(&p), it(p.starts.end()), b(p.elems.size()) {}
+        PairIterSV(const Parent &p, A a) : p(&p), it(p.starts.begin() + a), b(p.start(a)) {
+            adjust();
+        }
+        reference operator* () const { return {it.id, p->elems[b]}; }
+        Self &operator++ () { if (++b == it[1]) { ++it; adjust(); } return *this; }
+        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+        bool operator== (const Self &other) const { return b == other.b; }
+        difference_type operator- (const Self &other) const { return b - other.b; }
+
+    private:
+        void adjust() { it.skip_empty(); }
+
+        const Parent *p;
+        StartsContainer::const_iterator it;
         B b;
     };
 
@@ -124,6 +145,7 @@ struct DenseMultimap {
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
         bool operator== (const Self &other) const { return a == other.a; }
 
+    private:
         void adjust() {
             // skip "empty" keys
             while (a < p->starts.size() && p->start(a) == p->start(a+1))
@@ -132,6 +154,29 @@ struct DenseMultimap {
 
         const Parent *p;
         A a;
+    };
+
+    struct KeyIterSV {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = A;
+        using reference = value_type;
+        using Self = KeyIterSV;
+        using Parent = DenseMultimap;
+
+        KeyIterSV() : it() {}
+        KeyIterSV(const Parent &p) : it(p.starts.end()) {}
+        KeyIterSV(const Parent &p, A a) : it(p.starts.begin() + a) { adjust(); }
+
+        reference operator* () const { return it.id; }
+        Self &operator++ () { ++it; adjust(); return *this; }
+        Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
+        bool operator== (const Self &other) const { return it == other.it; }
+
+    private:
+        void adjust() { it.skip_empty(); }
+
+        StartsContainer::const_iterator it;
     };
 
     struct ValIter {
@@ -153,8 +198,15 @@ struct DenseMultimap {
         std::vector<value_type>::const_iterator it;
     };
 
-    using const_iterator = PairIter;
-    using const_key_iterator = KeyIter;
+
+    using const_iterator = std::conditional_t<
+        is_sorted_vector_v<StartsContainer>,
+        PairIterSV,
+        PairIter>;
+    using const_key_iterator = std::conditional_t<
+        is_sorted_vector_v<StartsContainer>,
+        KeyIterSV,
+        KeyIter>;
     using const_value_iterator = ValIter;
 
     const_iterator begin() const { return const_iterator(*this, 0); }
@@ -163,7 +215,8 @@ struct DenseMultimap {
         return { const_key_iterator(*this, 0), const_key_iterator(*this) };
     }
     iter_pair<const_value_iterator, const_value_iterator> values_for(const A &a) const {
-        return { elems.begin() + start(a), elems.begin() + start(a+1) };
+        auto sp = starts_pair(a);
+        return { elems.begin() + sp.first, elems.begin() + sp.second };
     }
 
     std::pair<const_iterator, const_iterator> equal_range(const A &a) const {
@@ -171,9 +224,25 @@ struct DenseMultimap {
         return std::make_pair(const_iterator(*this, a), const_iterator(*this, a+1));
     }
 
-    bool contains(const A &a) const { return start(a) < start(a+1); }
+    bool contains(const A &a) const {
+        if constexpr (is_sorted_vector_v<StartsContainer>) {
+            if (a + 1 < starts.size())
+                return ! starts.is_zero_diff(a + 1);
+        }
+        return start(a) < start(a+1);
+    }
 
 private:
+    std::pair<B, B> starts_pair(A a) const {
+        if constexpr (is_sorted_vector_v<StartsContainer>) {
+            if (a + 1 < starts.size()) {
+                B first = starts[a];
+                return { first, first + starts.get_diff(a+1) };
+            }
+        }
+        return { start(a), start(a+1) };
+    }
+
     B start(A a) const {
         if (a >= starts.size())
             return elems.size();

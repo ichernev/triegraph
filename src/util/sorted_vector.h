@@ -63,6 +63,9 @@ struct SortedVector {
             diffs[idx] : of_diffs.find(idx)->second;
     }
 
+    // quicker than get_diff(idx) == 0
+    bool is_zero_diff(Beacon idx) const { return diffs[idx] == 0; }
+
     Beacon at(Beacon idx) const {
         if (idx >= size()) {
             throw "idx-out-of-range";
@@ -197,6 +200,19 @@ struct SortedVector {
         reference_type operator[] (difference_type i) const { return *(*this + i); }
         difference_type operator- (const Self &other) const {
             return difference_type(id) - other.id; }
+
+        void skip_empty() {
+            auto sz = this->parent->size();
+            if (sz == 0) return;
+            --sz;
+            while (id < sz) {
+                if (this->parent->is_zero_diff(id+1))
+                    ++id;
+                else
+                    break;
+            }
+            // id == size-1 is never empty, by construction.
+        }
     };
 
     using const_iterator = Iter;
@@ -226,6 +242,12 @@ private:
         return --to_id;
     }
 };
+
+template <typename T>
+inline constexpr bool is_sorted_vector_v = false;
+
+template <typename Beacon, typename Diff>
+inline constexpr bool is_sorted_vector_v<SortedVector<Beacon, Diff>> = true;
 
 } /* namespace triegraph */
 
