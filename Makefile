@@ -33,9 +33,9 @@ tests: $(TEST_TARGETS)
 .PHONY: test
 test:
 	@if [ -n "$(ONLY)" ]; then \
-		make --no-print-directory build run ONLY="$(ONLY)" PREFIX=test; \
+		$(MAKE) --no-print-directory build run ONLY="$(ONLY)" PREFIX=test; \
 	else \
-		make --no-print-directory tests run-tests; \
+		$(MAKE) --no-print-directory tests run-tests; \
 	fi
 
 .PHONY: run-tests
@@ -51,11 +51,11 @@ build:
 		if [ -d "$$xpcs" ]; then \
 			find $$xpcs/ -name '*.cpp' | while read t; do \
 				[ -n "$(FORCE)" ] && rm -f ./$(OUTPUT)/$${t%.cpp}; \
-				make --no-print-directory ./$(OUTPUT)/$${t%.cpp}; \
+				$(MAKE) --no-print-directory ./$(OUTPUT)/$${t%.cpp}; \
 			done; \
 		else \
 			[ -n "$(FORCE)" ] && rm ./$(OUTPUT)/$$xpcs; \
-			make --no-print-directory ./$(OUTPUT)/$$xpcs; \
+			$(MAKE) --no-print-directory ./$(OUTPUT)/$$xpcs; \
 		fi; \
 	done
 
