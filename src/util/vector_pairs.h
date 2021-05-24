@@ -6,7 +6,7 @@
 
 namespace triegraph {
 
-enum struct VectorPairsImpl : u32 { EMPTY, SIMPLE, DUAL };
+enum struct VectorPairsImpl : u32 { EMPTY = 0, SIMPLE = 1, DUAL = 2 };
 
 template <typename T1_, typename T2_, VectorPairsImpl impl_choice>
 struct VectorPairsBase {
@@ -20,10 +20,10 @@ struct VectorPairsBase {
     static constexpr VectorPairsImpl impl = impl_choice;
 };
 
-template <typename T1, typename T2, VectorPairsImpl impl_choice>
-struct VectorPairs : public VectorPairsBase<T1, T2, impl_choice> {
-    using Base = VectorPairsBase<T1, T2, impl_choice>;
-    using Self = VectorPairs;
+template <typename T1, typename T2>
+struct VectorPairsEmpty : public VectorPairsBase<T1, T2, VectorPairsImpl::EMPTY> {
+    using Base = VectorPairsBase<T1, T2, VectorPairsImpl::EMPTY>;
+    using Self = VectorPairsEmpty;
 
     size_t size() const { return 0; }
     void reserve(size_t capacity) { }
@@ -61,8 +61,8 @@ struct VectorPairs : public VectorPairsBase<T1, T2, impl_choice> {
 };
 
 template <typename T1, typename T2>
-struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE> {
-    using Self = VectorPairs;
+struct VectorPairsSimple : public VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE> {
+    using Self = VectorPairsSimple;
     using Base = VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE>;
     Base::fwd_vec vec;
 
@@ -112,7 +112,6 @@ struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1,
 };
 
 namespace impl {
-
 
     template <typename T1, typename T2>
     struct RefPair;
@@ -237,8 +236,8 @@ namespace impl {
 
 
 template <typename T1, typename T2>
-struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T2, VectorPairsImpl::DUAL> {
-    using Self = VectorPairs;
+struct VectorPairsDual : public VectorPairsBase<T1, T2, VectorPairsImpl::DUAL> {
+    using Self = VectorPairsDual;
     using Base = VectorPairsBase<T1, T2, VectorPairsImpl::DUAL>;
 
     std::vector<T1> vec1;

@@ -45,7 +45,7 @@ static void test_non_empty(auto &&vp) {
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("test Empty impl", [] {
-    using VP = VectorPairs<u32, u32, VectorPairsImpl::EMPTY>;
+    using VP = VectorPairsEmpty<u32, u32>;
     auto vp = VP();
 
     assert(vp.size() == 0);
@@ -63,15 +63,15 @@ test::define_test("test Empty impl", [] {
 });
 
 test::define_test("test Simple impl", [] {
-    test_non_empty(VectorPairs<u32, u32, VectorPairsImpl::SIMPLE>());
+    test_non_empty(VectorPairsSimple<u32, u32>());
 });
 
 test::define_test("test Dual impl", [] {
-    test_non_empty(VectorPairs<u32, u32, VectorPairsImpl::DUAL>());
+    test_non_empty(VectorPairsDual<u32, u32>());
 });
 
 test::define_test("test Dual take", [] {
-    auto vp = VectorPairs<u32, u32, VectorPairsImpl::DUAL>();
+    auto vp = VectorPairsDual<u32, u32>();
     vp.emplace_back(0, 5);
     vp.emplace_back(2, 6);
     assert(vp.size() == 2u);

@@ -105,10 +105,13 @@ struct Manager : Cfg {
     using T2GMap = choose_type_t<Cfg::TDMapType, T2GSMM, T2GDMM>;
     using G2TMap = choose_type_t<Cfg::TDMapType, G2TSMM, G2TDMM>;
     // using VectorPairs = std::vector<std::pair<Kmer, typename LetterLocData::LetterLoc>>;
-    using VectorPairs = triegraph::VectorPairs<
-        std::conditional_t<Cfg::trie_pairs_raw, Kmer, typename Cfg::KmerHolder>,
-        typename LetterLocData::LetterLoc,
-        Cfg::vector_pairs_impl>;
+    using VPFirst_ = std::conditional_t<Cfg::trie_pairs_raw, Kmer, typename Cfg::KmerHolder>;
+    using VPSecond_ = LetterLocData::LetterLoc;
+    using VectorPairs = choose_type_t<
+        u32(Cfg::vector_pairs_impl),
+        triegraph::VectorPairsEmpty<VPFirst_, VPSecond_>,
+        triegraph::VectorPairsSimple<VPFirst_, VPSecond_>,
+        triegraph::VectorPairsDual<VPFirst_, VPSecond_> >;
     static constexpr auto vp_inserter_fmap = [](auto &&k) {
         return KmerCodec::to_int(std::forward<decltype(k)>(k));
     };
