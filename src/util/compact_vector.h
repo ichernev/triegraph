@@ -151,7 +151,7 @@ struct CompactVector {
         friend inline void swap(Ref a, T &b) { T tmp = T(a); a = b; b = tmp; }
         friend inline void swap(T &a, Ref b) { T tmp = a; a = T(b); b = tmp; }
     };
-    using reference_type = Ref<false>;
+    using reference = Ref<false>;
 
     T operator[] (u64 idx) const {
         return Ref<true>(data.begin(), div(idx * bits, u64(max_bits)), mask_(bits));
@@ -160,7 +160,7 @@ struct CompactVector {
         //     data[dr.quot+1] & mask >> (max_bits - dr.rem);
     }
 
-    reference_type operator[] (u64 idx) {
+    reference operator[] (u64 idx) {
         return { data.begin(), div(idx * bits, u64(max_bits)), mask_(bits) };
     }
 
@@ -170,7 +170,7 @@ struct CompactVector {
         using difference_type = std::ptrdiff_t;
         using value_type = T;
         using proxy_t = Ref<cnst>;
-        using reference_type = std::conditional_t<cnst, T, proxy_t>;
+        using reference = std::conditional_t<cnst, T, proxy_t>;
         using Self = Iter;
 
         data_iterator<cnst> it;
@@ -200,7 +200,7 @@ struct CompactVector {
             rem = dr.rem;
         }
 
-        reference_type operator* () const { return proxy_t(it, rem, mask_(bits)); }
+        reference operator* () const { return proxy_t(it, rem, mask_(bits)); }
         Self &operator++ () { _inc(); return *this; }
         Self &operator-- () { _dec(); return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
@@ -219,7 +219,7 @@ struct CompactVector {
         Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
         friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
 
-        reference_type operator[] (difference_type i) const {
+        reference operator[] (difference_type i) const {
             return *(*this + i);
         }
         difference_type operator- (const Self &other) const {

@@ -210,10 +210,10 @@ namespace impl {
         using difference_type = std::ptrdiff_t;
         using value_type = std::conditional_t<is_const,
               std::pair<T1, T2>, Pair<T1, T2>>;
-        using reference_type = std::conditional_t<is_const,
+        using reference = std::conditional_t<is_const,
               std::pair<T1, T2>, RefPair<T1, T2>>;
 
-        reference_type operator* () const { return reference_type(*it1(), *it2()); }
+        reference operator* () const { return reference(*it1(), *it2()); }
         Self &operator++ () { ++it1_; return *this; }
         Self &operator-- () { --it1_; return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
@@ -227,7 +227,7 @@ namespace impl {
         Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
         friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
 
-        reference_type operator[] (difference_type i) const { return reference_type(*(it1()+i), *(it2()+i)); }
+        reference operator[] (difference_type i) const { return reference(*(it1()+i), *(it2()+i)); }
         difference_type operator- (const Self &other) const { return it1_ - other.it1_; }
     };
 
