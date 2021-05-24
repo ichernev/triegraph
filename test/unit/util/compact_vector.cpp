@@ -127,6 +127,27 @@ struct CompactVectorTester {
         assert(cbeg == std::as_const(cv).end());
     }
 
+    static void test_push_back_resize() {
+        auto cv = make_cv();
+
+        cv.push_back(1);
+        cv.push_back(2);
+        cv.push_back(3);
+
+        assert(cv.size() == 3);
+        assert(std::ranges::equal(cv, std::vector<typename CV::value_type> { 1, 2, 3 }));
+
+        cv.resize(2);
+
+        assert(cv.size() == 2);
+        assert(std::ranges::equal(cv, std::vector<typename CV::value_type> { 1, 2 }));
+
+        cv.push_back(8);
+
+        assert(cv.size() == 3);
+        assert(std::ranges::equal(cv, std::vector<typename CV::value_type> { 1, 2, 8 }));
+    }
+
     static void define_tests() {
         using Self = CompactVectorTester;
 
@@ -140,6 +161,7 @@ struct CompactVectorTester {
         test::define_test(pref + "small", &Self::test_small);
         test::define_test(pref + "concepts", &Self::test_concepts);
         test::define_test(pref + "small_sort", &Self::test_small_sort);
+        test::define_test(pref + "push_back_resize", &Self::test_push_back_resize);
     }
 };
 

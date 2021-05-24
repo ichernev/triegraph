@@ -55,12 +55,24 @@ struct CompactVector {
     u64 capacity() const {
         if (data.capacity() < 2)
             return 0;
-        // std::cerr << "computing capacity: " << (data.capacity() - 1) * max_bits / bits << std::endl;
         return div_up((data.capacity() - 1) * max_bits, bits);
     }
 
     u64 size() const {
         return sz;
+    }
+
+    void resize(u64 size) {
+        if (size > sz) {
+            throw "compact-vector-resize-up-not-implemented";
+        }
+        if (size == 0) {
+            data.resize(1);
+        } else {
+            auto dr = div((size - 1) * bits, u64(max_bits));
+            data.resize(dr.quot + 2);
+        }
+        sz = size;
     }
 
     void push_back(const T &val) {
@@ -69,8 +81,8 @@ struct CompactVector {
             data.push_back(0);
 
         Ref<false>(data.begin(), dr, mask) = val;
-        // data[dr.quot] |= (val & mask) << dr.rem;
-        // data[dr.quot+1] |= (val & mask) >> (max_bits - dr.rem);
+        // data[dr.quot] |= lsh(val & mask, dr.rem);
+        // data[dr.quot+1] |= rsh(val & mask, max_bits - dr.rem);
 
         ++ sz;
     }
