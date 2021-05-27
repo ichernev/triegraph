@@ -6,14 +6,14 @@
 #include <sparsepp/spp.h>
 
 using namespace triegraph;
-using TG = Manager<dna::DnaConfig<0>>;
+using triegraph::dna::CfgFlags;
 
-template <typename TrieData>
+template <typename TG, typename TrieData = TG::TrieData>
 struct TrieDataTester : public test::TestCaseBase {
     std::string graph_file;
 
-    TG::LetterLocData lloc;
-    TG::VectorPairs pairs;
+    typename TG::LetterLocData lloc;
+    typename TG::VectorPairs pairs;
     int td_rel;
     // TrieData td;
     // TrieData::Stats stats;
@@ -26,14 +26,14 @@ struct TrieDataTester : public test::TestCaseBase {
 
     virtual void prepare() {
         auto graph = TG::Graph::from_file(graph_file, {});
-        auto lloc = TG::LetterLocData(graph);
+        auto lloc = typename TG::LetterLocData(graph);
         // auto s = TG::Settings {
         //     .trie_depth = log4_ceil(lloc.num_locations) + td_rel,
         //     // .trie_depth = (td_abs == 0 ?
         //     //     triegraph::log4_ceil(lloc.num_locations) + td_rel :
         //     //     td_abs)
         // };
-        auto pairs = TG::graph_to_pairs<TG::TrieBuilderNBFS>(
+        auto pairs = TG::template graph_to_pairs<typename TG::TrieBuilderNBFS>(
                 graph, lloc,
                 TG::KmerSettings::from_seed_config(lloc.num_locations, MapCfg {
                     "trie-depth-rel", std::to_string(td_rel)}),
@@ -44,7 +44,7 @@ struct TrieDataTester : public test::TestCaseBase {
     }
 
     virtual void run() {
-        TG::VectorPairs xpairs;
+        typename TG::VectorPairs xpairs;
         std::swap(xpairs, this->pairs);
         auto td = TrieData(std::move(xpairs), this->lloc);
         (void) td;
@@ -70,17 +70,10 @@ struct TrieDataTester : public test::TestCaseBase {
     }
 };
 
-using TrieDataSMM = TrieData<
-    TG::Kmer,
-    TG::LetterLocData,
-    TG::VectorPairs,
-    TG::triedata_allow_inner,
-    SimpleMultimap<
-        typename TG::KmerHolder,
-        typename TG::LetterLoc>,
-    SimpleMultimap<
-        typename TG::LetterLoc,
-        typename TG::KmerHolder>>;
+using TG = Manager<dna::DnaConfig<0>>;
+
+struct CfgSMM : public dna::DnaConfig<0> { static constexpr u32 TDMapType = 0u; /* use SMM */ };
+using TG_SMM = Manager<CfgSMM>;
 
 using HMMMap = std::unordered_map<u32, std::pair<u32, u32>>;
 using TrieDataHMM = TrieData<
@@ -115,44 +108,16 @@ using TrieDataHMM_SPP = TrieData<
         typename TG::KmerHolder,
         HMMSPP>>;
 
-using SVT = typename triegraph::bigger_type_t<
-    typename TG::KmerHolder,
-    typename TG::LetterLoc
->;
-using TrieDataDMM_SV = TrieData<
-    TG::Kmer,
-    TG::LetterLocData,
-    TG::VectorPairs,
-    TG::triedata_allow_inner,
-    DenseMultimap<
-        typename TG::KmerHolder,
-        typename TG::LetterLoc,
-        SortedVector<SVT>>,
-    DenseMultimap<
-        typename TG::LetterLoc,
-        typename TG::KmerHolder,
-        SortedVector<SVT>>>;
-
-using TrieDataDMM_SV0 = TrieData<
-    TG::Kmer,
-    TG::LetterLocData,
-    TG::VectorPairs,
-    TG::triedata_allow_inner,
-    DenseMultimap<
-        typename TG::KmerHolder,
-        typename TG::LetterLoc,
-        SortedVector<SVT>>,
-    DenseMultimap<
-        typename TG::LetterLoc,
-        typename TG::KmerHolder,
-        SortedVector<SVT>>,
-    true>;
+using TG_SV = Manager<dna::DnaConfig<0, CfgFlags::TD_SORTED_VECTOR | CfgFlags::VP_DUAL_IMPL>>;
+using TG_SV_CV = Manager<dna::DnaConfig<0, CfgFlags::TD_SORTED_VECTOR | CfgFlags::VP_DUAL_IMPL | CfgFlags::CV_ELEMS>>;
+using TG_SV0 = Manager<dna::DnaConfig<0, CfgFlags::TD_SORTED_VECTOR | CfgFlags::VP_DUAL_IMPL | CfgFlags::TD_ZERO_OVERHEAD>>;
 
 int m = test::define_module(__FILE__, [] {
-    // TrieDataTester<TG::TrieData>::define_tests("default");
-    // TrieDataTester<TrieDataSMM>::define_tests("SMM");
-    // TrieDataTester<TrieDataHMM>::define_tests("HMM");
-    // TrieDataTester<TrieDataHMM_SPP>::define_tests("HMM_SPP");
-    TrieDataTester<TrieDataDMM_SV>::define_tests("DMM_SV");
-    TrieDataTester<TrieDataDMM_SV0>::define_tests("DMM_SV0");
+    // TrieDataTester<TG /*, TG::TrieData */>::define_tests("default");
+    // TrieDataTester<TG_SMM /*, TrieDataSMM */>::define_tests("SMM");
+    // TrieDataTester<TG, TrieDataHMM>::define_tests("HMM");
+    // TrieDataTester<TG, TrieDataHMM_SPP>::define_tests("HMM_SPP");
+    TrieDataTester<TG_SV/*, TrieDataDMM_SV*/>::define_tests("DMM_SV");
+    TrieDataTester<TG_SV_CV/*, TrieDataDMM_SV*/>::define_tests("DMM_SV_CV");
+    TrieDataTester<TG_SV0/*, TrieDataDMM_SV0*/>::define_tests("DMM_SV0");
 });
