@@ -125,7 +125,12 @@ namespace impl {
     template <typename A, typename B>
     void _copy(A &&a, B &&b) { a.first = b.first; a.second = b.second; }
     template <typename A, typename B>
-    void _swap(A &&a, B &&b) { std::swap(a.first, b.first); std::swap(a.second, b.second); }
+    void _swap(A &&a, B &&b) {
+        // https://en.cppreference.com/w/cpp/language/adl
+        using std::swap;
+        swap(a.first, b.first);
+        swap(a.second, b.second);
+    }
 
     template <typename T1, typename T2>
     struct Pair {
@@ -294,8 +299,8 @@ struct VectorPairsDual : public VectorPairsBase<T1, T2, VectorPairsImpl::DUAL> {
 
     V1 &get_v1() { return vec1; }
     V2 &get_v2() { return vec2; }
-    V1 take_v1() { V1 res; std::swap(res, vec1); return res; }
-    V2 take_v2() { V2 res; std::swap(res, vec2); return res; }
+    V1 take_v1() { V1 res; using std::swap; swap(res, vec1); return res; }
+    V2 take_v2() { V2 res; using std::swap; swap(res, vec2); return res; }
 };
 
 } /* namespace triegraph */
