@@ -100,11 +100,17 @@ struct Manager : Cfg {
     using T2GDMM = DenseMultimap<
         typename Cfg::KmerHolder,
         typename Cfg::LetterLoc,
-        StartsContainer>;
+        StartsContainer,
+        std::conditional_t<Cfg::compactvector_for_elems,
+            CompactVector<typename Cfg::LetterLoc>,
+            std::vector<typename Cfg::LetterLoc> > >;
     using G2TDMM = DenseMultimap<
         typename Cfg::LetterLoc,
         typename Cfg::KmerHolder,
-        StartsContainer>;
+        StartsContainer,
+        std::conditional_t<Cfg::compactvector_for_elems,
+            CompactVector<typename Cfg::KmerHolder>,
+            std::vector<typename Cfg::KmerHolder> > >;
     using T2GMap = choose_type_t<Cfg::TDMapType, T2GSMM, T2GDMM>;
     using G2TMap = choose_type_t<Cfg::TDMapType, G2TSMM, G2TDMM>;
     // using VectorPairs = std::vector<std::pair<Kmer, typename LetterLocData::LetterLoc>>;
@@ -114,7 +120,11 @@ struct Manager : Cfg {
         u32(Cfg::vector_pairs_impl),
         triegraph::VectorPairsEmpty<VPFirst_, VPSecond_>,
         triegraph::VectorPairsSimple<VPFirst_, VPSecond_>,
-        triegraph::VectorPairsDual<VPFirst_, VPSecond_> >;
+        std::conditional_t<Cfg::compactvector_for_elems,
+            triegraph::VectorPairsDual<VPFirst_, VPSecond_,
+                CompactVector<VPFirst_>,
+                CompactVector<VPSecond_> >,
+            triegraph::VectorPairsDual<VPFirst_, VPSecond_> > >;
     static constexpr auto vp_inserter_fmap = [](auto &&k) {
         return KmerCodec::to_int(std::forward<decltype(k)>(k));
     };

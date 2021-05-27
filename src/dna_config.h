@@ -25,6 +25,13 @@ struct CfgFlags {
     /** Build TrieData from VectorPairs without allocating more memory than
      * necessary. Requires SortedVector, Dual Impl and DenseMMap (default) */
     static constexpr u32 TD_ZERO_OVERHEAD = 1u << 4;
+    /** Use CompactVector for ElemsContainer in DMM (and VectorPairDual by
+     * extension) */
+    static constexpr u32 CV_ELEMS         = 1u << 5;
+    // /** Use CompactVector for SortedVector beacons */
+    // static constexpr u32 CV_BEACONS       = 1u << 6;
+    // /** Use CompactVector for SortedVector diffs */
+    // static constexpr u32 CV_DIFFS         = 1u << 7;
 };
 
 template<u64 trie_depth = 15,
@@ -45,6 +52,7 @@ struct DnaConfig {
     static constexpr u32 TDMapType = 1u; /* use DMM */
     static constexpr bool triedata_sorted_vector = flags & CfgFlags::TD_SORTED_VECTOR;
     static constexpr bool triedata_zero_overhead = flags & CfgFlags::TD_ZERO_OVERHEAD;
+    static constexpr bool compactvector_for_elems = flags & CfgFlags::CV_ELEMS;
     static constexpr int LetterLocIdxShift = 4;
     static constexpr u64 KmerLen = trie_depth;
     static constexpr KmerHolder on_mask = KmerHolder(1) << (
