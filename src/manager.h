@@ -31,6 +31,7 @@
 #include "util/util.h"
 #include "util/vector_pairs.h"
 #include "util/vector_pairs_inserter.h"
+#include "util/logger.h"
 
 #include <type_traits>
 #include <vector>
@@ -250,6 +251,17 @@ struct Manager : Cfg {
 
             compact_vector_set_bits(pairs.get_v1(), bits);
             compact_vector_set_bits(pairs.get_v2(), bits);
+
+            u32 reg_bits = sizeof(typename std::decay_t<
+                    decltype(pairs.get_v1())>::value_type) *
+                BITS_PER_BYTE;
+            u32 act_bits = compact_vector_get_bits(pairs.get_v1());
+            if (act_bits < reg_bits) {
+                Logger::get().log("activated CompactVector",
+                        "; bits =", act_bits,
+                        "; tot =", reg_bits,
+                        "; saving =", double(reg_bits - act_bits) / reg_bits);
+            }
         }
     }
 
