@@ -32,6 +32,9 @@
 #include "util/vector_pairs.h"
 #include "util/vector_pairs_inserter.h"
 
+#include <type_traits>
+#include <vector>
+
 namespace triegraph {
 
 template<typename Cfg>
@@ -251,7 +254,8 @@ struct Manager : Cfg {
         }
     }
 
-    template <typename TrieBuilder, typename pairs_variant = PairsVariantRaw>
+    template <typename TrieBuilder, typename pairs_variant =
+        std::conditional_t<Cfg::trie_pairs_raw, PairsVariantRaw, PairsVariantCompressed> >
     static VectorPairs graph_to_pairs(
             const Graph &graph,
             const auto &cfg) {
@@ -259,9 +263,9 @@ struct Manager : Cfg {
         return graph_to_pairs<TrieBuilder, pairs_variant>(
                 graph,
                 lloc,
-                KmerSettings::from_seed_config<Cfg::KmerHolder>(
+                KmerSettings::from_seed_config<typename Cfg::KmerHolder>(
                     lloc.num_locations, cfg),
-                TrieBuilder::from_config(cfg),
+                TrieBuilder::Settings::from_config(cfg),
                 lloc);
     }
 
