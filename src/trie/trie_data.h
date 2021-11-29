@@ -3,9 +3,10 @@
 
 #include "trie/kmer_codec.h"
 #include "trie/trie_presence.h"
+#include "util/compact_vector.h"
 #include "util/logger.h"
-#include "util/pow_histogram.h"
 #include "util/multimaps.h"
+#include "util/pow_histogram.h"
 #include "util/util.h"
 #include "util/vector_pairs.h"
 
@@ -17,7 +18,6 @@
 #include <iterator>
 #include <ranges>
 #include <functional>
-#include <span>
 
 #include <assert.h>
 
@@ -41,15 +41,19 @@ struct TrieData {
 
     TrieData(VectorPairs pairs, const LetterLocData &letter_loc) {
         if constexpr (no_overhead_build)
-            init_dual(std::move(pairs), letter_loc);
+            init_no_overhead(std::move(pairs), letter_loc);
+        else if constexpr (T2GMap::impl == MultimapImpl::DENSE &&
+                G2TMap::impl == MultimapImpl::DENSE &&
+                VectorPairs::impl == VectorPairsImpl::DUAL)
+            init_dual_dense(std::move(pairs), letter_loc);
         else
-            init_single(std::move(pairs), letter_loc);
+            init_simple(std::move(pairs), letter_loc);
     }
 
-    void init_single(VectorPairs pairs, const LetterLocData &letter_loc) {
+    void init_simple(VectorPairs pairs, const LetterLocData &letter_loc) {
         auto &log = Logger::get();
 
-        auto scope = log.begin_scoped("TrieData init_single");
+        auto scope = log.begin_scoped("TrieData init_simple");
 
         log.begin("sort pairs t2g");
         pairs.sort_by_fwd().unique();
@@ -76,17 +80,54 @@ struct TrieData {
                                 KmerCodec::to_int(p.first));
                     }
                 )*/};
-
         log.end();
-        log.begin("build inner");
-        using key_iter_pair = iter_pair<
-            typename T2GMap::const_key_iterator,
-            typename T2GMap::const_key_iterator,
-            KmerCodec>;
-        active_trie = { key_iter_pair(trie2graph.keys()) };
+
+        init_active();
     }
 
-    void init_dual(VectorPairs pairs, const LetterLocData &letter_loc) {
+    void init_dual_dense(VectorPairs pairs, const LetterLocData &letter_loc) {
+        static_assert(VectorPairs::impl == VectorPairsImpl::DUAL);
+        static_assert(T2GMap::impl == MultimapImpl::DENSE);
+        static_assert(G2TMap::impl == MultimapImpl::DENSE);
+
+        auto &log = Logger::get();
+
+        auto scope = log.begin_scoped("TrieData init_dual_dense");
+
+        log.begin("sort by rev + unique");
+        pairs.sort_by_rev().unique();
+        log.end();
+
+        {
+            auto scope = log.begin_scoped("g2t init");
+            auto starts = sorted_vector_from_elem_seq<typename G2TMap::StartsContainer>(
+                    pairs.get_v2());
+
+            typename G2TMap::ElemsContainer elems;
+            compact_vector_set_bits(elems, compact_vector_get_bits(pairs.get_v1()));
+            std::ranges::copy(pairs.get_v1(), std::back_inserter(elems));
+
+            graph2trie = G2TMap(std::move(starts), std::move(elems));
+        }
+
+        log.begin("sort by fwd");
+        pairs.sort_by_fwd();
+        log.end();
+
+        {
+            auto scope = log.begin_scoped("t2g init");
+            auto starts = sorted_vector_from_elem_seq<typename T2GMap::StartsContainer>(
+                    pairs.get_v1());
+
+            // TODO: Be more careful with taking v2, it could be different
+            // type/cfg
+            trie2graph = T2GMap(std::move(starts), pairs.take_v2());
+        }
+
+        init_active();
+    }
+
+    void init_no_overhead(VectorPairs pairs, const LetterLocData &letter_loc) {
         // ideally we should also check if Multimaps use SortedVector and not
         // regular vector
         static_assert(VectorPairs::impl == VectorPairsImpl::DUAL);
@@ -96,7 +137,7 @@ struct TrieData {
 
         auto &log = Logger::get();
 
-        auto scope = log.begin_scoped("TrieData init_dual");
+        auto scope = log.begin_scoped("TrieData init_no_overhead");
 
         log.begin("sort by rev + unique O(nlogn)");
         pairs.sort_by_rev().unique();
@@ -113,7 +154,7 @@ struct TrieData {
 
         log.begin("prep kmer_idx O(n)");
         // reuse locs space for kmer_idx
-        auto kmer_idx = std::span(locs);
+        auto &kmer_idx = locs;
         std::iota(kmer_idx.begin(), kmer_idx.end(), KHolder {});
 
         log.end().begin("sort kmer_idx O(nlogn)");
@@ -136,8 +177,15 @@ struct TrieData {
         log.end().begin("construct multi-maps O(1)");
         trie2graph = { std::move(kmer_beg), std::move(locs) };
         graph2trie = { std::move(locs_beg), std::move(kmers) };
+        log.end();
 
-        log.end().begin("construct active-trie O(n)");
+        init_active();
+    }
+
+    void init_active() {
+        auto &log = Logger::get();
+
+        auto scope = log.begin_scoped("construct active-trie O(n)");
         using key_iter_pair = iter_pair<
             typename T2GMap::const_key_iterator,
             typename T2GMap::const_key_iterator,

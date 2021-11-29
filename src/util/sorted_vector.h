@@ -138,7 +138,7 @@ struct SortedVector {
         using iterator_category = std::random_access_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = Beacon;
-        using reference_type = value_type;
+        using reference = value_type;
 
         const Parent *parent;
         Beacon id;
@@ -183,7 +183,7 @@ struct SortedVector {
                 val = _xid(id += d);
         }
 
-        reference_type operator* () const { return val; }
+        reference operator* () const { return val; }
         Self &operator++ () { _inc(); return *this; }
         Self &operator-- () { _dec(); return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
@@ -196,7 +196,7 @@ struct SortedVector {
         Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
         friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
 
-        reference_type operator[] (difference_type i) const { return *(*this + i); }
+        reference operator[] (difference_type i) const { return *(*this + i); }
         difference_type operator- (const Self &other) const {
             return difference_type(id) - other.id; }
 

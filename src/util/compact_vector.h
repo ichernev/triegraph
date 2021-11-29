@@ -3,10 +3,10 @@
 
 #include "util/util.h"
 
+#include <cassert>
+#include <cstdlib> /* div */
 #include <type_traits>
 #include <vector>
-#include <cstdlib> /* div */
-#include <cassert>
 
 namespace triegraph {
 
@@ -55,12 +55,24 @@ struct CompactVector {
     u64 capacity() const {
         if (data.capacity() < 2)
             return 0;
-        // std::cerr << "computing capacity: " << (data.capacity() - 1) * max_bits / bits << std::endl;
         return div_up((data.capacity() - 1) * max_bits, bits);
     }
 
     u64 size() const {
         return sz;
+    }
+
+    void resize(u64 size) {
+        if (size > sz) {
+            throw "compact-vector-resize-up-not-implemented";
+        }
+        if (size == 0) {
+            data.resize(1);
+        } else {
+            auto dr = div((size - 1) * bits, u64(max_bits));
+            data.resize(dr.quot + 2);
+        }
+        sz = size;
     }
 
     void push_back(const T &val) {
@@ -69,8 +81,8 @@ struct CompactVector {
             data.push_back(0);
 
         Ref<false>(data.begin(), dr, mask) = val;
-        // data[dr.quot] |= (val & mask) << dr.rem;
-        // data[dr.quot+1] |= (val & mask) >> (max_bits - dr.rem);
+        // data[dr.quot] |= lsh(val & mask, dr.rem);
+        // data[dr.quot+1] |= rsh(val & mask, max_bits - dr.rem);
 
         ++ sz;
     }
@@ -151,7 +163,7 @@ struct CompactVector {
         friend inline void swap(Ref a, T &b) { T tmp = T(a); a = b; b = tmp; }
         friend inline void swap(T &a, Ref b) { T tmp = a; a = T(b); b = tmp; }
     };
-    using reference_type = Ref<false>;
+    using reference = Ref<false>;
 
     T operator[] (u64 idx) const {
         return Ref<true>(data.begin(), div(idx * bits, u64(max_bits)), mask_(bits));
@@ -160,7 +172,7 @@ struct CompactVector {
         //     data[dr.quot+1] & mask >> (max_bits - dr.rem);
     }
 
-    reference_type operator[] (u64 idx) {
+    reference operator[] (u64 idx) {
         return { data.begin(), div(idx * bits, u64(max_bits)), mask_(bits) };
     }
 
@@ -170,7 +182,7 @@ struct CompactVector {
         using difference_type = std::ptrdiff_t;
         using value_type = T;
         using proxy_t = Ref<cnst>;
-        using reference_type = std::conditional_t<cnst, T, proxy_t>;
+        using reference = std::conditional_t<cnst, T, proxy_t>;
         using Self = Iter;
 
         data_iterator<cnst> it;
@@ -200,7 +212,7 @@ struct CompactVector {
             rem = dr.rem;
         }
 
-        reference_type operator* () const { return proxy_t(it, rem, mask_(bits)); }
+        reference operator* () const { return proxy_t(it, rem, mask_(bits)); }
         Self &operator++ () { _inc(); return *this; }
         Self &operator-- () { _dec(); return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
@@ -219,7 +231,7 @@ struct CompactVector {
         Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
         friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
 
-        reference_type operator[] (difference_type i) const {
+        reference operator[] (difference_type i) const {
             return *(*this + i);
         }
         difference_type operator- (const Self &other) const {
@@ -246,7 +258,17 @@ struct CompactVector {
 template <typename T>
 void compact_vector_set_bits(CompactVector<T> &cv, u32 bits) { cv.set_bits(bits); }
 template <typename T>
-void compact_vector_set_bits(std::vector<T> &cv, u32 bits) { }
+void compact_vector_set_bits(std::vector<T> &v, u32 bits) {
+    if (bits > sizeof(T) * BITS_PER_BYTE)
+        throw "not-enough-bits-vector";
+}
+
+template <typename T>
+u32 compact_vector_get_bits(const CompactVector<T> &cv) { return cv.bits; }
+template <typename T>
+u32 compact_vector_get_bits(const std::vector<T> &v) {
+    return sizeof(T) * BITS_PER_BYTE;
+}
 
 } /* namespace triegraph */
 

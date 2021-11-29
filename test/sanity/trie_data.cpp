@@ -9,7 +9,7 @@
 using namespace triegraph;
 using TG = Manager<dna::DnaConfig<0>>;
 
-template <typename TrieData>
+template <typename TG, typename TrieData = TG::TrieData>
 struct TrieDataTester : public test::TestCaseBase {
     std::string graph_file;
 
@@ -69,14 +69,14 @@ struct TrieDataTester : public test::TestCaseBase {
 
     static void test_with_file(std::string gfa_file) {
         auto graph = TG::Graph::from_file(gfa_file, {});
-        auto lloc = TG::LetterLocData(graph);
-        auto pairs = TG::graph_to_pairs<TG::TrieBuilderNBFS>(
+        auto lloc = typename TG::LetterLocData(graph);
+        auto pairs = TG::template graph_to_pairs<typename TG::TrieBuilderNBFS>(
                 graph,
                 lloc,
                 KmerSettings::from_seed_config(lloc.num_locations, MapCfg {}),
                 {},
                 lloc);
-        auto pairs_copy = TG::VectorPairs {};
+        auto pairs_copy = typename TG::VectorPairs {};
         std::ranges::copy(pairs.fwd_pairs(), std::back_inserter(pairs_copy));
         auto td = TrieData(std::move(pairs), lloc);
         // Do sort+uniq after TrieData creation to make sure TD works with
@@ -141,6 +141,11 @@ using TrieDataDMM_SV = TrieData<
         typename TG::KmerHolder,
         SortedVector<bigger_type_t<TG::KmerHolder, TG::LetterLoc>>>>;
 
+using TG_CV = Manager<dna::DnaConfig<0,
+      dna::CfgFlags::TD_SORTED_VECTOR |
+      dna::CfgFlags::VP_DUAL_IMPL |
+      dna::CfgFlags::CV_ELEMS>>;
+
 using TrieDataDMM_SV0 = TrieData<
     TG::Kmer,
     TG::LetterLocData,
@@ -157,9 +162,10 @@ using TrieDataDMM_SV0 = TrieData<
     true>;
 
 int m = test::define_module(__FILE__, [] {
-    TrieDataTester<TG::TrieData>::define_tests("Default");
-    TrieDataTester<TrieDataSMM>::define_tests("SMM");
-    TrieDataTester<TrieDataHMM>::define_tests("HMM");
-    TrieDataTester<TrieDataDMM_SV>::define_tests("DMM_SV");
-    TrieDataTester<TrieDataDMM_SV0>::define_tests("DMM_SV0");
+    TrieDataTester<TG, TG::TrieData>::define_tests("Default");
+    TrieDataTester<TG, TrieDataSMM>::define_tests("SMM");
+    TrieDataTester<TG, TrieDataHMM>::define_tests("HMM");
+    TrieDataTester<TG, TrieDataDMM_SV>::define_tests("DMM_SV");
+    TrieDataTester<TG_CV>::define_tests("DMM_SV_CV");
+    TrieDataTester<TG, TrieDataDMM_SV0>::define_tests("DMM_SV0");
 });

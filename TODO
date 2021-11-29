@@ -52,6 +52,23 @@ Tasks
     - sorting on disk, configurable buffer
     - streaming from disk (iter), configurable buffer
 
+CompactVector roadmap:
++ add CV support in VectorPairs (Dual)
+    + vector-pairs -> dmm in TrieData init
+    ! CV sort is ~1.5x slower than V sort
+    ! VP<CV> sort is ~20x slower
+- add CV support to SV beacons
+- add CV support to SV diffs
+    - support SV histogram building for tuning
+- (re)implement 1/N starts
+- cfg support for u32/u64
+    - fix nasty warning about uninit memory
+- dump/read from/to disk for TrieData (multimaps)
+
+- try with smaller graph (u32)
+- try on HG with 1/10 (u64)
+
+
 https://github.com/maickrau/GraphAligner/blob/master/src/GfaGraph.cpp
 https://github.com/maickrau/GraphAligner/blob/master/src/GraphAlignerGAFAlignment.h
 

@@ -6,22 +6,25 @@
 
 namespace triegraph {
 
-enum struct VectorPairsImpl : u32 { EMPTY, SIMPLE, DUAL };
+enum struct VectorPairsImpl : u32 { EMPTY = 0, SIMPLE = 1, DUAL = 2 };
 
-template <typename T1, typename T2, VectorPairsImpl impl_choice>
+template <typename T1_, typename T2_, VectorPairsImpl impl_choice>
 struct VectorPairsBase {
+    using T1 = T1_;
+    using T2 = T2_;
     using fwd_pair = std::pair<T1, T2>;
     using rev_pair = std::pair<T2, T1>;
+    // These are used in tests to build vectors for comparison with VP
     using fwd_vec = std::vector<fwd_pair>;
     using rev_vec = std::vector<rev_pair>;
     using value_type = fwd_pair; // for back_inserter
     static constexpr VectorPairsImpl impl = impl_choice;
 };
 
-template <typename T1, typename T2, VectorPairsImpl impl_choice>
-struct VectorPairs : public VectorPairsBase<T1, T2, impl_choice> {
-    using Base = VectorPairsBase<T1, T2, impl_choice>;
-    using Self = VectorPairs;
+template <typename T1, typename T2>
+struct VectorPairsEmpty : public VectorPairsBase<T1, T2, VectorPairsImpl::EMPTY> {
+    using Base = VectorPairsBase<T1, T2, VectorPairsImpl::EMPTY>;
+    using Self = VectorPairsEmpty;
 
     size_t size() const { return 0; }
     void reserve(size_t capacity) { }
@@ -59,8 +62,8 @@ struct VectorPairs : public VectorPairsBase<T1, T2, impl_choice> {
 };
 
 template <typename T1, typename T2>
-struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE> {
-    using Self = VectorPairs;
+struct VectorPairsSimple : public VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE> {
+    using Self = VectorPairsSimple;
     using Base = VectorPairsBase<T1, T2, VectorPairsImpl::SIMPLE>;
     Base::fwd_vec vec;
 
@@ -111,10 +114,6 @@ struct VectorPairs<T1, T2, VectorPairsImpl::SIMPLE> : public VectorPairsBase<T1,
 
 namespace impl {
 
-
-    template <typename T1, typename T2>
-    struct RefPair;
-
     template <typename A, typename B>
     std::strong_ordering _cmp(A &&a, B &&b) {
         if (const auto cmp = a.first <=> b.first; cmp != 0)
@@ -126,36 +125,37 @@ namespace impl {
     template <typename A, typename B>
     void _copy(A &&a, B &&b) { a.first = b.first; a.second = b.second; }
     template <typename A, typename B>
-    void _swap(A &&a, B &&b) { std::swap(a.first, b.first); std::swap(a.second, b.second); }
+    void _swap(A &&a, B &&b) {
+        // https://en.cppreference.com/w/cpp/language/adl
+        using std::swap;
+        swap(a.first, b.first);
+        swap(a.second, b.second);
+    }
 
     template <typename T1, typename T2>
     struct Pair {
         T1 first;
         T2 second;
-        using RefPair = impl::RefPair<T1, T2>;
 
         Pair(const T1 &first, const T2 &second) : first(first), second(second) {}
         Pair(const Pair &) = default;
-        Pair(RefPair &&other) { _copy(*this, other); }
+        Pair(auto &&other) { _copy(*this, other); }
 
         friend std::strong_ordering operator<=> (const Pair &a, const Pair &b) {
             return _cmp(a, b);
         }
-        friend std::strong_ordering operator<=> (const Pair &a, const RefPair &b) {
-            return _cmp(a, b);
-        }
         friend bool operator== (const Pair &a, const Pair &b) { return _eq(a, b); }
-        friend bool operator== (const Pair &a, const RefPair &b) { return _eq(a, b); }
         friend void swap(Pair &a, Pair &b) { _swap(a, b); }
     };
 
-    template <typename T1, typename T2>
+    template <typename T1, typename T2, typename R1 = T1&, typename R2 = T2&>
     struct RefPair {
-        T1& first;
-        T2& second;
+        R1 first;
+        R2 second;
         using Pair = impl::Pair<T1, T2>;
 
-        RefPair(T1& a, T2& b) : first(a), second(b) {}
+        RefPair(R1 a, R2 b) : first(a), second(b) {}
+        // TODO: Add R1&&, R2&&
         RefPair &operator= (RefPair &&other) { _copy(*this, other); return *this; }
         RefPair &operator= (Pair &&other) { _copy(*this, other); return *this; }
         friend std::strong_ordering operator<=> (const RefPair &a, const Pair &b) {
@@ -164,24 +164,20 @@ namespace impl {
         friend std::strong_ordering operator<=> (const RefPair &a, const RefPair &b) {
             return _cmp(a, b);
         }
+        friend std::strong_ordering operator<=> (const Pair &a, const RefPair &b) {
+            return _cmp(a, b);
+        }
         friend bool operator== (const RefPair &a, const Pair &b) { return _eq(a, b); }
         friend bool operator== (const RefPair &a, const RefPair &b) { return _eq(a, b); }
+        friend bool operator== (const Pair &a, const RefPair &b) { return _eq(a, b); }
         friend void swap(RefPair a, RefPair b) { _swap(a, b); }
 
         operator Pair() const { return Pair(first, second); }
     };
 
-    template <typename T1, typename T2, bool is_const = false>
+    template <typename T1, typename T2, bool is_const,
+             typename v1_iter, typename v2_iter>
     struct PairIter {
-        using v1_iter = std::conditional_t<
-            is_const,
-            typename std::vector<T1>::const_iterator,
-            typename std::vector<T1>::iterator>;
-        using v2_iter = std::conditional_t<
-            is_const,
-            typename std::vector<T2>::const_iterator,
-            typename std::vector<T2>::iterator>;
-
         using Self = PairIter;
 
         v1_iter beg1;
@@ -209,10 +205,11 @@ namespace impl {
         using difference_type = std::ptrdiff_t;
         using value_type = std::conditional_t<is_const,
               std::pair<T1, T2>, Pair<T1, T2>>;
-        using reference_type = std::conditional_t<is_const,
-              std::pair<T1, T2>, RefPair<T1, T2>>;
+        using reference = std::conditional_t<is_const,
+              std::pair<T1, T2>, RefPair<T1, T2, typename v1_iter::reference,
+                                                 typename v2_iter::reference>>;
 
-        reference_type operator* () const { return reference_type(*it1(), *it2()); }
+        reference operator* () const { return reference(*it1(), *it2()); }
         Self &operator++ () { ++it1_; return *this; }
         Self &operator-- () { --it1_; return *this; }
         Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
@@ -226,7 +223,7 @@ namespace impl {
         Self operator- (difference_type i) const { Self tmp = *this; tmp -= i; return tmp; }
         friend Self operator+ (difference_type i, const Self &it) { Self tmp = it; tmp += i; return tmp; }
 
-        reference_type operator[] (difference_type i) const { return reference_type(*(it1()+i), *(it2()+i)); }
+        reference operator[] (difference_type i) const { return reference(*(it1()+i), *(it2()+i)); }
         difference_type operator- (const Self &other) const { return it1_ - other.it1_; }
     };
 
@@ -234,13 +231,15 @@ namespace impl {
 } /* namespace impl */
 
 
-template <typename T1, typename T2>
-struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T2, VectorPairsImpl::DUAL> {
-    using Self = VectorPairs;
+template <typename T1, typename T2,
+         typename V1 = std::vector<T1>,
+         typename V2 = std::vector<T2>>
+struct VectorPairsDual : public VectorPairsBase<T1, T2, VectorPairsImpl::DUAL> {
+    using Self = VectorPairsDual;
     using Base = VectorPairsBase<T1, T2, VectorPairsImpl::DUAL>;
 
-    std::vector<T1> vec1;
-    std::vector<T2> vec2;
+    V1 vec1;
+    V2 vec2;
 
     size_t size() const { return vec1.size(); }
     void reserve(size_t cap) { vec1.reserve(cap); vec2.reserve(cap); }
@@ -260,21 +259,21 @@ struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T
     }
 
     Self &sort_by_fwd() {
-        using PI = impl::PairIter<T1, T2>;
+        using PI = impl::PairIter<T1, T2, false, typename V1::iterator, typename V2::iterator>;
         std::sort(
                 PI(vec1.begin(), vec2.begin(), vec1.begin()),
                 PI(vec1.begin(), vec2.begin(), vec1.end()));
         return *this;
     }
     Self &sort_by_rev() {
-        using PI = impl::PairIter<T2, T1>;
+        using PI = impl::PairIter<T2, T1, false, typename V2::iterator, typename V1::iterator>;
         std::sort(
                 PI(vec2.begin(), vec1.begin(), vec2.begin()),
                 PI(vec2.begin(), vec1.begin(), vec2.end()));
         return *this;
     }
     Self &unique() {
-        using PI = impl::PairIter<T1, T2>;
+        using PI = impl::PairIter<T1, T2, false, typename V1::iterator, typename V2::iterator>;
         auto beg = PI(vec1.begin(), vec2.begin(), vec1.begin()),
              end = PI(vec1.begin(), vec2.begin(), vec1.end());
         auto ue = std::unique(beg, end);
@@ -284,22 +283,24 @@ struct VectorPairs<T1, T2, VectorPairsImpl::DUAL> : public VectorPairsBase<T1, T
     }
 
     auto fwd_pairs() const {
-        using PI = impl::PairIter<T1, T2, true>;
+        using PI = impl::PairIter<T1, T2, true, typename V1::const_iterator, typename V2::const_iterator>;
         return iter_pair<PI, PI> {
             PI(vec1.begin(), vec2.begin(), vec1.begin()),
             PI(vec1.begin(), vec2.begin(), vec1.end())
         };
     }
     auto rev_pairs() const {
-        using PI = impl::PairIter<T2, T1, true>;
+        using PI = impl::PairIter<T2, T1, true, typename V2::const_iterator, typename V1::const_iterator>;
         return iter_pair<PI, PI> {
             PI(vec2.begin(), vec1.begin(), vec2.begin()),
             PI(vec2.begin(), vec1.begin(), vec2.end())
         };
     }
 
-    std::vector<T1> take_v1() { std::vector<T1> res; std::swap(res, vec1); return res; }
-    std::vector<T2> take_v2() { std::vector<T2> res; std::swap(res, vec2); return res; }
+    V1 &get_v1() { return vec1; }
+    V2 &get_v2() { return vec2; }
+    V1 take_v1() { V1 res; using std::swap; swap(res, vec1); return res; }
+    V2 take_v2() { V2 res; using std::swap; swap(res, vec2); return res; }
 };
 
 } /* namespace triegraph */

@@ -91,7 +91,7 @@ struct iter_codec {
     using iterator_category = std::bidirectional_iterator_tag; // std::iterator_traits<IT>::iterator_category; // downgrade to input for now
     using difference_type = std::ptrdiff_t;
     using value_type = Codec::ext_type;
-    using reference_type = value_type;
+    using reference = value_type;
     using Self = iter_codec;
     // using SelfSimilar = iter_codec<IT,
     //       CodecIdentity<typename std::iterator_traits<IT>::value_type>;
@@ -102,7 +102,7 @@ struct iter_codec {
     Self &operator= (const Self &) = default;
     Self &operator= (Self &&) = default;
 
-    reference_type operator* () const { return Codec::to_ext(*it); }
+    reference operator* () const { return Codec::to_ext(*it); }
     Self &operator++ () { ++it; return *this; }
     Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
     Self &operator-- () { --it; return *this; }

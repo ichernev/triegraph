@@ -155,7 +155,8 @@ int main(int argc, char *argv[]) {
 
     try {
         if (cmd == "pairs"s || cmd == "print-pairs"s ||
-                cmd == "td"s || cmd == "td0"s || cmd == "ce-test"s ||
+                cmd == "td"s || cmd == "td0"s || cmd == "td-cv"s ||
+                cmd == "ce-test"s ||
                 cmd == "print-top-order"s) {
 
             using triegraph::dna::CfgFlags;
@@ -230,6 +231,9 @@ int main(int argc, char *argv[]) {
             } else if (cmd == "td0"s) {
                 using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0, CfgFlags::VP_DUAL_IMPL | CfgFlags::TD_SORTED_VECTOR | CfgFlags::TD_ZERO_OVERHEAD>>;
                 auto td = get_td<TGX>(graph, lloc, cmdline, TGX::algo_from_name(algo));
+            } else if (cmd == "td-cv"s) {
+                using TG_CV = triegraph::Manager<triegraph::dna::DnaConfig<0, CfgFlags::VP_DUAL_IMPL | CfgFlags::TD_SORTED_VECTOR | CfgFlags::CV_ELEMS>>;
+                auto td = get_td<TG_CV>(graph, lloc, cmdline, TG_CV::algo_from_name(algo));
             } else if (cmd == "print-top-order"s) {
                 // auto starts = ConnectedComponents<TG::Graph>(graph).compute_starting_points();
                 // auto top_ord = TG::TopOrder::Builder(graph).build(starts);

@@ -11,16 +11,18 @@
 namespace triegraph {
 
 template <typename A, typename C,
-         typename StartsContainer_ = std::vector<bigger_type_t<A, C>>>
+         typename StartsContainer_ = std::vector<bigger_type_t<A, C>>,
+         typename ElemsContainer_ = std::vector<C>>
 struct DenseMultimap {
     using B = bigger_type_t<A, C>;
     using StartsContainer = StartsContainer_;
+    using ElemsContainer = ElemsContainer_;
 
     static constexpr auto impl = MultimapImpl::DENSE;
     // TODO(opt): compute sizes for sorted-vector from histograms
 
     DenseMultimap() {}
-    DenseMultimap(StartsContainer &&starts, std::vector<C> &&elems)
+    DenseMultimap(StartsContainer &&starts, ElemsContainer &&elems)
         : starts(std::move(starts)),
           elems(std::move(elems))
     {}
@@ -187,7 +189,7 @@ struct DenseMultimap {
         using Self = ValIter;
 
         ValIter() : it() {}
-        ValIter(std::vector<value_type>::const_iterator it) : it(it) {}
+        ValIter(ElemsContainer::const_iterator it) : it(it) {}
 
         reference operator* () const { return *it; }
         Self &operator++ () { ++it; return *this; }
@@ -195,7 +197,7 @@ struct DenseMultimap {
         difference_type operator- (const Self &other) { return it - other.it; }
         bool operator== (const Self &other) const { return it == other.it; }
 
-        std::vector<value_type>::const_iterator it;
+        ElemsContainer::const_iterator it;
     };
 
 
@@ -250,7 +252,7 @@ private:
     }
 
     StartsContainer starts; // indexed by A
-    std::vector<C> elems; // indexed by B
+    ElemsContainer elems; // indexed by B
 };
 
 } /* namespace triegraph */

@@ -23,6 +23,7 @@
 #include "trie/kmer.h"
 #include "trie/dkmer.h"
 #include "trie/trie_data.h"
+#include "util/compact_vector.h"
 #include "util/dense_multimap.h"
 #include "util/hybrid_multimap.h"
 #include "util/simple_multimap.h"
@@ -30,6 +31,10 @@
 #include "util/util.h"
 #include "util/vector_pairs.h"
 #include "util/vector_pairs_inserter.h"
+#include "util/logger.h"
+
+#include <type_traits>
+#include <vector>
 
 namespace triegraph {
 
@@ -96,18 +101,31 @@ struct Manager : Cfg {
     using T2GDMM = DenseMultimap<
         typename Cfg::KmerHolder,
         typename Cfg::LetterLoc,
-        StartsContainer>;
+        StartsContainer,
+        std::conditional_t<Cfg::compactvector_for_elems,
+            CompactVector<typename Cfg::LetterLoc>,
+            std::vector<typename Cfg::LetterLoc> > >;
     using G2TDMM = DenseMultimap<
         typename Cfg::LetterLoc,
         typename Cfg::KmerHolder,
-        StartsContainer>;
+        StartsContainer,
+        std::conditional_t<Cfg::compactvector_for_elems,
+            CompactVector<typename Cfg::KmerHolder>,
+            std::vector<typename Cfg::KmerHolder> > >;
     using T2GMap = choose_type_t<Cfg::TDMapType, T2GSMM, T2GDMM>;
     using G2TMap = choose_type_t<Cfg::TDMapType, G2TSMM, G2TDMM>;
     // using VectorPairs = std::vector<std::pair<Kmer, typename LetterLocData::LetterLoc>>;
-    using VectorPairs = triegraph::VectorPairs<
-        std::conditional_t<Cfg::trie_pairs_raw, Kmer, typename Cfg::KmerHolder>,
-        typename LetterLocData::LetterLoc,
-        Cfg::vector_pairs_impl>;
+    using VPFirst_ = std::conditional_t<Cfg::trie_pairs_raw, Kmer, typename Cfg::KmerHolder>;
+    using VPSecond_ = LetterLocData::LetterLoc;
+    using VectorPairs = choose_type_t<
+        u32(Cfg::vector_pairs_impl),
+        triegraph::VectorPairsEmpty<VPFirst_, VPSecond_>,
+        triegraph::VectorPairsSimple<VPFirst_, VPSecond_>,
+        std::conditional_t<Cfg::compactvector_for_elems,
+            triegraph::VectorPairsDual<VPFirst_, VPSecond_,
+                CompactVector<VPFirst_>,
+                CompactVector<VPSecond_> >,
+            triegraph::VectorPairsDual<VPFirst_, VPSecond_> > >;
     static constexpr auto vp_inserter_fmap = [](auto &&k) {
         return KmerCodec::to_int(std::forward<decltype(k)>(k));
     };
@@ -208,6 +226,7 @@ struct Manager : Cfg {
         // std::cerr << "FOOOOOO" << std::endl;
         Kmer::set_settings(kmer_settings);
         auto pairs = VectorPairs {};
+        _vp_set_bits(pairs, lloc);
         std::conditional_t<Cfg::trie_pairs_raw,
             VectorPairs &,
             VectorPairsInserter> pairs_inserter = make_pairs_inserter(pairs, pairs_variant {});
@@ -219,10 +238,46 @@ struct Manager : Cfg {
             .set_settings(std::move(tb_settings))
             .compute_pairs(std::forward<decltype(starts)>(starts));
         // std::cerr << "got pairs size " << pairs.size() << std::endl;
+        _vp_check_bits(pairs);
         return pairs;
     }
 
-    template <typename TrieBuilder, typename pairs_variant = PairsVariantRaw>
+    static void _vp_set_bits(VectorPairs &pairs, const LetterLocData &lloc) {
+        if constexpr (VectorPairs::impl == VectorPairsImpl::DUAL) {
+            // TODO: Put this in CompactVectorSettings, and add cfg override
+            u32 kmer_bits = log2_ceil(TrieData::total_kmers());
+            u32 lloc_bits = log2_ceil(lloc.num_locations);
+            u32 bits = std::max(kmer_bits, lloc_bits) + 1;
+
+            compact_vector_set_bits(pairs.get_v1(), bits);
+            compact_vector_set_bits(pairs.get_v2(), bits);
+
+            u32 reg_bits = sizeof(typename std::decay_t<
+                    decltype(pairs.get_v1())>::value_type) *
+                BITS_PER_BYTE;
+            u32 act_bits = compact_vector_get_bits(pairs.get_v1());
+            if (act_bits < reg_bits) {
+                Logger::get().log("activated CompactVector",
+                        "; bits =", act_bits,
+                        "; tot =", reg_bits,
+                        "; saving =", double(reg_bits - act_bits) / reg_bits);
+            }
+        }
+    }
+
+    static void _vp_check_bits(VectorPairs &pairs) {
+        if constexpr (VectorPairs::impl == VectorPairsImpl::DUAL) {
+            u32 pair_bits = log2_ceil(pairs.size());
+            if (pair_bits > compact_vector_get_bits(pairs.get_v1()) ||
+                    pair_bits > compact_vector_get_bits(pairs.get_v2())) {
+                // TODO: Support increasing #bits in CV
+                throw "not-enough-bits-for-pairs";
+            }
+        }
+    }
+
+    template <typename TrieBuilder, typename pairs_variant =
+        std::conditional_t<Cfg::trie_pairs_raw, PairsVariantRaw, PairsVariantCompressed> >
     static VectorPairs graph_to_pairs(
             const Graph &graph,
             const auto &cfg) {
@@ -230,9 +285,9 @@ struct Manager : Cfg {
         return graph_to_pairs<TrieBuilder, pairs_variant>(
                 graph,
                 lloc,
-                KmerSettings::from_seed_config<Cfg::KmerHolder>(
+                KmerSettings::from_seed_config<typename Cfg::KmerHolder>(
                     lloc.num_locations, cfg),
-                TrieBuilder::from_config(cfg),
+                TrieBuilder::Settings::from_config(cfg),
                 lloc);
     }
 

@@ -100,9 +100,9 @@ struct PrevHandleIter {
     using iterator_category = std::input_iterator_tag;
     using difference_type = std::ptrdiff_t;
     using value_type = Handle;
-    using reference_type = value_type;
+    using reference = value_type;
 
-    reference_type operator* () const { return get(); }
+    reference operator* () const { return get(); }
     Self &operator++ () { inc(); return *this; }
     Self operator++ (int) { Self tmp = *this; ++(*this); return tmp; }
     // TODO: This is obviously a hack, but it should work
