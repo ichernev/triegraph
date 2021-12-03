@@ -77,6 +77,10 @@ struct TrieGraph {
         return h;
     }
 
+    Handle reverse(Handle h) const {
+        return h.nodepos().reverse(data.graph);
+    }
+
     NodeLen next_match_many(Handle h, const Str::View &sv) {
         if (!h.is_valid() || !h.is_graph()) {
             return 0;

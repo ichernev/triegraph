@@ -317,6 +317,21 @@ test::define_test("exact_short_match", [] {
     assert(tg.exact_short_match(TG::Str("acacg")) == TG::Handle::invalid());
 });
 
+test::define_test("reverse_handle", [] {
+    auto tg = test::tg_from_graph<TG>(
+            TG::Graph::Builder({ .add_reverse_complement = true })
+                .add_node(Str("acgt"), "s1")
+                .add_node(Str("cc"), "s2")
+                .add_edge("s1", "s2")
+                .build(),
+            4);
+
+    assert(tg.reverse(TG::Handle(0, 0)) == TG::Handle(1, 3));
+    assert(tg.reverse(TG::Handle(0, 1)) == TG::Handle(1, 2));
+    assert(tg.reverse(TG::Handle(0, 2)) == TG::Handle(1, 1));
+    assert(tg.reverse(TG::Handle(0, 3)) == TG::Handle(1, 0));
+});
+
 });
 
 } /* unnamed namespace */

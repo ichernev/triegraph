@@ -20,6 +20,10 @@ struct NodePos {
     friend std::ostream &operator << (std::ostream &os, const NodePos &np) {
         return os << "nodepos:" << np.node << ":" << np.pos;
     }
+
+    NodePos reverse(auto const& graph) const {
+        return NodePos(node ^ 1, graph.node(node).seg.size() - 1 - pos);
+    }
 };
 
 template <typename NodePos_, typename Graph_, typename LetterLoc_, int expand_idx_shift = -1>

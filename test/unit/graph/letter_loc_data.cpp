@@ -99,4 +99,26 @@ test::define_test("lloc_iter", [] {
                 ll));
 });
 
+test::define_test("reverse", [] {
+    auto g = TG::Graph::Builder({ .add_reverse_complement = true, .add_extends = false })
+        .add_node(TG::Str("acgt"), "s1")
+        .add_node(TG::Str("ag"), "s2")
+        .add_edge("s1", "s2")
+        .build();
+
+    assert(TG::NodePos(0, 0).reverse(g) == TG::NodePos(1, 3));
+    assert(TG::NodePos(0, 1).reverse(g) == TG::NodePos(1, 2));
+    assert(TG::NodePos(0, 2).reverse(g) == TG::NodePos(1, 1));
+    assert(TG::NodePos(0, 3).reverse(g) == TG::NodePos(1, 0));
+    assert(TG::NodePos(1, 0).reverse(g) == TG::NodePos(0, 3));
+    assert(TG::NodePos(1, 1).reverse(g) == TG::NodePos(0, 2));
+    assert(TG::NodePos(1, 2).reverse(g) == TG::NodePos(0, 1));
+    assert(TG::NodePos(1, 3).reverse(g) == TG::NodePos(0, 0));
+    for (TG::NodeLoc n = 0; n < g.data.nodes.size(); ++n) {
+        for (TG::NodeLen l = 0; l < g.node(n).seg.size(); ++l) {
+            assert(TG::NodePos(n, l).reverse(g).reverse(g) == TG::NodePos(n, l));
+        }
+    }
+});
+
 });
