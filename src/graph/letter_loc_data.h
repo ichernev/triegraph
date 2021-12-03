@@ -10,7 +10,6 @@ struct NodePos {
     using NodeLoc = NodeLoc_;
     using NodeLen = NodeLen_;
 
-    // TODO: Add tests in handle that verify byte order
     NodeLen pos;
     NodeLoc node;
 
