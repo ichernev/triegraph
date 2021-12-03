@@ -1,6 +1,8 @@
 #ifndef __HANDLE_H__
 #define __HANDLE_H__
 
+#include <variant>
+
 namespace triegraph {
 
 template <typename Kmer_, typename NodePos_>
@@ -12,46 +14,38 @@ struct Handle {
     using TrieDepth = typename Kmer::klen_type;
     static constexpr NodeLen INV_NODE_LEN = std::numeric_limits<NodeLen>::max();
 
-    static_assert(sizeof(Kmer) == 4 && sizeof(NodePos) == 8, "remove filler or rework");
-    // TODO: THIS IS UGLYYY
-    union {
-        struct {
-            u32  filler;
-            Kmer kmer;
-        };
-        NodePos nodepos;
-    };
+    enum struct StateId : u32 { Inval = 0, Kmer, NodePos };
+    std::variant<std::monostate, Kmer, NodePos> state;
 
-    Handle() : nodepos(0, INV_NODE_LEN) {}
-    Handle(Kmer k) : kmer(k) {}
-    Handle(NodeLoc n, NodeLen p = 0) : nodepos(n, p) {}
-    Handle(NodePos np) : nodepos(np) {}
+    Handle() {}
+    Handle(Kmer k) : state(k) {}
+    Handle(NodeLoc n, NodeLen p = 0) : state(NodePos{n, p}) {}
+    Handle(NodePos np) : state(np) {}
+
     static Handle invalid() { return Handle(); }
 
-    bool is_trie() const { return kmer.data & Kmer::ON_MASK; }
-    TrieDepth depth_in_trie() const { return kmer.get_len(); }
+    bool is_trie() const { return state.index() == static_cast<u32>(StateId::Kmer); }
+    Kmer &kmer() { return std::get<Kmer>(state); }
+    const Kmer &kmer() const { return std::get<Kmer>(state); }
+    TrieDepth depth_in_trie() const { return kmer().get_len(); }
 
-    bool is_graph() const { return !is_trie(); }
-    NodeLoc node() const { return nodepos.node; }
-    NodeLen pos() const { return nodepos.pos; }
+    bool is_graph() const { return state.index() == static_cast<u32>(StateId::NodePos); }
+    NodePos &nodepos() { return std::get<NodePos>(state); }
+    const NodePos &nodepos() const { return std::get<NodePos>(state); }
+    NodeLoc node() const { return nodepos().node; }
+    NodeLen pos() const { return nodepos().pos; }
 
-    bool is_valid() const { return !is_graph() || pos() != INV_NODE_LEN; }
+    bool is_valid() const { return state.index() != static_cast<u32>(StateId::Inval); }
 
     bool operator== (const Handle &other) const {
-        if constexpr (sizeof(kmer) == sizeof(nodepos))
-            return kmer == other.kmer;
-
-        if (is_trie())
-            return other.is_trie() ? kmer == other.kmer : false;
-        else
-            return other.is_graph() ? nodepos == other.nodepos : false;
+        return state == other.state;
     }
 
     bool operator< (const Handle &other) const {
         if (is_trie())
-            return other.is_trie() ? kmer < other.kmer : true;
+            return other.is_trie() ? kmer() < other.kmer() : true;
         else
-            return other.is_graph() ? nodepos < other.nodepos : false;
+            return other.is_graph() ? nodepos() < other.nodepos() : false;
     }
 
     friend std::ostream &operator<< (std::ostream &os, const Handle &h) {
