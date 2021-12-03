@@ -28,10 +28,11 @@ struct CfgFlags {
     /** Use CompactVector for ElemsContainer in DMM (and VectorPairDual by
      * extension) */
     static constexpr u32 CV_ELEMS         = 1u << 5;
-    // /** Use CompactVector for SortedVector beacons */
-    // static constexpr u32 CV_BEACONS       = 1u << 6;
-    // /** Use CompactVector for SortedVector diffs */
-    // static constexpr u32 CV_DIFFS         = 1u << 7;
+    /** Use 64 bit types for graph locations and kmers.
+     * 32bit is good up to 15 trie depth and 4b graph size
+     * 64bit is good up to 31 trie depth and any graph size (hope you have RAM)
+     */
+    static constexpr u32 WEB_SCALE        = 1u << 6;
 };
 
 template<u64 trie_depth = 15,
@@ -43,8 +44,8 @@ struct DnaConfig {
     using NodeLoc = u32;
     using NodeLen = u32;
     using EdgeLoc = u32;
-    using LetterLoc = u32;
-    using KmerHolder = u32;
+    using LetterLoc = std::conditional_t<flags & CfgFlags::WEB_SCALE, u64, u32>;
+    using KmerHolder = std::conditional_t<flags & CfgFlags::WEB_SCALE, u64, u32>;
     static constexpr bool triedata_allow_inner = flags & CfgFlags::ALLOW_INNER_KMER;
     static constexpr VectorPairsImpl vector_pairs_impl = flags & CfgFlags::VP_DUAL_IMPL ?
         VectorPairsImpl::DUAL : VectorPairsImpl::SIMPLE;

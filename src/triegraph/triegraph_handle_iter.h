@@ -123,13 +123,13 @@ struct PrevHandleIter {
             if (h.depth_in_trie() == 0) {
                 return make_single(Handle::invalid());
             } else {
-                typename Handle::Kmer nkmer(h.kmer);
+                typename Handle::Kmer nkmer(h.kmer());
                 nkmer.pop();
                 return make_single(nkmer);
             }
         } else {
             // from graph to trie
-            auto letter_loc = tg.letter_loc.compress(h.nodepos);
+            auto letter_loc = tg.letter_loc.compress(h.nodepos());
             return make_graph_to_trie(tg.trie_data.g2t_values_for(letter_loc));
         }
     }

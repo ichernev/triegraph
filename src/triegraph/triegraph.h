@@ -73,7 +73,7 @@ struct TrieGraph {
         if (!h.is_trie())
             return Handle::invalid();
 
-        h.kmer.pop();
+        h.kmer().pop();
         return h;
     }
 

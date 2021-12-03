@@ -49,7 +49,7 @@ struct SortedVector {
     }
 
     Beacon operator[] (Beacon idx) const {
-        auto dr = div(idx, beacon_interval);
+        auto dr = div<std::conditional_t<sizeof(idx)>=sizeof(beacon_interval), decltype(idx), decltype(beacon_interval)>>(idx, beacon_interval);
         Beacon res = beacons[dr.quot];
         Beacon base_idx = idx - dr.rem;
         for (u32 i = 1; i <= dr.rem; ++i) {

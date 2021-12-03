@@ -442,7 +442,7 @@ struct EditEdgeIter {
         using Letter = Kmer::Letter;
         if (h.is_trie()) {
             if (h.depth_in_trie() + 1 < Kmer::K) {
-                Kmer nkmer = h.kmer;
+                Kmer nkmer = h.kmer();
                 u32 bitset = 0;
                 static_assert(Letter::num_options <= sizeof(bitset) * BITS_PER_BYTE);
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
@@ -452,9 +452,9 @@ struct EditEdgeIter {
                     }
                     nkmer.pop();
                 }
-                return make_trie_inner(h.kmer, bitset);
+                return make_trie_inner(h.kmer(), bitset);
             } else if (h.depth_in_trie() + 1 == Kmer::K) {
-                Kmer nkmer = h.kmer;
+                Kmer nkmer = h.kmer();
                 u32 bitset = 0;
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
                     nkmer.push_back(l);
@@ -463,20 +463,20 @@ struct EditEdgeIter {
                     }
                     nkmer.pop();
                 }
-                return make_trie_inner(h.kmer, bitset);
+                return make_trie_inner(h.kmer(), bitset);
             } else {
-                return make_trie_to_graph(h.kmer, tgd);
+                return make_trie_to_graph(h.kmer(), tgd);
             }
         } else {
             auto &node = tgd.graph.node(h.node());
             if (h.pos() + 1 < node.seg.size()) {
-                return make_graph_fwd(node.seg[h.pos()], h.nodepos);
+                return make_graph_fwd(node.seg[h.pos()], h.nodepos());
             } else {
                 return make_graph_split(
                         h.pos() == node.seg.size() ?
                             Letter(Letter::EPS) :
                             node.seg[h.pos()],
-                        h.nodepos,
+                        h.nodepos(),
                         tgd.graph.forward_from(h.node()));
             }
         }

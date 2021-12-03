@@ -279,7 +279,7 @@ test::define_test("up_handle_trie", [] {
     //             .trie_depth = 4 });
 
     auto handle = tg.up_trie_handle(TG::Kmer::from_str("acac"));
-    assert(handle.is_trie() && handle.kmer == TG::Kmer::from_str("aca"));
+    assert(handle.is_trie() && handle.kmer() == TG::Kmer::from_str("aca"));
 });
 
 test::define_test("next_match_many", [] {
