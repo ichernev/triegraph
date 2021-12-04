@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #ifndef __TRIE_BUILDER_BT_H__
 #define __TRIE_BUILDER_BT_H__
 

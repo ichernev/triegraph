@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #ifndef __SIMPLE_MULTIMAP_H__
 #define __SIMPLE_MULTIMAP_H__
 

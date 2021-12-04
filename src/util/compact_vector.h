@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #ifndef __COMPACT_VECTOR_H__
 #define __COMPACT_VECTOR_H__
 

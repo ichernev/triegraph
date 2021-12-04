@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #ifndef __TRIEGRAPH_HANDLE_ITER_H__
 #define __TRIEGRAPH_HANDLE_ITER_H__
 

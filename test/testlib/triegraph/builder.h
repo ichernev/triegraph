@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #ifndef __TESTLIB_TRIEGRAPH_BUILDER_H__
 #define __TESTLIB_TRIEGRAPH_BUILDER_H__
 

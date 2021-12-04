@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #ifndef __CONNECTED_COMPONENTS_H__
 #define __CONNECTED_COMPONENTS_H__
 

@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 // read str, check actual bits
 // test comparing two views, aligned unaligned
 // check speed of comparing aligned vs unaligned views

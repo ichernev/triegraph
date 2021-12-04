@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #include "graph/rgfa_graph.h"
 #include "alphabet/dna_letter.h"
 #include "alphabet/str.h"

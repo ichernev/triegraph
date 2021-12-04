@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+/*
+ * Copyright (c) 2021, Iskren Chernev
+ */
+
 #include "testlib/dna.h"
 #include "testlib/test.h"
 #include "testlib/trie/builder/tester.h"
