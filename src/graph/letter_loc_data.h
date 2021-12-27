@@ -148,4 +148,13 @@ struct LetterLocData {
 
 } /* namespace triegraph */
 
+namespace std {
+    template <typename NodeLoc, typename NodeLen>
+    struct hash<triegraph::NodePos<NodeLoc, NodeLen>> {
+        size_t operator() (const triegraph::NodePos<NodeLoc, NodeLen> &np) const {
+            return std::hash<NodeLoc>{}(np.node) ^ std::hash<NodeLen>{}(np.pos);
+        }
+    };
+} /* namespace std */
+
 #endif /* __LETTER_LOC_DATA_H__ */

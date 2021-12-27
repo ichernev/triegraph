@@ -64,4 +64,15 @@ struct Handle {
 
 } /* namespace triegraph */
 
+namespace std {
+    template <typename Kmer, typename NodePos>
+    struct hash<triegraph::Handle<Kmer, NodePos>> {
+        size_t operator() (const triegraph::Handle<Kmer, NodePos> &h) const {
+            return !h.is_valid() ? 0 :
+                h.is_trie() ? std::hash<Kmer>{}(h.kmer()) :
+                    std::hash<NodePos>{}(h.nodepos());
+        }
+    };
+} /* namespace std */
+
 #endif /* __HANDLE_H__ */
