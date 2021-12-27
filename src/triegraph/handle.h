@@ -55,7 +55,7 @@ struct Handle {
 
     friend std::ostream &operator<< (std::ostream &os, const Handle &h) {
         if (h.is_trie())
-            os << "trie:" << h.depth_in_trie() << ":" << h.kmer;
+            os << "trie:" << h.depth_in_trie() << ":" << h.kmer();
         else
             os << "graph:" << h.node() << ":" << h.pos();
         return os;
