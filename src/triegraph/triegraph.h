@@ -63,6 +63,10 @@ struct TrieGraph {
         edit_edge_iterator,
         typename edit_edge_iterator::Sent>;
 
+    Handle root_handle() const {
+        return Handle(Kmer::empty());
+    }
+
     edit_edge_iter_view next_edit_edges(Handle h) const { return EditEdgeIter::make(h, data); }
     PrevHandleIterHelper prev_graph_handles(Handle h) const { return prev_graph_handles_it(h); }
     PrevHandleIterHelper prev_trie_handles(Handle h) const { return prev_trie_handles_it(h); }
