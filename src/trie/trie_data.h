@@ -9,6 +9,7 @@
 #include "trie/kmer_codec.h"
 #include "trie/trie_presence.h"
 #include "util/compact_vector.h"
+#include "util/sorted_vector.h"
 #include "util/logger.h"
 #include "util/multimaps.h"
 #include "util/pow_histogram.h"
