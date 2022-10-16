@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <vector>
 #include <cstring>
+#include <memory>
 
 #include "util/logger.h"
 #include "util/human.h"
