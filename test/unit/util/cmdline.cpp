@@ -34,5 +34,21 @@ test::define_test("init_list MapCfg", [] {
     assert(x.get<bool>("empty") == true);
 });
 
+test::define_test("subset MapCfg", [] {
+    using std::string_literals::operator""s;
+    auto x = MapCfg {
+        "foo", "bar",
+        "trie-depth", "5",
+        "empty", "",
+    };
+
+    auto a = x.subset({"foo", "empty"});
+    assert(a.has("foo"));
+    assert(a.has("empty"));
+    assert(!a.has("trie-depth"));
+    assert(a.get<std::string>("foo") == "bar");
+    assert(a.get<std::string>("empty") == "");
+});
+
 });
 

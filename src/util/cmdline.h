@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace triegraph {
 
@@ -21,6 +22,8 @@ struct MapCfg {
         for (size_t i = 0; i < items.size(); i += 2) {
             flags[bp[i]] = bp[i+1];
         }
+    }
+    MapCfg(std::map<std::string, std::string> &&flags) : flags(std::move(flags)) {
     }
 
     template <typename T=std::string>
@@ -57,6 +60,20 @@ struct MapCfg {
 
     const std::string &val_for_key(const std::string &key) const {
         return flags.find(key)->second;
+    }
+
+    bool has(const std::string &key) const {
+        return flags.contains(key);
+    }
+
+    MapCfg subset(const std::vector<std::string> &keys) {
+        std::map<std::string, std::string> new_flags;
+        for (const auto &[k, v] : flags) {
+            if (std::find(keys.begin(), keys.end(), k) != keys.end()) {
+                new_flags[k] = v;
+            }
+        }
+        return {std::move(new_flags)};
     }
 };
 
