@@ -38,7 +38,7 @@ struct TrieGraph {
 
     TrieGraphData data;
 
-    TrieGraph(TrieGraphData &&data) : data(std::move(data)) {}
+    TrieGraph(TrieGraphData data) : data(data) {}
 
     std::tuple<NodeLoc, NodeLoc, LetterLoc> graph_size() const {
         return std::make_tuple(

@@ -14,20 +14,20 @@ struct TrieGraphData {
     using LetterLocData = LetterLocData_;
     using TrieData = TrieData_;
 
-    Graph graph;
-    LetterLocData letter_loc;
-    TrieData trie_data;
+    const Graph &graph;
+    const LetterLocData &letter_loc;
+    const TrieData &trie_data;
 
-    TrieGraphData(Graph &&g, LetterLocData &&lloc, TrieData &&trie_data)
-      : graph(std::move(g)),
-        letter_loc(std::move(lloc)),
-        trie_data(std::move(trie_data)) {
+    TrieGraphData(const Graph &g, const LetterLocData &lloc, const TrieData &trie_data)
+      : graph(g),
+        letter_loc(lloc),
+        trie_data(trie_data) {
     }
 
-    TrieGraphData(const TrieGraphData &) = delete;
+    TrieGraphData(const TrieGraphData &) = default;
     TrieGraphData &operator= (const TrieGraphData &) = delete;
     TrieGraphData(TrieGraphData &&) = default;
-    TrieGraphData &operator= (TrieGraphData &&) = default;
+    TrieGraphData &operator= (TrieGraphData &&) = delete;
 };
 
 } /* triegraph */
