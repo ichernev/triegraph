@@ -125,6 +125,12 @@ struct Str {
             return os;
         }
 
+        std::basic_string<typename Letter::Human> to_str() const {
+            std::ostringstream os;
+            os << *this;
+            return os.str();
+        }
+
         const_iterator begin() const { return const_iterator(base->data, offset); }
         const_iterator end() const { return const_iterator(base->data, offset + length); }
 
