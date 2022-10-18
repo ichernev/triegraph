@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "util/util.h"
-#include "util/compact_vector.h"
+#include "triegraph/util/util.h"
+#include "triegraph/util/compact_vector.h"
 
 #include "testlib/test.h"
 

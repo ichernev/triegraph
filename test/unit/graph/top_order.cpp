@@ -3,7 +3,7 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "graph/top_order.h"
+#include "triegraph/graph/top_order.h"
 
 #include "testlib/dna.h"
 #include "testlib/test.h"

@@ -3,10 +3,10 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-// #include "util/util.h"
-// #include "alphabet/dna_letter.h"
-#include "dna_config.h"
-#include "manager.h"
+// #include "triegraph/util/util.h"
+// #include "triegraph/alphabet/dna_letter.h"
+#include "triegraph/dna_config.h"
+#include "triegraph/manager.h"
 
 #include <ranges>
 

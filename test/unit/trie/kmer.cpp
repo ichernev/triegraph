@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "trie/kmer.h"
-#include "alphabet/dna_letter.h"
+#include "triegraph/trie/kmer.h"
+#include "triegraph/alphabet/dna_letter.h"
 
 #include "testlib/test.h"
 // #include <assert.h>

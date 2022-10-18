@@ -3,13 +3,13 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "util/util.h"
-#include "trie/trie_presence.h"
-#include "trie/kmer.h"
-#include "trie/dkmer.h"
-#include "trie/kmer_settings.h"
-#include "alphabet/letter.h"
-#include "alphabet/dna_letter.h"
+#include "triegraph/util/util.h"
+#include "triegraph/trie/trie_presence.h"
+#include "triegraph/trie/kmer.h"
+#include "triegraph/trie/dkmer.h"
+#include "triegraph/trie/kmer_settings.h"
+#include "triegraph/alphabet/letter.h"
+#include "triegraph/alphabet/dna_letter.h"
 
 #include <vector>
 #include <algorithm>

@@ -13,8 +13,8 @@
 // * revcomp copy
 // * revcomp view
 
-#include "alphabet/dna_letter.h"
-#include "alphabet/str.h"
+#include "triegraph/alphabet/dna_letter.h"
+#include "triegraph/alphabet/str.h"
 
 #include <sstream>
 

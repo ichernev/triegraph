@@ -5,8 +5,8 @@
 
 #include "testlib/test.h"
 
-#include "dna_config.h"
-#include "manager.h"
+#include "triegraph/dna_config.h"
+#include "triegraph/manager.h"
 
 #include <sparsepp/spp.h>
 

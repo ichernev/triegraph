@@ -5,11 +5,11 @@
 
 #include "testlib/test.h"
 
-#include "dna_config.h"
-#include "manager.h"
+#include "triegraph/dna_config.h"
+#include "triegraph/manager.h"
 
-#include "util/hybrid_multimap.h"
-#include "util/simple_multimap.h"
+#include "triegraph/util/hybrid_multimap.h"
+#include "triegraph/util/simple_multimap.h"
 
 using namespace triegraph;
 using TG = Manager<dna::DnaConfig<0>>;

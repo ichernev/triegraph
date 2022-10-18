@@ -1,13 +1,10 @@
 OUTPUT := output
 
-SRCS := $(shell find src -name '*.cpp')
-# OBJS := $(patsubst %.cpp,%.o,$(SRCS))
-TARGETS  := $(patsubst %.cpp,$(OUTPUT)/%,$(SRCS))
 TEST_SRCS := $(shell find test -name '*.cpp')
 TEST_TARGETS = $(patsubst %.cpp,$(OUTPUT)/%,$(TEST_SRCS))
 # SLOWS := $(patsubst %.cpp,%,$(wildcard slow/*.cpp))
 # BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
-DEPS := $(SRCS:%.cpp=$(OUTPUT)/%.d) $(TEST_SRCS:%.cpp=$(OUTPUT)/%.d)
+DEPS := $(TEST_SRCS:%.cpp=$(OUTPUT)/%.d)
 
 FORCE :=
 DEBUG := 0
@@ -17,14 +14,11 @@ else
   OPTIMIZE := -O2
 endif
 SHORT := -Wfatal-errors
-CPPFLAGS := -MMD $(SHORT) -std=c++20 -Isrc -Wall $(OPTIMIZE)
+CPPFLAGS := -MMD $(SHORT) -std=c++20 -I. -Wall $(OPTIMIZE)
 CPPFLAGS_TEST := $(CPPFLAGS) -Itest -Ithird-party/sparsepp
 
 TCOLORS := awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /TEST MODULE/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
 
-
-.PHONY: all
-main: $(TARGETS)
 
 .PHONY: tests
 tests: $(TEST_TARGETS)
@@ -84,6 +78,6 @@ $(OUTPUT)/%: %.cpp
 
 .PHONY: clean
 clean:
-	rm -rf main $(DEPS) $(TARGETS) $(TEST_TARGETS)
+	rm -rf main $(DEPS) $(TEST_TARGETS)
 
 -include $(DEPS)

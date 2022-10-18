@@ -3,12 +3,12 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "graph/rgfa_graph.h"
-#include "alphabet/dna_letter.h"
-#include "alphabet/str.h"
+#include "triegraph/graph/rgfa_graph.h"
+#include "triegraph/alphabet/dna_letter.h"
+#include "triegraph/alphabet/str.h"
 
-#include "dna_config.h"
-#include "manager.h"
+#include "triegraph/dna_config.h"
+#include "triegraph/manager.h"
 
 #include <ranges>
 // #include <iostream>

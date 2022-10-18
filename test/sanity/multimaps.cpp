@@ -5,11 +5,11 @@
 
 #include "testlib/test.h"
 
-#include "util/dense_multimap.h"
-#include "util/hybrid_multimap.h"
-#include "util/simple_multimap.h"
-#include "util/sorted_vector.h"
-#include "util/util.h"
+#include "triegraph/util/dense_multimap.h"
+#include "triegraph/util/hybrid_multimap.h"
+#include "triegraph/util/simple_multimap.h"
+#include "triegraph/util/sorted_vector.h"
+#include "triegraph/util/util.h"
 
 #include <algorithm>
 #include <unordered_map>

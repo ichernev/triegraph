@@ -4,8 +4,8 @@
  */
 
 #include "testlib/test.h"
-#include "util/cmdline.h"
-#include "util/util.h"
+#include "triegraph/util/cmdline.h"
+#include "triegraph/util/util.h"
 
 using namespace triegraph;
 

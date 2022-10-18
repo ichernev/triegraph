@@ -16,11 +16,11 @@
 #include <cstring>
 #include <memory>
 
-#include "util/logger.h"
-#include "util/human.h"
-#include "util/timer.h"
-#include "util/memory.h"
-#include "util/cmdline.h"
+#include "triegraph/util/logger.h"
+#include "triegraph/util/human.h"
+#include "triegraph/util/timer.h"
+#include "triegraph/util/memory.h"
+#include "triegraph/util/cmdline.h"
 
 // std::string test_module_name;
 // std::string prefix;

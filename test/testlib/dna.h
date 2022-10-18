@@ -6,8 +6,8 @@
 #ifndef __TESTLIB_DNA_CONFIG_H__
 #define __TESTLIB_DNA_CONFIG_H__
 
-#include "manager.h"
-#include "dna_config.h"
+#include "triegraph/manager.h"
+#include "triegraph/dna_config.h"
 
 namespace test {
     // using namespace triegraph;

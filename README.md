@@ -1,3 +1,9 @@
+Usage
+=====
+
+Triegraph is a header-only library, you can use it by copy-pasting the source
+code and adding `-Iroot-triegraph-dir` to your CPPFLAGS.
+
 About
 =====
 

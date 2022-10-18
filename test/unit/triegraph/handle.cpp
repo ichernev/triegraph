@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "dna_config.h"
-#include "manager.h"
+#include "triegraph/dna_config.h"
+#include "triegraph/manager.h"
 
 #include "testlib/test.h"
 

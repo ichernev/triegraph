@@ -3,13 +3,13 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "dna_config.h"
-#include "manager.h"
+#include "triegraph/dna_config.h"
+#include "triegraph/manager.h"
 #include "testlib/test.h"
-#include "util/compact_vector.h"
-#include "util/util.h"
-#include "util/vector_pairs.h"
-#include "util/timer.h"
+#include "triegraph/util/compact_vector.h"
+#include "triegraph/util/util.h"
+#include "triegraph/util/vector_pairs.h"
+#include "triegraph/util/timer.h"
 
 #include <random>
 

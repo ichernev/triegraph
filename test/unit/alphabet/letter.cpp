@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "alphabet/letter.h"
-#include "alphabet/dna_letter.h"
+#include "triegraph/alphabet/letter.h"
+#include "triegraph/alphabet/dna_letter.h"
 
 #include "testlib/test.h"
 

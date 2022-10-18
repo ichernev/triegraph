@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "util/util.h"
-#include "util/dense_multimap.h"
+#include "triegraph/util/util.h"
+#include "triegraph/util/dense_multimap.h"
 
 // #include <assert.h>
 // #include <iostream>

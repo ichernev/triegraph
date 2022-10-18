@@ -6,8 +6,8 @@
 #ifndef __TESTLIB_TRIEGRAPH_BUILDER_H__
 #define __TESTLIB_TRIEGRAPH_BUILDER_H__
 
-#include <util/util.h>
-#include <trie/kmer_settings.h>
+#include "triegraph/util/util.h"
+#include "triegraph/trie/kmer_settings.h"
 
 namespace test {
 

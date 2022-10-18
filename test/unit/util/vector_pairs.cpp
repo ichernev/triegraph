@@ -5,9 +5,9 @@
 
 #include "testlib/test.h"
 
-#include "util/util.h"
-#include "util/vector_pairs.h"
-#include "util/compact_vector.h"
+#include "triegraph/util/util.h"
+#include "triegraph/util/vector_pairs.h"
+#include "triegraph/util/compact_vector.h"
 
 using namespace triegraph;
 

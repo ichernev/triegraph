@@ -5,7 +5,7 @@
 
 #include "testlib/test.h"
 
-#include "util/human.h"
+#include "triegraph/util/human.h"
 
 using namespace triegraph;
 

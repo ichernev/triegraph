@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "util/sorted_vector.h"
-#include "util/util.h"
+#include "triegraph/util/sorted_vector.h"
+#include "triegraph/util/util.h"
 
 #include "testlib/test.h"
 

@@ -3,8 +3,8 @@
  * Copyright (c) 2021, Iskren Chernev
  */
 
-#include "util/hybrid_multimap.h"
-#include "util/util.h"
+#include "triegraph/util/hybrid_multimap.h"
+#include "triegraph/util/util.h"
 
 #include "testlib/test.h"
 
