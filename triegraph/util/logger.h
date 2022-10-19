@@ -87,7 +87,7 @@ struct Logger {
     //     print(os, std::forward<Args>(args)...);
     // }
 
-    template <typename... Args>
+    template <int sep=SPACE, typename... Args>
     void log(Args&&... args) {
         if (!timers.back().expanded) {
             print_ln(os);
@@ -98,7 +98,7 @@ struct Logger {
             print<NONE>(os, '|');
         }
         print<NONE>(os, ":- "); /* _time_diff(timers.back().begin); */
-        print_ln(os, std::forward<Args>(args)...);
+        print_ln<sep>(os, std::forward<Args>(args)...);
     }
 
     Logger &begin(const std::string &tag) {

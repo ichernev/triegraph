@@ -80,7 +80,7 @@ struct MapCfg {
 struct CmdLine : public MapCfg {
     std::vector<std::string> positional;
 
-    CmdLine(int argc, char *argv[]) {
+    CmdLine(int argc, const char *argv[]) {
         using std::string_literals::operator""s;
 
         bool force_positional = false;

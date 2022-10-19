@@ -1,3 +1,15 @@
->Simple header line
+>read1, cost 0
 aC
 Gt
+
+>read2, within one node, cost 0
+TGTGA
+
+>read3, crossing two nodes, cost 0
+GAAACG
+
+>read4, crossing two nodes, 1 subst, cost 1
+GAATCG
+
+>read5, crossing two nodes, 1 deletion, cost 1
+GAACG

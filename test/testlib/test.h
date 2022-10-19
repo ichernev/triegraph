@@ -205,7 +205,7 @@ namespace test {
 
 
 int main(int argc, char *argv[]) {
-    auto cmdline = triegraph::CmdLine(argc, argv);
+    auto cmdline = triegraph::CmdLine(argc, (const char**)argv);
     using Timer = triegraph::Timer<>;
     if (!cmdline.get<bool>("leave-logger"))
         triegraph::Logger::disable();
