@@ -15,7 +15,7 @@ else
   OPTIMIZE := -O2
 endif
 SHORT := -Wfatal-errors
-CPPFLAGS := -MMD $(SHORT) -std=c++20 -I. -Wall $(OPTIMIZE)
+CPPFLAGS := -MMD $(SHORT) -std=c++20 -I. -Wall $(OPTIMIZE) $(CPPFLAGS_EXTRA)
 CPPFLAGS_TEST := $(CPPFLAGS) -Itest -Ithird-party/sparsepp
 
 TCOLORS := awk ' BEGIN { RED = "\033[1;31m"; GREEN = "\033[1;32m"; COLEND = "\033[0m" } /TEST MODULE/ { printf GREEN; } /Assertion|terminate/ { printf RED; } // { print $$0 COLEND; } '
