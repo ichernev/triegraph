@@ -62,10 +62,10 @@ run:
 		[ -n "$(PREFIX)" ] && xpcs=$(PREFIX)/$${xpcs#$(PREFIX)/}; \
 		if [ -d "$$xpcs" ]; then \
 			find $$xpcs/ -name '*.cpp' | while read t; do \
-				./$(OUTPUT)/$${t%.cpp} 2>&1 | $(TCOLORS); \
+				./$(OUTPUT)/$${t%.cpp} $(TEST_OPTS) 2>&1 | $(TCOLORS); \
 			done; \
 		else \
-			./$(OUTPUT)/$$xpcs 2>&1 | $(TCOLORS); \
+			./$(OUTPUT)/$$xpcs $(TEST_OPTS) 2>&1 | $(TCOLORS); \
 		fi; \
 	done
 
