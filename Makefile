@@ -6,6 +6,7 @@ TEST_TARGETS = $(patsubst %.cpp,$(OUTPUT)/%,$(TEST_SRCS))
 # BENCHES := $(patsubst %.cpp,%,$(wildcard benchmark/*.cpp))
 DEPS := $(TEST_SRCS:%.cpp=$(OUTPUT)/%.d)
 
+CPP := g++
 FORCE :=
 DEBUG := 0
 ifeq ($(DEBUG), 1)
@@ -70,11 +71,11 @@ run:
 
 $(OUTPUT)/test/%: test/%.cpp
 	@mkdir -p $(OUTPUT)/$(shell dirname $<)
-	g++ $(CPPFLAGS_TEST) $< -o $@
+	$(CPP) $(CPPFLAGS_TEST) $< -o $@
 
 $(OUTPUT)/%: %.cpp
 	@mkdir -p $(OUTPUT)/$(shell dirname $<)
-	g++ $(CPPFLAGS) $< -o $@
+	$(CPP) $(CPPFLAGS) $< -o $@
 
 .PHONY: clean
 clean:
