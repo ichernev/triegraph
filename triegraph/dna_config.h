@@ -38,13 +38,17 @@ struct CfgFlags {
      * 64bit is good up to 31 trie depth and any graph size (hope you have RAM)
      */
     static constexpr u32 WEB_SCALE        = 1u << 6;
+    /**
+     * Use DNA representation that supports N letter
+     */
+    static constexpr u32 USE_DNAN         = 1u << 7;
 };
 
 template<u64 trie_depth = 15,
-    u32 flags = CfgFlags::TD_SORTED_VECTOR | CfgFlags::VP_DUAL_IMPL>
+    u32 flags = CfgFlags::USE_DNAN | CfgFlags::TD_SORTED_VECTOR | CfgFlags::VP_DUAL_IMPL>
 struct DnaConfig {
-    using Letter = DnaLetter;
-    using Letters = DnaLetters;
+    using Letter = std::conditional_t<flags & CfgFlags::USE_DNAN, DnaNLetter, DnaLetter>;
+    using Letters = std::conditional_t<flags & CfgFlags::USE_DNAN, DnaNLetters, DnaLetters>;
     using StrHolder = u32;
     using NodeLoc = u32;
     using NodeLen = u32;

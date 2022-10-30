@@ -55,11 +55,13 @@ test::define_test("next_edit_edges_fwd", [] {
         EditEdge { NodePos { 2, 2 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 2, 2 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 2, 2 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 2, 2 }, EditEdge::SUB,   DnaLetters::N },
 
         EditEdge { NodePos { 2, 1 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 2, 1 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 2, 1 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 2, 1 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 2, 1 }, EditEdge::INS,   DnaLetters::N },
 
         EditEdge { NodePos { 2, 2 }, EditEdge::DEL,   DnaLetters::EPS },
     };
@@ -81,18 +83,21 @@ test::define_test("next_edit_edges_split", [] {
         EditEdge { NodePos { 2, 0 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos { 2, 0 }, EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos { 1, 0 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos { 1, 0 }, EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos { 0, 1 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 0, 1 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 0, 1 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 0, 1 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 0, 1 }, EditEdge::INS,   DnaLetters::N },
     };
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
@@ -114,18 +119,21 @@ test::define_test("next_edit_edges_trie_inner", [] {
         EditEdge { Kmer::from_str("cga"), EditEdge::SUB, DnaLetters::C },
         EditEdge { Kmer::from_str("cga"), EditEdge::SUB, DnaLetters::G },
         EditEdge { Kmer::from_str("cga"), EditEdge::SUB, DnaLetters::T },
+        EditEdge { Kmer::from_str("cga"), EditEdge::SUB, DnaLetters::N },
         EditEdge { Kmer::from_str("cga"), EditEdge::DEL, DnaLetters::EPS },
 
         EditEdge { Kmer::from_str("cgg"), EditEdge::SUB, DnaLetters::A },
         EditEdge { Kmer::from_str("cgg"), EditEdge::SUB, DnaLetters::C },
         EditEdge { Kmer::from_str("cgg"), EditEdge::MATCH, DnaLetters::G },
         EditEdge { Kmer::from_str("cgg"), EditEdge::SUB, DnaLetters::T },
+        EditEdge { Kmer::from_str("cgg"), EditEdge::SUB, DnaLetters::N },
         EditEdge { Kmer::from_str("cgg"), EditEdge::DEL, DnaLetters::EPS },
 
         EditEdge { Kmer::from_str("cg"), EditEdge::INS, DnaLetters::A },
         EditEdge { Kmer::from_str("cg"), EditEdge::INS, DnaLetters::C },
         EditEdge { Kmer::from_str("cg"), EditEdge::INS, DnaLetters::G },
         EditEdge { Kmer::from_str("cg"), EditEdge::INS, DnaLetters::T },
+        EditEdge { Kmer::from_str("cg"), EditEdge::INS, DnaLetters::N },
     };
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
@@ -147,12 +155,14 @@ test::define_test("next_edit_edges_trie_edge", [] {
         EditEdge { Kmer::from_str("cgac"), EditEdge::MATCH, DnaLetters::C },
         EditEdge { Kmer::from_str("cgac"), EditEdge::SUB, DnaLetters::G },
         EditEdge { Kmer::from_str("cgac"), EditEdge::SUB, DnaLetters::T },
+        EditEdge { Kmer::from_str("cgac"), EditEdge::SUB, DnaLetters::N },
         EditEdge { Kmer::from_str("cgac"), EditEdge::DEL, DnaLetters::EPS },
 
         EditEdge { Kmer::from_str("cga"), EditEdge::INS, DnaLetters::A },
         EditEdge { Kmer::from_str("cga"), EditEdge::INS, DnaLetters::C },
         EditEdge { Kmer::from_str("cga"), EditEdge::INS, DnaLetters::G },
         EditEdge { Kmer::from_str("cga"), EditEdge::INS, DnaLetters::T },
+        EditEdge { Kmer::from_str("cga"), EditEdge::INS, DnaLetters::N },
     };
 
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
@@ -179,11 +189,13 @@ test::define_test("next_edit_edges_trie_to_graph", [] {
         EditEdge { NodePos { 3, 1 }, EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos { 3, 1 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 3, 1 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 3, 1 }, EditEdge::SUB,   DnaLetters::N },
 
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::N },
 
         EditEdge { NodePos { 3, 1 }, EditEdge::DEL,   DnaLetters::EPS },
     };

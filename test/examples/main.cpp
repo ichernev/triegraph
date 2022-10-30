@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
             } else if (cmd == "td"s) {
-                using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
+                using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0, CfgFlags::TD_SORTED_VECTOR | CfgFlags::VP_DUAL_IMPL>>;
                 auto td = get_td<TGX>(graph, lloc, cmdline, TGX::algo_from_name(algo));
             } else if (cmd == "td0"s) {
                 using TGX = triegraph::Manager<triegraph::dna::DnaConfig<0, CfgFlags::VP_DUAL_IMPL | CfgFlags::TD_SORTED_VECTOR | CfgFlags::TD_ZERO_OVERHEAD>>;

@@ -38,15 +38,21 @@ test::define_test("graph_fwd", [] {
         EditEdge { NodePos { 4, 3 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 4, 3 }, EditEdge::SUB,   DnaLetters::N },
 
         EditEdge { NodePos { 4, 2 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 4, 2 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 4, 2 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 4, 2 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 4, 2 }, EditEdge::INS,   DnaLetters::N },
 
         EditEdge { NodePos { 4, 3 }, EditEdge::DEL,   DnaLetters::EPS },
     };
 
+    // std::cerr << "----- expected:" << std::endl;
+    // std::ranges::copy(expected, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
+    // std::cerr << "----- actual:" << std::endl;
+    // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
 });
 
@@ -69,18 +75,21 @@ test::define_test("graph_split", [] {
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 1, 0 }, EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos { 1, 0 }, EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos { 2, 0 }, EditEdge::MATCH, DnaLetters::A },
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 2, 0 }, EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos { 2, 0 }, EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 0, 0 }, EditEdge::INS,   DnaLetters::N },
     };
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
@@ -95,12 +104,14 @@ test::define_test("graph_split", [] {
         EditEdge { NodePos { 4, 0 }, EditEdge::MATCH, DnaLetters::C },
         EditEdge { NodePos { 4, 0 }, EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos { 4, 0 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 4, 0 }, EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos { 4, 0 }, EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos { 2, 0 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 2, 0 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 2, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 2, 0 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 2, 0 }, EditEdge::INS,   DnaLetters::N },
     };
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
@@ -115,12 +126,14 @@ test::define_test("graph_split", [] {
         EditEdge { NodePos { 3, 0 }, EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos { 3, 0 }, EditEdge::MATCH, DnaLetters::G },
         EditEdge { NodePos { 3, 0 }, EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos { 3, 0 }, EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos { 3, 0 }, EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos { 1, 0 }, EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos { 1, 0 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 1, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 1, 0 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 1, 0 }, EditEdge::INS,   DnaLetters::N },
     };
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(std::ranges::equal(h, expected));
@@ -135,6 +148,7 @@ test::define_test("graph_split", [] {
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos { 3, 0 }, EditEdge::INS,   DnaLetters::N },
     };
     assert(std::ranges::equal(h, expected));
 });
@@ -150,22 +164,27 @@ test::define_test("trie_inner", [] {
         EditEdge { Kmer::from_str("acgtc"), EditEdge::MATCH, DnaLetters::C },
         EditEdge { Kmer::from_str("acgtc"), EditEdge::SUB,   DnaLetters::G },
         EditEdge { Kmer::from_str("acgtc"), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { Kmer::from_str("acgtc"), EditEdge::SUB,   DnaLetters::N },
         EditEdge { Kmer::from_str("acgtc"), EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { Kmer::from_str("acgtg"), EditEdge::SUB,   DnaLetters::A },
         EditEdge { Kmer::from_str("acgtg"), EditEdge::SUB,   DnaLetters::C },
         EditEdge { Kmer::from_str("acgtg"), EditEdge::MATCH, DnaLetters::G },
         EditEdge { Kmer::from_str("acgtg"), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { Kmer::from_str("acgtg"), EditEdge::SUB,   DnaLetters::N },
         EditEdge { Kmer::from_str("acgtg"), EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::A },
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::C },
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::G },
         EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::T },
+        EditEdge { Kmer::from_str("acgt"), EditEdge::INS,   DnaLetters::N },
     };
+    // std::cerr << "----- actual:" << std::endl;
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(test::equal_sorted(h, test::sorted(expected)));
 });
+
 test::define_test("trie_to_graph", [] {
 // static void test_trie_to_graph() {
     // using TG2 = Manager<dna::DnaConfig<0, false, true>>;
@@ -174,7 +193,6 @@ test::define_test("trie_to_graph", [] {
     using Kmer = TG::Kmer;
     using EditEdge = TG::EditEdge;
     using NodePos = TG::NodePos;
-    using DnaLetters = dna::DnaLetters;
     using DnaStr = TG::Str;
 
     auto g = TG::Graph::Builder({ .add_reverse_complement = false })
@@ -210,38 +228,46 @@ test::define_test("trie_to_graph", [] {
         EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos(1, 1), EditEdge::MATCH, DnaLetters::G },
         EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos(1, 1), EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(1, 0), EditEdge::INS,   DnaLetters::N },
         EditEdge { NodePos(1, 1), EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos(2, 1), EditEdge::MATCH, DnaLetters::A },
         EditEdge { NodePos(2, 1), EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos(2, 1), EditEdge::SUB,   DnaLetters::G },
         EditEdge { NodePos(2, 1), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos(2, 1), EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos(2, 0), EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos(2, 0), EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos(2, 0), EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos(2, 0), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(2, 0), EditEdge::INS,   DnaLetters::N },
         EditEdge { NodePos(2, 1), EditEdge::DEL,   DnaLetters::EPS },
 
         EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::A },
         EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::C },
         EditEdge { NodePos(3, 0), EditEdge::MATCH, DnaLetters::G },
         EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::T },
+        EditEdge { NodePos(3, 0), EditEdge::SUB,   DnaLetters::N },
         EditEdge { NodePos(3, 0), EditEdge::DEL,   DnaLetters::EPS },
         EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(2, 2), EditEdge::INS,   DnaLetters::N },
 
         EditEdge { NodePos(4, 0), EditEdge::INS,   DnaLetters::A },
         EditEdge { NodePos(4, 0), EditEdge::INS,   DnaLetters::C },
         EditEdge { NodePos(4, 0), EditEdge::INS,   DnaLetters::G },
         EditEdge { NodePos(4, 0), EditEdge::INS,   DnaLetters::T },
+        EditEdge { NodePos(4, 0), EditEdge::INS,   DnaLetters::N },
     };
 
+    // std::cerr << "---- actual:" << std::endl;
     // std::ranges::copy(h, std::ostream_iterator<EditEdge>(std::cerr, "\n"));
     assert(test::equal_sorted(h, test::sorted(expected)));
 });

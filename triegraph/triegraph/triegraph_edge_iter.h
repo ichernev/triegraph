@@ -95,8 +95,8 @@ struct EdgeIterImplGraphFwd final : EdgeIterImplBase<Edge_> {
     }
 
     virtual Edge get() const {
-        Letter c { this->state & Letter::mask };
-        switch ((this->state >> Letter::bits) & 3) {
+        Letter c { this->state % Letter::num_options };
+        switch (this->state / Letter::num_options) {
             case 0:
                 // sub/match
                 return Edge {
