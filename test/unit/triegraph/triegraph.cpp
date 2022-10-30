@@ -44,7 +44,6 @@ TG::Graph build_graph() {
       ******************/
 }
 
-
 int m = test::define_module(__FILE__, [] {
 
 test::define_test("next_edit_edges_fwd", [] {
@@ -170,7 +169,7 @@ test::define_test("next_edit_edges_trie_to_graph", [] {
 
     auto h = tg.next_edit_edges(TG::Handle(Kmer::from_str("acgg")));
 
-    // auto er = tg.data.trie_data.trie2graph.equal_range(Kmer::from_str("acgg"));
+    // auto er = tg.data.trie_data().trie2graph.equal_range(Kmer::from_str("acgg"));
     // for (auto it = er.first; it != er.second; ++it) {
     //     std::cerr << it->second << std::endl;
     // }

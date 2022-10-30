@@ -134,8 +134,8 @@ struct PrevHandleIter {
             }
         } else {
             // from graph to trie
-            auto letter_loc = tg.letter_loc.compress(h.nodepos());
-            return make_graph_to_trie(tg.trie_data.g2t_values_for(letter_loc));
+            auto letter_loc = tg.letter_loc().compress(h.nodepos());
+            return make_graph_to_trie(tg.trie_data().g2t_values_for(letter_loc));
         }
     }
 

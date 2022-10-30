@@ -49,9 +49,9 @@ struct TrieGraph {
 
     std::tuple<TrieSize, u32, TrieSize> trie_size() const {
         return std::make_tuple(0, 0, 0);
-                // data.trie_data.trie2graph.size(),
-                // data.trie_data.trie2graph.key_size(),
-                // data.trie_data.active_trie.size());
+                // data.trie_data().trie2graph.size(),
+                // data.trie_data().trie2graph.key_size(),
+                // data.trie_data().active_trie.size());
     }
 
     TrieDepth trie_depth() const {
@@ -71,7 +71,7 @@ struct TrieGraph {
     PrevHandleIterHelper prev_graph_handles(Handle h) const { return prev_graph_handles_it(h); }
     PrevHandleIterHelper prev_trie_handles(Handle h) const { return prev_trie_handles_it(h); }
     PrevHandleIter prev_graph_handles_it(Handle h) const {
-        return PrevHandleIter::make_graph(data.graph, h);
+        return PrevHandleIter::make_graph(data.graph(), h);
     }
 
     PrevHandleIter prev_trie_handles_it(Handle h) const {
@@ -87,14 +87,14 @@ struct TrieGraph {
     }
 
     Handle reverse(Handle h) const {
-        return h.nodepos().reverse(data.graph);
+        return h.nodepos().reverse(data.graph());
     }
 
     NodeLen next_match_many(Handle h, const Str::View &sv) {
         if (!h.is_valid() || !h.is_graph()) {
             return 0;
         }
-        auto nview = data.graph.node(h.node()).seg.get_view(h.pos());
+        auto nview = data.graph().node(h.node()).seg.get_view(h.pos());
         return nview.fast_match(sv);
     }
 
@@ -103,7 +103,7 @@ struct TrieGraph {
             return Handle::invalid();
         }
         auto kmer = Kmer::from_sv(sv);
-        return data.trie_data.trie_contains(kmer) ? kmer : Handle::invalid();
+        return data.trie_data().trie_contains(kmer) ? kmer : Handle::invalid();
     }
 };
 

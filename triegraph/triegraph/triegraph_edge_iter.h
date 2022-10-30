@@ -295,7 +295,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
     } its;
 
     EdgeIterImplTrieToGraph(Kmer kmer, const TrieGraphData &tg)
-        : trie_graph(tg), nps(trie_graph.trie_data.t2g_values_for(kmer))
+        : trie_graph(tg), nps(trie_graph.trie_data().t2g_values_for(kmer))
     {
         after_inc();
     }
@@ -331,9 +331,9 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
             // std::cerr << "state 1" << std::endl;
             auto letter_loc = *nps;
             // std::cerr << "state 1.1 " << letter_loc << std::endl;
-            auto np = trie_graph.letter_loc.expand(letter_loc);
+            auto np = trie_graph.letter_loc().expand(letter_loc);
             // std::cerr << "np: " << np << " " << letter_loc << std::endl;
-            const auto &node = trie_graph.graph.node(np.node);
+            const auto &node = trie_graph.graph().node(np.node);
             if (np.pos + 1 >= node.seg.size()) {
                 // std::cerr << "making split " << np.pos + 1 << " " << node.seg.size() << std::endl;
                 new(&its.split) EdgeIterImplGraphSplit<Edge, Graph>(
@@ -341,7 +341,7 @@ struct EdgeIterImplTrieToGraph final : EdgeIterImplBase<Edge_> {
                             Letter(Letter::EPS) :
                             node.seg[np.pos],
                         np,
-                        trie_graph.graph.forward_from(np.node));
+                        trie_graph.graph().forward_from(np.node));
             } else {
                 // std::cerr << "making fwd" << std::endl;
                 new(&its.fwd) EdgeIterImplGraphFwd<Edge>(
@@ -452,7 +452,7 @@ struct EditEdgeIter {
                 static_assert(Letter::num_options <= sizeof(bitset) * BITS_PER_BYTE);
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
                     nkmer.push_back(l);
-                    if (tgd.trie_data.trie_inner_contains(nkmer)) {
+                    if (tgd.trie_data().trie_inner_contains(nkmer)) {
                         bitset |= 1 << l;
                     }
                     nkmer.pop();
@@ -463,7 +463,7 @@ struct EditEdgeIter {
                 u32 bitset = 0;
                 for (typename Letter::Holder l = 0; l < Letter::num_options; ++l) {
                     nkmer.push_back(l);
-                    if (tgd.trie_data.t2g_contains(nkmer)) {
+                    if (tgd.trie_data().t2g_contains(nkmer)) {
                         bitset |= 1 << l;
                     }
                     nkmer.pop();
@@ -473,7 +473,7 @@ struct EditEdgeIter {
                 return make_trie_to_graph(h.kmer(), tgd);
             }
         } else {
-            auto &node = tgd.graph.node(h.node());
+            auto &node = tgd.graph().node(h.node());
             if (h.pos() + 1 < node.seg.size()) {
                 return make_graph_fwd(node.seg[h.pos()], h.nodepos());
             } else {
@@ -482,7 +482,7 @@ struct EditEdgeIter {
                             Letter(Letter::EPS) :
                             node.seg[h.pos()],
                         h.nodepos(),
-                        tgd.graph.forward_from(h.node()));
+                        tgd.graph().forward_from(h.node()));
             }
         }
     }
