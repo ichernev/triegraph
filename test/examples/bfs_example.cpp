@@ -59,7 +59,7 @@ void bfs(const typename TG::TrieGraph &tg) {
 int main(int argc, char* argv[]) {
     using TG = triegraph::Manager<triegraph::dna::DnaConfig<0>>;
 
-    auto cmdline = triegraph::CmdLine(argc, argv);
+    auto cmdline = triegraph::CmdLine(argc, (const char**) argv);
     auto graph_file = cmdline.positional[0];
 
     // read the graph

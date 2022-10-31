@@ -56,7 +56,7 @@ static TG::VectorPairs get_pairs(
 int main(int argc, char *argv[]) {
     using std::string_literals::operator""s;
 
-    auto cmdline = CmdLine(argc, argv);
+    auto cmdline = CmdLine(argc, (const char **) argv);
     cmdline.debug();
 
     auto algo_fast = cmdline.get_or<std::string>("algo-fast", "back_track"s);

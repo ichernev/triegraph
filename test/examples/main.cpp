@@ -149,7 +149,7 @@ std::vector<typename TG::NodeLoc> shortest_path(
 }
 
 int main(int argc, char *argv[]) {
-    auto cmdline = triegraph::CmdLine(argc, argv);
+    auto cmdline = triegraph::CmdLine(argc, (const char **) argv);
 
     assert(cmdline.positional.size() == 3);
     auto cmd = cmdline.positional[0];
