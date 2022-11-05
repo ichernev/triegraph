@@ -349,6 +349,11 @@ decr_l2:
     //         return hasher(kmr.data);
     //     }
     // };
+    DKmer(Holder h = EMPTY) : data(h) {}
+    DKmer(const DKmer&) = default;
+    DKmer(DKmer&&) = default;
+    DKmer& operator= (const DKmer&) = default;
+    DKmer& operator= (DKmer&&) = default;
 };
 
 } /* namespace triegraph */
